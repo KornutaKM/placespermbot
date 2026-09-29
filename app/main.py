@@ -12,6 +12,7 @@ from app.catalog_service import CatalogService
 from app.config import get_settings
 from app.database import migrate_database
 from app.handlers.main import router
+from app.user_data_controls import UserDataControlsRepository
 from app.storage import (
     FavoritesRepository,
     InterestsRepository,
@@ -31,6 +32,7 @@ async def main() -> None:
     visited_repo = VisitedRepository(settings.database_path)
     saved_routes_repo = SavedRoutesRepository(settings.database_path)
     user_city_repo = UserCityRepository(settings.database_path)
+    data_controls_repo = UserDataControlsRepository(settings.database_path)
     catalog_service = CatalogService(
         default_city_slug=settings.city_slug,
         user_city_repo=user_city_repo,
@@ -45,6 +47,7 @@ async def main() -> None:
     dispatcher["interests_repo"] = interests_repo
     dispatcher["visited_repo"] = visited_repo
     dispatcher["saved_routes_repo"] = saved_routes_repo
+    dispatcher["data_controls_repo"] = data_controls_repo
     dispatcher["catalog_service"] = catalog_service
     dispatcher.update.outer_middleware(CatalogMiddleware(catalog_service))
     dispatcher.include_router(router)
