@@ -29,6 +29,8 @@ from app.keyboards import (
     route_duration_keyboard,
     route_interest_keyboard,
     routes_keyboard,
+    saved_route_details_keyboard,
+    saved_routes_keyboard,
     visited_places_keyboard,
 )
 from app.navigation import (
@@ -47,7 +49,13 @@ from app.pagination import paginate
 from app.planner import INTEREST_LABELS, build_route
 from app.profile import ProfileSummary, build_profile_summary, profile_text
 from app.recommendations import recommend_places
-from app.storage import FavoritesRepository, InterestsRepository, VisitedRepository
+from app.saved_routes import build_save_callback, parse_save_callback
+from app.storage import (
+    FavoritesRepository,
+    InterestsRepository,
+    SavedRoutesRepository,
+    VisitedRepository,
+)
 
 router = Router()
 
@@ -121,6 +129,7 @@ async def build_current_profile(
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
+    saved_routes_repo: SavedRoutesRepository,
 ) -> ProfileSummary:
     return await build_profile_summary(
         user_id,
@@ -128,6 +137,7 @@ async def build_current_profile(
         favorites_repo=favorites_repo,
         interests_repo=interests_repo,
         visited_repo=visited_repo,
+        saved_routes_repo=saved_routes_repo,
     )
 
 
@@ -137,12 +147,14 @@ async def profile_command(
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
+    saved_routes_repo: SavedRoutesRepository,
 ) -> None:
     summary = await build_current_profile(
         message.from_user.id,
         favorites_repo,
         interests_repo,
         visited_repo,
+        saved_routes_repo,
     )
     await message.answer(
         profile_text(summary),
@@ -156,12 +168,14 @@ async def menu_profile(
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
+    saved_routes_repo: SavedRoutesRepository,
 ) -> None:
     summary = await build_current_profile(
         callback.from_user.id,
         favorites_repo,
         interests_repo,
         visited_repo,
+        saved_routes_repo,
     )
     await callback.message.edit_text(
         profile_text(summary),
@@ -867,7 +881,164 @@ async def route_builder_interest(callback: CallbackQuery, state: FSMContext) -> 
         f"<b>Маршрут:</b>\n{stops}\n\n"
         "Время переходов рассчитано ориентировочно для пешей скорости 4,5 км/ч. "
         "Фактический путь может отличаться из-за мостов, переходов и дорожной сети.",
-        reply_markup=generated_route_keyboard(route.places),
+        reply_markup=generated_route_keyboard(
+            route.places,
+            save_callback=build_save_callback(catalog, route),
+        ),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("savegen:"))
+async def save_generated_route(
+    callback: CallbackQuery,
+    saved_routes_repo: SavedRoutesRepository,
+) -> None:
+    catalog = current_catalog()
+    try:
+        snapshot = parse_save_callback(callback.data, catalog)
+    except ValueError:
+        await callback.answer(
+            "Этот маршрут устарел. Соберите его заново.",
+            show_alert=True,
+        )
+        return
+
+    saved = await saved_routes_repo.save(
+        callback.from_user.id,
+        catalog.slug,
+        snapshot.interest,
+        snapshot.budget_minutes,
+        tuple(place.slug for place in snapshot.places),
+    )
+    await callback.message.edit_reply_markup(
+        reply_markup=generated_route_keyboard(snapshot.places)
+    )
+    await callback.answer(f"Маршрут сохранён · {saved.route_id[:6]}")
+
+
+async def show_saved_routes_page(
+    callback: CallbackQuery,
+    saved_routes_repo: SavedRoutesRepository,
+    page_index: int,
+) -> None:
+    catalog = current_catalog()
+    routes = await saved_routes_repo.list_routes(
+        callback.from_user.id,
+        catalog.slug,
+    )
+
+    if not routes:
+        await callback.message.edit_text(
+            "🧭 <b>Сохранённые маршруты</b>\n\n"
+            "Здесь пока пусто. Соберите маршрут и нажмите "
+            "«💾 Сохранить маршрут».",
+            reply_markup=profile_keyboard(),
+        )
+        await callback.answer()
+        return
+
+    page = paginate(routes, page_index)
+    await callback.message.edit_text(
+        "🧭 <b>Сохранённые маршруты</b>\n\n"
+        f"Сохранено: {page.total_items} · "
+        f"страница {page.number}/{page.total_pages}.",
+        reply_markup=saved_routes_keyboard(page),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "menu:savedroutes")
+async def saved_routes(
+    callback: CallbackQuery,
+    saved_routes_repo: SavedRoutesRepository,
+) -> None:
+    await show_saved_routes_page(callback, saved_routes_repo, 0)
+
+
+@router.callback_query(F.data.startswith("savedroutes:"))
+async def saved_routes_page(
+    callback: CallbackQuery,
+    saved_routes_repo: SavedRoutesRepository,
+) -> None:
+    try:
+        page_index = int(callback.data.rsplit(":", 1)[1])
+    except (ValueError, AttributeError):
+        await callback.answer("Некорректная страница.", show_alert=True)
+        return
+
+    await show_saved_routes_page(callback, saved_routes_repo, page_index)
+
+
+@router.callback_query(F.data.startswith("savedroute:delete:"))
+async def delete_saved_route(
+    callback: CallbackQuery,
+    saved_routes_repo: SavedRoutesRepository,
+) -> None:
+    route_id = callback.data.removeprefix("savedroute:delete:").strip()
+    catalog = current_catalog()
+    if not route_id:
+        await callback.answer("Некорректный маршрут.", show_alert=True)
+        return
+
+    await saved_routes_repo.remove(
+        callback.from_user.id,
+        catalog.slug,
+        route_id,
+    )
+    await show_saved_routes_page(callback, saved_routes_repo, 0)
+
+
+@router.callback_query(F.data.startswith("savedroute:"))
+async def saved_route_card(
+    callback: CallbackQuery,
+    saved_routes_repo: SavedRoutesRepository,
+) -> None:
+    route_id = callback.data.removeprefix("savedroute:").strip()
+    catalog = current_catalog()
+    route = await saved_routes_repo.get(
+        callback.from_user.id,
+        catalog.slug,
+        route_id,
+    )
+    if route is None:
+        await callback.answer(
+            "Сохранённый маршрут не найден.",
+            show_alert=True,
+        )
+        return
+
+    places = tuple(
+        place
+        for slug in route.place_slugs
+        if (place := catalog.place_by_slug(slug)) is not None
+    )
+    label = INTEREST_LABELS.get(route.interest, route.interest)
+    stops = "\n".join(
+        f"{index}. {place.emoji} {place.title}"
+        for index, place in enumerate(places, start=1)
+    )
+    unavailable_count = len(route.place_slugs) - len(places)
+
+    body = (
+        f"🧭 <b>{label}</b>\n\n"
+        f"Бюджет: {route.budget_minutes // 60} ч\n"
+        f"Точек доступно: {len(places)}/{len(route.place_slugs)}\n\n"
+    )
+    if places:
+        body += f"<b>Маршрут:</b>\n{stops}"
+    else:
+        body += "Все точки этого snapshot сейчас отсутствуют в каталоге."
+
+    if unavailable_count:
+        body += (
+            "\n\nЧасть точек была удалена или переименована "
+            "в текущем каталоге и пропущена."
+        )
+
+    await callback.message.edit_text(
+        body,
+        reply_markup=saved_route_details_keyboard(route, places),
     )
     await callback.answer()
 
