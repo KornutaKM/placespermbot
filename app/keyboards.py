@@ -11,6 +11,15 @@ from app.domain import Place, RoutePlan
 from app.events import EventProvider
 from app.excursions import ExcursionProvider
 from app.maps import google_maps_directions_to_place_url, google_maps_route_urls
+from app.navigation import (
+    DEFAULT_CONTEXT,
+    back_target,
+    favorite_callback,
+    nearby_callback,
+    personal_context,
+    place_callback,
+    route_context,
+)
 from app.pagination import Page
 from app.planner import INTEREST_LABELS
 
@@ -61,12 +70,13 @@ def places_keyboard(
     *,
     back_callback: str = "menu:places",
     back_text: str = "← Категории",
+    place_context: str = DEFAULT_CONTEXT,
 ) -> InlineKeyboardMarkup:
     rows = [
         [
             InlineKeyboardButton(
                 text=f"{place.emoji} {place.title}",
-                callback_data=f"place:{place.slug}",
+                callback_data=place_callback(place.slug, place_context),
             )
         ]
         for place in places
@@ -81,13 +91,14 @@ def paginated_places_keyboard(
     page_callback_prefix: str,
     back_callback: str,
     back_text: str,
+    place_context: str = DEFAULT_CONTEXT,
     extra_rows: list[list[InlineKeyboardButton]] | None = None,
 ) -> InlineKeyboardMarkup:
     rows = [
         [
             InlineKeyboardButton(
                 text=f"{place.emoji} {place.title}",
-                callback_data=f"place:{place.slug}",
+                callback_data=place_callback(place.slug, place_context),
             )
         ]
         for place in page.items
@@ -187,7 +198,7 @@ def generated_route_keyboard(places: tuple[Place, ...]) -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(
                 text=f"{index}. {place.emoji} {place.title}",
-                callback_data=f"place:{place.slug}",
+                callback_data=place_callback(place.slug, route_context()),
             )
         ]
         for index, place in enumerate(places, start=1)
@@ -286,6 +297,7 @@ def personalized_places_keyboard(
         page_callback_prefix="personalpage",
         back_callback="menu:home",
         back_text="← Главное меню",
+        place_context=personal_context(page.index),
         extra_rows=[
             [
                 InlineKeyboardButton(
@@ -305,9 +317,15 @@ def back_home_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-def place_keyboard(place: Place, *, is_favorite: bool = False) -> InlineKeyboardMarkup:
+def place_keyboard(
+    place: Place,
+    *,
+    is_favorite: bool = False,
+    context: str = DEFAULT_CONTEXT,
+) -> InlineKeyboardMarkup:
     favorite_text = "💔 Убрать из избранного" if is_favorite else "❤️ В избранное"
     favorite_action = "remove" if is_favorite else "add"
+    back = back_target(context)
 
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -324,16 +342,20 @@ def place_keyboard(place: Place, *, is_favorite: bool = False) -> InlineKeyboard
             [
                 InlineKeyboardButton(
                     text="✨ Что рядом",
-                    callback_data=f"nearby:{place.slug}",
+                    callback_data=nearby_callback(place.slug, context),
                 ),
                 InlineKeyboardButton(
                     text=favorite_text,
-                    callback_data=f"favorite:{favorite_action}:{place.slug}",
+                    callback_data=favorite_callback(
+                        favorite_action,
+                        place.slug,
+                        context,
+                    ),
                 ),
             ],
             [
                 InlineKeyboardButton(text="🗺 Маршруты", callback_data="menu:routes"),
-                InlineKeyboardButton(text="← Категории", callback_data="menu:places"),
+                InlineKeyboardButton(text=back.text, callback_data=back.callback_data),
             ],
         ]
     )
