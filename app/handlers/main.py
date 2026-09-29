@@ -16,6 +16,7 @@ from app.keyboards import (
     request_location_keyboard,
     route_duration_keyboard,
     route_interest_keyboard,
+    route_details_keyboard,
     routes_keyboard,
 )
 from app.planner import INTEREST_LABELS, build_route
@@ -402,12 +403,15 @@ async def route_card(callback: CallbackQuery) -> None:
         await callback.answer("Маршрут не найден.", show_alert=True)
         return
 
-    titles = [
-        place.title
+    route_places = tuple(
+        place
         for place_slug in route.place_slugs
         if (place := catalog.place_by_slug(place_slug)) is not None
-    ]
-    stops = "\n".join(f"{index}. {title}" for index, title in enumerate(titles, start=1))
+    )
+    stops = "\n".join(
+        f"{index}. {place.title}"
+        for index, place in enumerate(route_places, start=1)
+    )
 
     await callback.message.edit_text(
         f"🧭 <b>{route.title}</b>\n\n"
@@ -417,7 +421,7 @@ async def route_card(callback: CallbackQuery) -> None:
         f"<b>Точки:</b>\n{stops}\n\n"
         "Карточки точек уже содержат геопозицию; построение единого маршрута по карте "
         "добавим отдельным слоем.",
-        reply_markup=back_home_keyboard(),
+        reply_markup=route_details_keyboard(route_places),
     )
     await callback.answer()
 
