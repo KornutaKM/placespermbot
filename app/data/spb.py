@@ -22,6 +22,8 @@ PLACES: tuple[Place, ...] = (
         district="Центральный район",
         visit_minutes=35,
         is_free=True,
+        latitude=59.9398,
+        longitude=30.3146,
         tags=("архитектура", "история", "центр"),
     ),
     Place(
@@ -33,6 +35,8 @@ PLACES: tuple[Place, ...] = (
         district="Петроградский район",
         visit_minutes=90,
         is_free=False,
+        latitude=59.9504,
+        longitude=30.3160,
         tags=("история", "архитектура", "остров"),
     ),
     Place(
@@ -44,6 +48,8 @@ PLACES: tuple[Place, ...] = (
         district="Центральный район",
         visit_minutes=60,
         is_free=True,
+        latitude=59.9454,
+        longitude=30.3359,
         tags=("парк", "прогулка", "центр"),
     ),
     Place(
@@ -55,6 +61,8 @@ PLACES: tuple[Place, ...] = (
         district="Адмиралтейский район",
         visit_minutes=75,
         is_free=True,
+        latitude=59.9290,
+        longitude=30.2890,
         tags=("современный город", "остров", "прогулка"),
     ),
     Place(
@@ -66,6 +74,8 @@ PLACES: tuple[Place, ...] = (
         district="Василеостровский район",
         visit_minutes=90,
         is_free=True,
+        latitude=59.9248,
+        longitude=30.2407,
         tags=("залив", "закат", "современный город"),
     ),
     Place(
@@ -77,6 +87,8 @@ PLACES: tuple[Place, ...] = (
         district="Центральный район",
         visit_minutes=120,
         is_free=False,
+        latitude=59.9387,
+        longitude=30.3324,
         tags=("искусство", "музей", "центр"),
     ),
     Place(
@@ -88,6 +100,8 @@ PLACES: tuple[Place, ...] = (
         district="Петроградский район",
         visit_minutes=60,
         is_free=False,
+        latitude=59.9555,
+        longitude=30.3378,
         tags=("корабль", "история", "с детьми"),
     ),
     Place(
@@ -99,6 +113,8 @@ PLACES: tuple[Place, ...] = (
         district="Центральный район",
         visit_minutes=30,
         is_free=True,
+        latitude=59.9440,
+        longitude=30.3310,
         tags=("парк", "центр", "бесплатно"),
     ),
 )
@@ -121,19 +137,3 @@ ROUTES: tuple[RoutePlan, ...] = (
         place_slugs=("peter-paul-fortress", "aurora", "sevkabel-port"),
     ),
 )
-
-
-def place_by_slug(slug: str) -> Place | None:
-    return next((place for place in PLACES if place.slug == slug), None)
-
-
-def route_by_slug(slug: str) -> RoutePlan | None:
-    return next((route for route in ROUTES if route.slug == slug), None)
-
-
-def places_for_category(category: str) -> tuple[Place, ...]:
-    if category == "free":
-        return tuple(place for place in PLACES if place.is_free)
-    if category == "family":
-        return tuple(place for place in PLACES if "с детьми" in place.tags)
-    return tuple(place for place in PLACES if place.category == category)
