@@ -28,6 +28,7 @@ from app.keyboards import (
     route_duration_keyboard,
     route_interest_keyboard,
     routes_keyboard,
+    visited_places_keyboard,
 )
 from app.navigation import (
     category_context,
@@ -37,13 +38,14 @@ from app.navigation import (
     parse_favorite_callback,
     parse_nearby_callback,
     parse_place_callback,
+    parse_visited_callback,
     place_callback,
     search_context,
 )
 from app.pagination import paginate
 from app.planner import INTEREST_LABELS, build_route
 from app.recommendations import recommend_places
-from app.storage import FavoritesRepository, InterestsRepository
+from app.storage import FavoritesRepository, InterestsRepository, VisitedRepository
 
 router = Router()
 
@@ -242,6 +244,7 @@ async def category_page(callback: CallbackQuery) -> None:
 async def place_card(
     callback: CallbackQuery,
     favorites_repo: FavoritesRepository,
+    visited_repo: VisitedRepository,
 ) -> None:
     catalog = current_catalog()
     try:
@@ -262,6 +265,11 @@ async def place_card(
         catalog.slug,
         place.slug,
     )
+    is_visited = await visited_repo.contains(
+        callback.from_user.id,
+        catalog.slug,
+        place.slug,
+    )
 
     await callback.message.edit_text(
         f"{place.emoji} <b>{place.title}</b>\n\n"
@@ -275,6 +283,7 @@ async def place_card(
         reply_markup=place_keyboard(
             place,
             is_favorite=is_favorite,
+            is_visited=is_visited,
             context=context,
         ),
     )
@@ -285,6 +294,7 @@ async def place_card(
 async def favorite_action(
     callback: CallbackQuery,
     favorites_repo: FavoritesRepository,
+    visited_repo: VisitedRepository,
 ) -> None:
     catalog = current_catalog()
     try:
@@ -308,10 +318,59 @@ async def favorite_action(
         is_favorite = False
         message = "Удалено из избранного"
 
+    is_visited = await visited_repo.contains(
+        callback.from_user.id,
+        catalog.slug,
+        place.slug,
+    )
     await callback.message.edit_reply_markup(
         reply_markup=place_keyboard(
             place,
             is_favorite=is_favorite,
+            is_visited=is_visited,
+            context=context,
+        )
+    )
+    await callback.answer(message)
+
+
+@router.callback_query(F.data.startswith("visit:"))
+async def visited_action(
+    callback: CallbackQuery,
+    favorites_repo: FavoritesRepository,
+    visited_repo: VisitedRepository,
+) -> None:
+    catalog = current_catalog()
+    try:
+        action, slug, context = parse_visited_callback(callback.data)
+    except ValueError:
+        await callback.answer("Не удалось изменить историю.", show_alert=True)
+        return
+
+    place = catalog.place_by_slug(slug)
+    if place is None:
+        await callback.answer("Место не найдено.", show_alert=True)
+        return
+
+    if action == "add":
+        await visited_repo.add(callback.from_user.id, catalog.slug, place.slug)
+        is_visited = True
+        message = "Отмечено как посещённое"
+    else:
+        await visited_repo.remove(callback.from_user.id, catalog.slug, place.slug)
+        is_visited = False
+        message = "Отметка посещения снята"
+
+    is_favorite = await favorites_repo.contains(
+        callback.from_user.id,
+        catalog.slug,
+        place.slug,
+    )
+    await callback.message.edit_reply_markup(
+        reply_markup=place_keyboard(
+            place,
+            is_favorite=is_favorite,
+            is_visited=is_visited,
             context=context,
         )
     )
@@ -374,6 +433,7 @@ async def nearby(callback: CallbackQuery) -> None:
 async def show_personal_page(
     callback: CallbackQuery,
     interests_repo: InterestsRepository,
+    visited_repo: VisitedRepository,
     page_index: int,
 ) -> None:
     catalog = current_catalog()
@@ -391,10 +451,15 @@ async def show_personal_page(
         await callback.answer()
         return
 
+    visited_slugs = await visited_repo.list_place_slugs(
+        callback.from_user.id,
+        catalog.slug,
+    )
     places = recommend_places(
         catalog,
         interests,
         limit=len(catalog.places),
+        exclude_slugs=visited_slugs,
     )
     page = paginate(places, page_index)
     labels = " · ".join(INTEREST_LABELS[key] for key in interests)
@@ -402,8 +467,13 @@ async def show_personal_page(
     await callback.message.edit_text(
         "🎯 <b>Для меня</b>\n\n"
         f"Ваши интересы: {labels}\n"
-        f"Подобрано: {page.total_items} · страница {page.number}/{page.total_pages}.\n\n"
-        "Рейтинг строится только по данным текущего каталога.",
+        f"Подобрано новых мест: {page.total_items} · "
+        f"страница {page.number}/{page.total_pages}.\n\n"
+        + (
+            "Все подходящие места уже отмечены как посещённые."
+            if not places
+            else "Посещённые места исключены из этой подборки."
+        ),
         reply_markup=personalized_places_keyboard(page),
     )
     await callback.answer()
@@ -413,14 +483,16 @@ async def show_personal_page(
 async def personal_recommendations(
     callback: CallbackQuery,
     interests_repo: InterestsRepository,
+    visited_repo: VisitedRepository,
 ) -> None:
-    await show_personal_page(callback, interests_repo, 0)
+    await show_personal_page(callback, interests_repo, visited_repo, 0)
 
 
 @router.callback_query(F.data.startswith("personalpage:"))
 async def personal_recommendations_page(
     callback: CallbackQuery,
     interests_repo: InterestsRepository,
+    visited_repo: VisitedRepository,
 ) -> None:
     try:
         page_index = int(callback.data.rsplit(":", 1)[1])
@@ -428,7 +500,7 @@ async def personal_recommendations_page(
         await callback.answer("Некорректная страница.", show_alert=True)
         return
 
-    await show_personal_page(callback, interests_repo, page_index)
+    await show_personal_page(callback, interests_repo, visited_repo, page_index)
 
 
 @router.callback_query(F.data == "pref:edit")
@@ -487,6 +559,7 @@ async def toggle_interest(
 async def finish_interests(
     callback: CallbackQuery,
     interests_repo: InterestsRepository,
+    visited_repo: VisitedRepository,
 ) -> None:
     catalog = current_catalog()
     interests = await interests_repo.list_interests(
@@ -497,7 +570,7 @@ async def finish_interests(
         await callback.answer("Выберите хотя бы один интерес.", show_alert=True)
         return
 
-    await show_personal_page(callback, interests_repo, 0)
+    await show_personal_page(callback, interests_repo, visited_repo, 0)
 
 
 @router.callback_query(F.data == "menu:nearby")
