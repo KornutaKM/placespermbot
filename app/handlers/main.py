@@ -419,8 +419,8 @@ async def route_card(callback: CallbackQuery) -> None:
         f"⏱ ~{route.duration_minutes // 60} ч {route.duration_minutes % 60:02d} мин\n"
         f"🚶 ~{route.distance_km:g} км\n\n"
         f"<b>Точки:</b>\n{stops}\n\n"
-        "Карточки точек уже содержат геопозицию; построение единого маршрута по карте "
-        "добавим отдельным слоем.",
+        "Ниже можно открыть пешеходный маршрут в Google Maps. "
+        "Длинные прогулки разбиваются на несколько последовательных частей.",
         reply_markup=route_details_keyboard(route_places),
     )
     await callback.answer()
