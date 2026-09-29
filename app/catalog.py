@@ -28,6 +28,35 @@ class CityCatalog:
             return tuple(place for place in self.places if "с детьми" in place.tags)
         return tuple(place for place in self.places if place.category == category)
 
+    def search_places(self, query: str, *, limit: int = 8) -> tuple[Place, ...]:
+        terms = tuple(part for part in _normalize(query).split() if part)
+        if not terms:
+            return ()
+
+        ranked: list[tuple[int, Place]] = []
+        for place in self.places:
+            title = _normalize(place.title)
+            tags = _normalize(" ".join(place.tags))
+            district = _normalize(place.district)
+            summary = _normalize(place.summary)
+
+            score = 0
+            for term in terms:
+                if term in title:
+                    score += 8
+                if term in tags:
+                    score += 5
+                if term in district:
+                    score += 3
+                if term in summary:
+                    score += 1
+
+            if score:
+                ranked.append((score, place))
+
+        ranked.sort(key=lambda item: (-item[0], item[1].title))
+        return tuple(place for _, place in ranked[:limit])
+
     def nearby_places(
         self,
         origin_slug: str,
@@ -49,6 +78,10 @@ class CityCatalog:
 
         ranked.sort(key=lambda item: item[1])
         return tuple(ranked[:limit])
+
+
+def _normalize(value: str) -> str:
+    return " ".join(value.casefold().replace("ё", "е").split())
 
 
 def _distance_km(first: Place, second: Place) -> float:
