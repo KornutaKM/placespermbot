@@ -10,7 +10,7 @@ from aiogram.types import (
 from app.domain import Place, RoutePlan
 from app.events import EventProvider
 from app.excursions import ExcursionProvider
-from app.maps import google_maps_route_urls
+from app.maps import google_maps_directions_to_place_url, google_maps_route_urls
 from app.pagination import Page
 from app.planner import INTEREST_LABELS
 
@@ -305,7 +305,7 @@ def back_home_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-def place_keyboard(place_slug: str, *, is_favorite: bool = False) -> InlineKeyboardMarkup:
+def place_keyboard(place: Place, *, is_favorite: bool = False) -> InlineKeyboardMarkup:
     favorite_text = "💔 Убрать из избранного" if is_favorite else "❤️ В избранное"
     favorite_action = "remove" if is_favorite else "add"
 
@@ -314,17 +314,21 @@ def place_keyboard(place_slug: str, *, is_favorite: bool = False) -> InlineKeybo
             [
                 InlineKeyboardButton(
                     text="📍 Показать на карте",
-                    callback_data=f"geo:{place_slug}",
-                )
+                    callback_data=f"geo:{place.slug}",
+                ),
+                InlineKeyboardButton(
+                    text="🚶 Маршрут сюда",
+                    url=google_maps_directions_to_place_url(place),
+                ),
             ],
             [
                 InlineKeyboardButton(
                     text="✨ Что рядом",
-                    callback_data=f"nearby:{place_slug}",
+                    callback_data=f"nearby:{place.slug}",
                 ),
                 InlineKeyboardButton(
                     text=favorite_text,
-                    callback_data=f"favorite:{favorite_action}:{place_slug}",
+                    callback_data=f"favorite:{favorite_action}:{place.slug}",
                 ),
             ],
             [
