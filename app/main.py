@@ -9,7 +9,7 @@ from aiogram.types import BotCommand
 
 from app.config import get_settings
 from app.handlers.main import router
-from app.storage import FavoritesRepository
+from app.storage import FavoritesRepository, InterestsRepository
 
 
 async def main() -> None:
@@ -17,7 +17,9 @@ async def main() -> None:
     settings = get_settings()
 
     favorites_repo = FavoritesRepository(settings.database_path)
+    interests_repo = InterestsRepository(settings.database_path)
     await favorites_repo.initialize()
+    await interests_repo.initialize()
 
     bot = Bot(
         token=settings.require_bot_token(),
@@ -25,6 +27,7 @@ async def main() -> None:
     )
     dispatcher = Dispatcher(storage=MemoryStorage())
     dispatcher["favorites_repo"] = favorites_repo
+    dispatcher["interests_repo"] = interests_repo
     dispatcher.include_router(router)
 
     await bot.set_my_commands(
