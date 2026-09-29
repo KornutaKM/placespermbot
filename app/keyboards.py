@@ -93,7 +93,11 @@ def profile_keyboard() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(
                     text="🧭 Сохранённые маршруты",
                     callback_data="menu:savedroutes",
-                )
+                ),
+                InlineKeyboardButton(
+                    text="📦 Экспорт данных",
+                    callback_data="profile:export",
+                ),
             ],
             [
                 InlineKeyboardButton(
