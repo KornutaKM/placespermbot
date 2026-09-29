@@ -84,18 +84,32 @@ def _normalize(value: str) -> str:
     return " ".join(value.casefold().replace("ё", "е").split())
 
 
-def distance_km(first: Place, second: Place) -> float:
+def coordinates_distance_km(
+    first_latitude: float,
+    first_longitude: float,
+    second_latitude: float,
+    second_longitude: float,
+) -> float:
     earth_radius_km = 6371.0088
-    lat1 = radians(first.latitude)
-    lat2 = radians(second.latitude)
+    lat1 = radians(first_latitude)
+    lat2 = radians(second_latitude)
     delta_lat = lat2 - lat1
-    delta_lon = radians(second.longitude - first.longitude)
+    delta_lon = radians(second_longitude - first_longitude)
 
     haversine = (
         sin(delta_lat / 2) ** 2
         + cos(lat1) * cos(lat2) * sin(delta_lon / 2) ** 2
     )
     return 2 * earth_radius_km * asin(sqrt(haversine))
+
+
+def distance_km(first: Place, second: Place) -> float:
+    return coordinates_distance_km(
+        first.latitude,
+        first.longitude,
+        second.latitude,
+        second.longitude,
+    )
 
 
 _CATALOGS: dict[str, CityCatalog] = {
