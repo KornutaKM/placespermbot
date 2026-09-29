@@ -15,6 +15,8 @@ from app.keyboards import (
     excursion_providers_keyboard,
     generated_route_keyboard,
     home_keyboard,
+    interests_keyboard,
+    personalized_places_keyboard,
     place_keyboard,
     places_keyboard,
     request_location_keyboard,
@@ -24,7 +26,8 @@ from app.keyboards import (
     routes_keyboard,
 )
 from app.planner import INTEREST_LABELS, build_route
-from app.storage import FavoritesRepository
+from app.recommendations import recommend_places
+from app.storage import FavoritesRepository, InterestsRepository
 
 router = Router()
 
@@ -226,6 +229,115 @@ async def nearby(callback: CallbackQuery) -> None:
             back_callback=f"place:{origin.slug}",
             back_text=f"← {origin.title}",
         ),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "menu:personal")
+async def personal_recommendations(
+    callback: CallbackQuery,
+    interests_repo: InterestsRepository,
+) -> None:
+    catalog = current_catalog()
+    interests = await interests_repo.list_interests(
+        callback.from_user.id,
+        catalog.slug,
+    )
+
+    if not interests:
+        await callback.message.edit_text(
+            "🎯 <b>Для меня</b>\n\n"
+            "Выберите интересы. Я сохраню только те варианты, которые вы отметите сами.",
+            reply_markup=interests_keyboard(()),
+        )
+        await callback.answer()
+        return
+
+    places = recommend_places(catalog, interests)
+    labels = " · ".join(INTEREST_LABELS[key] for key in interests)
+
+    await callback.message.edit_text(
+        "🎯 <b>Для меня</b>\n\n"
+        f"Ваши интересы: {labels}\n\n"
+        f"Подобрано мест: {len(places)}. Рейтинг строится только по данным каталога.",
+        reply_markup=personalized_places_keyboard(places),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "pref:edit")
+async def edit_interests(
+    callback: CallbackQuery,
+    interests_repo: InterestsRepository,
+) -> None:
+    catalog = current_catalog()
+    interests = await interests_repo.list_interests(
+        callback.from_user.id,
+        catalog.slug,
+    )
+    await callback.message.edit_text(
+        "⚙️ <b>Ваши интересы</b>\n\n"
+        "Нажимайте на пункты, чтобы включать или выключать их. "
+        "Изменения сохраняются сразу.",
+        reply_markup=interests_keyboard(interests),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("pref:toggle:"))
+async def toggle_interest(
+    callback: CallbackQuery,
+    interests_repo: InterestsRepository,
+) -> None:
+    interest = callback.data.rsplit(":", 1)[1]
+    if interest not in INTEREST_LABELS:
+        await callback.answer("Неизвестный интерес.", show_alert=True)
+        return
+
+    catalog = current_catalog()
+    interests = await interests_repo.list_interests(
+        callback.from_user.id,
+        catalog.slug,
+    )
+
+    if interest in interests:
+        await interests_repo.remove(callback.from_user.id, catalog.slug, interest)
+    else:
+        await interests_repo.add(callback.from_user.id, catalog.slug, interest)
+
+    updated = await interests_repo.list_interests(
+        callback.from_user.id,
+        catalog.slug,
+    )
+    await callback.message.edit_text(
+        "⚙️ <b>Ваши интересы</b>\n\n"
+        f"Выбрано: {len(updated)}. Изменения сохранены.",
+        reply_markup=interests_keyboard(updated),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "pref:done")
+async def finish_interests(
+    callback: CallbackQuery,
+    interests_repo: InterestsRepository,
+) -> None:
+    catalog = current_catalog()
+    interests = await interests_repo.list_interests(
+        callback.from_user.id,
+        catalog.slug,
+    )
+    if not interests:
+        await callback.answer("Выберите хотя бы один интерес.", show_alert=True)
+        return
+
+    places = recommend_places(catalog, interests)
+    labels = " · ".join(INTEREST_LABELS[key] for key in interests)
+    await callback.message.edit_text(
+        "🎯 <b>Для меня</b>\n\n"
+        f"Ваши интересы: {labels}\n\n"
+        f"Подобрано мест: {len(places)}.",
+        reply_markup=personalized_places_keyboard(places),
     )
     await callback.answer()
 
