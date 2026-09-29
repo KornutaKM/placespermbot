@@ -1,10 +1,11 @@
 import asyncio
+import sqlite3
 
 import pytest
 
 from app.config import Settings
+from app.database import migrate_database
 from app.runtime_checks import validate_health, validate_static_runtime
-from app.storage import FavoritesRepository, InterestsRepository
 
 
 def settings(tmp_path, **overrides) -> Settings:
@@ -35,10 +36,7 @@ def test_static_runtime_rejects_unknown_city(tmp_path) -> None:
 def test_health_accepts_initialized_database(tmp_path) -> None:
     async def scenario() -> None:
         config = settings(tmp_path)
-        favorites = FavoritesRepository(config.database_path)
-        interests = InterestsRepository(config.database_path)
-        await favorites.initialize()
-        await interests.initialize()
+        await migrate_database(config.database_path)
 
         await validate_health(config)
 
@@ -56,8 +54,34 @@ def test_health_rejects_missing_database(tmp_path) -> None:
 def test_health_rejects_incomplete_schema(tmp_path) -> None:
     async def scenario() -> None:
         config = settings(tmp_path)
-        favorites = FavoritesRepository(config.database_path)
-        await favorites.initialize()
+        with sqlite3.connect(config.database_path) as database:
+            database.execute(
+                """
+                CREATE TABLE schema_migrations (
+                    version INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            database.execute(
+                """
+                CREATE TABLE favorites (
+                    user_id INTEGER NOT NULL,
+                    city_slug TEXT NOT NULL,
+                    place_slug TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, city_slug, place_slug)
+                )
+                """
+            )
+            database.execute(
+                """
+                INSERT INTO schema_migrations (version, name)
+                VALUES (1, 'create_favorites')
+                """
+            )
+            database.commit()
 
         with pytest.raises(RuntimeError, match="user_interests"):
             await validate_health(config)
