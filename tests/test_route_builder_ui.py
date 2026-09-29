@@ -5,6 +5,8 @@ from app.events import get_event_providers
 from app.excursions import get_excursion_providers
 from app.keyboards import (
     cities_keyboard,
+    data_controls_keyboard,
+    data_delete_confirm_keyboard,
     event_providers_keyboard,
     excursion_providers_keyboard,
     generated_route_keyboard,
@@ -307,6 +309,7 @@ def test_profile_keyboard_links_existing_user_flows() -> None:
         "menu:visited",
         "menu:savedroutes",
         "profile:export",
+        "profile:data",
         "menu:home",
     }
 
@@ -347,3 +350,22 @@ def test_saved_route_details_preserve_route_context() -> None:
         ) in callbacks
     assert "savedroute:delete:abc123" in callbacks
     assert "menu:savedroutes" in callbacks
+
+
+def test_data_controls_keyboard_binds_active_city() -> None:
+    callbacks = callback_values(data_controls_keyboard(CITY_SLUG))
+
+    assert callbacks == {
+        "profile:export",
+        f"profile:data:confirm:{CITY_SLUG}",
+        "menu:profile",
+    }
+
+
+def test_data_delete_confirmation_requires_explicit_second_click() -> None:
+    callbacks = callback_values(data_delete_confirm_keyboard(CITY_SLUG))
+
+    assert callbacks == {
+        f"profile:data:delete:{CITY_SLUG}",
+        "menu:profile",
+    }
