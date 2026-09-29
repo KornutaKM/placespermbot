@@ -24,3 +24,12 @@ class RoutePlan:
     duration_minutes: int
     distance_km: float
     place_slugs: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class GeneratedRoute:
+    interest: str
+    budget_minutes: int
+    estimated_minutes: int
+    distance_km: float
+    places: tuple[Place, ...]
