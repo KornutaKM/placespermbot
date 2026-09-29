@@ -126,7 +126,7 @@ class InterestsRepository:
                 SELECT interest
                 FROM user_interests
                 WHERE user_id = ? AND city_slug = ?
-                ORDER BY created_at ASC, interest ASC
+                ORDER BY interest ASC
                 """,
                 (user_id, city_slug),
             )
