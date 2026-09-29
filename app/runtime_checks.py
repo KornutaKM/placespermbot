@@ -6,8 +6,9 @@ import aiosqlite
 
 from app.catalog import get_catalog
 from app.config import Settings
+from app.database import KNOWN_SCHEMA_VERSIONS, get_applied_migration_versions
 
-EXPECTED_TABLES = frozenset({"favorites", "user_interests"})
+EXPECTED_TABLES = frozenset({"schema_migrations", "favorites", "user_interests"})
 
 
 def validate_static_runtime(settings: Settings) -> None:
@@ -41,3 +42,16 @@ async def validate_health(settings: Settings) -> None:
     if missing_tables:
         missing = ", ".join(sorted(missing_tables))
         raise RuntimeError(f"Database schema is incomplete: {missing}")
+
+    applied_versions = set(
+        await get_applied_migration_versions(database_path)
+    )
+    unknown_versions = applied_versions - KNOWN_SCHEMA_VERSIONS
+    if unknown_versions:
+        versions = ", ".join(str(version) for version in sorted(unknown_versions))
+        raise RuntimeError(f"Database schema is newer than this app: {versions}")
+
+    missing_versions = KNOWN_SCHEMA_VERSIONS - applied_versions
+    if missing_versions:
+        versions = ", ".join(str(version) for version in sorted(missing_versions))
+        raise RuntimeError(f"Database migrations are incomplete: {versions}")
