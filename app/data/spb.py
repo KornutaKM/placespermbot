@@ -1,7 +1,51 @@
-from app.domain import Place, RoutePlan
+from datetime import date
+
+from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "saint-petersburg"
 CITY_NAME = "Санкт-Петербург"
+SOURCE_CHECKED_AT = date(2026, 9, 29)
+
+VISIT_PETERSBURG = PlaceSource(
+    name="Visit Petersburg",
+    url="https://visit-petersburg.ru/leisure/places/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+YUSUPOV_PALACE = PlaceSource(
+    name="Юсуповский дворец",
+    url="https://yusupov-palace.ru/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+FABERGE_MUSEUM = PlaceSource(
+    name="Музей Фаберже",
+    url="https://fabergemuseum.ru/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+ERARTA_MUSEUM = PlaceSource(
+    name="Эрарта",
+    url="https://www.erarta.com/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+GRAND_MAKET = PlaceSource(
+    name="Гранд Макет Россия",
+    url="https://grandmaket.ru/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+YELAGIN_PALACE = PlaceSource(
+    name="Visit Petersburg — Елагиноостровский дворец",
+    url="https://visit-petersburg.ru/leisure/places/tp-196849-elagin-dvorets/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+BOTANICAL_GARDEN = PlaceSource(
+    name="Культура Петербурга — Ботанический сад",
+    url="https://spbcult.ru/places/botanicheskiy-sad-petra-velikogo/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+MARIINSKY_THEATRE = PlaceSource(
+    name="Мариинский театр",
+    url="https://www.mariinsky.ru/",
+    checked_at=SOURCE_CHECKED_AT,
+)
 
 CATEGORY_LABELS: dict[str, str] = {
     "sights": "🏛 Достопримечательности",
@@ -24,6 +68,7 @@ PLACES: tuple[Place, ...] = (
         is_free=True,
         latitude=59.9398,
         longitude=30.3146,
+        source=VISIT_PETERSBURG,
         tags=("архитектура", "история", "центр"),
     ),
     Place(
@@ -37,6 +82,7 @@ PLACES: tuple[Place, ...] = (
         is_free=False,
         latitude=59.9398,
         longitude=30.3146,
+        source=VISIT_PETERSBURG,
         tags=("эрмитаж", "искусство", "музей", "зимний дворец"),
     ),
     Place(
@@ -50,6 +96,7 @@ PLACES: tuple[Place, ...] = (
         is_free=False,
         latitude=59.9341,
         longitude=30.3061,
+        source=VISIT_PETERSBURG,
         tags=("собор", "архитектура", "центр"),
     ),
     Place(
@@ -63,6 +110,7 @@ PLACES: tuple[Place, ...] = (
         is_free=False,
         latitude=59.9401,
         longitude=30.3289,
+        source=VISIT_PETERSBURG,
         tags=("храм", "мозаика", "архитектура", "центр"),
     ),
     Place(
@@ -76,6 +124,7 @@ PLACES: tuple[Place, ...] = (
         is_free=True,
         latitude=59.9343,
         longitude=30.3246,
+        source=VISIT_PETERSBURG,
         tags=("собор", "невский проспект", "архитектура", "центр"),
     ),
     Place(
@@ -89,6 +138,7 @@ PLACES: tuple[Place, ...] = (
         is_free=False,
         latitude=59.9504,
         longitude=30.3160,
+        source=VISIT_PETERSBURG,
         tags=("история", "архитектура", "остров"),
     ),
     Place(
@@ -102,6 +152,7 @@ PLACES: tuple[Place, ...] = (
         is_free=False,
         latitude=59.9414,
         longitude=30.3045,
+        source=VISIT_PETERSBURG,
         tags=("музей", "коллекции", "васильевский остров"),
     ),
     Place(
@@ -115,6 +166,7 @@ PLACES: tuple[Place, ...] = (
         is_free=True,
         latitude=59.9445,
         longitude=30.3065,
+        source=VISIT_PETERSBURG,
         tags=("панорама", "нева", "васильевский остров", "бесплатно"),
     ),
     Place(
@@ -128,32 +180,35 @@ PLACES: tuple[Place, ...] = (
         is_free=True,
         latitude=59.9454,
         longitude=30.3359,
+        source=VISIT_PETERSBURG,
         tags=("парк", "прогулка", "центр", "с детьми"),
     ),
     Place(
         slug="new-holland",
         title="Новая Голландия",
         category="unusual",
-        summary="Островское общественное пространство, сочетающее историческую архитектуру и современную городскую среду.",
+        summary="Островское общественное пространство с исторической архитектурой и современной городской средой.",
         emoji="✨",
         district="Адмиралтейский район",
         visit_minutes=75,
         is_free=True,
         latitude=59.9290,
         longitude=30.2890,
+        source=VISIT_PETERSBURG,
         tags=("современный город", "остров", "прогулка", "с детьми"),
     ),
     Place(
         slug="sevkabel-port",
         title="Севкабель Порт",
         category="unusual",
-        summary="Общественное пространство у Финского залива, популярное для прогулок и видов на воду.",
+        summary="Общественное пространство у Финского залива для прогулок и видов на воду.",
         emoji="🌊",
         district="Василеостровский район",
         visit_minutes=90,
         is_free=True,
         latitude=59.9248,
         longitude=30.2407,
+        source=VISIT_PETERSBURG,
         tags=("залив", "закат", "современный город"),
     ),
     Place(
@@ -167,6 +222,7 @@ PLACES: tuple[Place, ...] = (
         is_free=False,
         latitude=59.9387,
         longitude=30.3324,
+        source=VISIT_PETERSBURG,
         tags=("искусство", "музей", "центр"),
     ),
     Place(
@@ -180,6 +236,7 @@ PLACES: tuple[Place, ...] = (
         is_free=False,
         latitude=59.9555,
         longitude=30.3378,
+        source=VISIT_PETERSBURG,
         tags=("корабль", "история", "с детьми"),
     ),
     Place(
@@ -193,7 +250,120 @@ PLACES: tuple[Place, ...] = (
         is_free=True,
         latitude=59.9440,
         longitude=30.3310,
+        source=VISIT_PETERSBURG,
         tags=("парк", "центр", "бесплатно"),
+    ),
+    Place(
+        slug="yusupov-palace",
+        title="Юсуповский дворец на Мойке",
+        category="museums",
+        summary="Исторический дворец с сохранившимися парадными интерьерами и домашним театром.",
+        emoji="🏛",
+        district="Адмиралтейский район",
+        visit_minutes=100,
+        is_free=False,
+        latitude=59.9295,
+        longitude=30.2987,
+        source=YUSUPOV_PALACE,
+        tags=("дворец", "история", "архитектура", "музей"),
+    ),
+    Place(
+        slug="faberge-museum",
+        title="Музей Фаберже",
+        category="museums",
+        summary="Музей декоративно-прикладного искусства в Шуваловском дворце на Фонтанке.",
+        emoji="💎",
+        district="Центральный район",
+        visit_minutes=100,
+        is_free=False,
+        latitude=59.93472,
+        longitude=30.34313,
+        source=FABERGE_MUSEUM,
+        tags=("музей", "искусство", "фаберже", "дворец"),
+    ),
+    Place(
+        slug="erarta",
+        title="Эрарта",
+        category="museums",
+        summary="Музей современного искусства на Васильевском острове.",
+        emoji="🎨",
+        district="Василеостровский район",
+        visit_minutes=120,
+        is_free=False,
+        latitude=59.93214,
+        longitude=30.25129,
+        source=ERARTA_MUSEUM,
+        tags=("музей", "современное искусство", "васильевский остров"),
+    ),
+    Place(
+        slug="grand-maket-russia",
+        title="Гранд Макет Россия",
+        category="museums",
+        summary="Большой интерактивный макет, представляющий собирательный образ регионов России.",
+        emoji="🚂",
+        district="Московский район",
+        visit_minutes=120,
+        is_free=False,
+        latitude=59.88799,
+        longitude=30.33035,
+        source=GRAND_MAKET,
+        tags=("музей", "макет", "интерактив", "с детьми"),
+    ),
+    Place(
+        slug="yelagin-palace",
+        title="Елагиноостровский дворец",
+        category="museums",
+        summary="Дворец Карла Росси в составе дворцово-паркового ансамбля Елагина острова.",
+        emoji="🏛",
+        district="Петроградский район",
+        visit_minutes=90,
+        is_free=False,
+        latitude=59.97932,
+        longitude=30.27003,
+        source=YELAGIN_PALACE,
+        tags=("дворец", "архитектура", "остров", "парк"),
+    ),
+    Place(
+        slug="botanical-garden",
+        title="Ботанический сад Петра Великого",
+        category="parks",
+        summary="Исторический ботанический сад на Аптекарском острове с парком и оранжереями.",
+        emoji="🌱",
+        district="Петроградский район",
+        visit_minutes=120,
+        is_free=False,
+        latitude=59.96987,
+        longitude=30.32238,
+        source=BOTANICAL_GARDEN,
+        tags=("сад", "парк", "растения", "прогулка", "с детьми"),
+    ),
+    Place(
+        slug="mariinsky-theatre",
+        title="Мариинский театр",
+        category="sights",
+        summary="Историческая сцена оперы и балета на Театральной площади.",
+        emoji="🎭",
+        district="Адмиралтейский район",
+        visit_minutes=45,
+        is_free=True,
+        latitude=59.92556,
+        longitude=30.29611,
+        source=MARIINSKY_THEATRE,
+        tags=("театр", "архитектура", "культура"),
+    ),
+    Place(
+        slug="singer-house",
+        title="Дом компании «Зингер»",
+        category="sights",
+        summary="Знаковое здание модерна на Невском проспекте напротив Казанского собора.",
+        emoji="📚",
+        district="Центральный район",
+        visit_minutes=30,
+        is_free=True,
+        latitude=59.93586,
+        longitude=30.32589,
+        source=VISIT_PETERSBURG,
+        tags=("архитектура", "модерн", "невский проспект", "центр"),
     ),
 )
 
@@ -208,6 +378,7 @@ ROUTES: tuple[RoutePlan, ...] = (
             "palace-square",
             "st-isaacs-cathedral",
             "kazan-cathedral",
+            "singer-house",
             "savior-on-spilled-blood",
             "field-of-mars",
             "summer-garden",
