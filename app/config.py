@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     database_path: str = "data/places.db"
     sputnik8_affiliate_url: str = ""
     tripster_affiliate_url: str = ""
+    yandex_afisha_url: str = ""
+    kudago_events_url: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",
