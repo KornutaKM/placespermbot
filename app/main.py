@@ -8,6 +8,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand
 
 from app.config import get_settings
+from app.database import migrate_database
 from app.handlers.main import router
 from app.storage import FavoritesRepository, InterestsRepository
 
@@ -16,10 +17,9 @@ async def main() -> None:
     logging.basicConfig(level=logging.INFO)
     settings = get_settings()
 
+    await migrate_database(settings.database_path)
     favorites_repo = FavoritesRepository(settings.database_path)
     interests_repo = InterestsRepository(settings.database_path)
-    await favorites_repo.initialize()
-    await interests_repo.initialize()
 
     bot = Bot(
         token=settings.require_bot_token(),
