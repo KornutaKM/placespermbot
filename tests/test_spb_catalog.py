@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
 
@@ -13,7 +15,7 @@ def test_city_is_saint_petersburg() -> None:
 
 
 def test_catalog_has_useful_seed_size() -> None:
-    assert len(catalog().places) >= 14
+    assert len(catalog().places) >= 22
 
 
 def test_place_slugs_are_unique() -> None:
@@ -51,6 +53,12 @@ def test_each_place_has_minimum_card_content_and_valid_coordinates() -> None:
         assert place.district.strip()
         assert -90 <= place.latitude <= 90
         assert -180 <= place.longitude <= 180
+        assert place.source.name.strip()
+        assert place.source.checked_at is not None
+
+        source_url = urlparse(place.source.url)
+        assert source_url.scheme == "https"
+        assert source_url.hostname
 
 
 def test_nearby_places_excludes_origin_and_is_distance_sorted() -> None:
@@ -139,3 +147,28 @@ def test_nearby_from_coordinates_rejects_nonpositive_window() -> None:
         place.longitude,
         limit=0,
     ) == ()
+
+
+def test_expanded_catalog_contains_new_verified_places() -> None:
+    slugs = {place.slug for place in catalog().places}
+
+    assert {
+        "yusupov-palace",
+        "faberge-museum",
+        "erarta",
+        "grand-maket-russia",
+        "yelagin-palace",
+        "botanical-garden",
+        "mariinsky-theatre",
+        "singer-house",
+    } <= slugs
+
+
+def test_new_places_participate_in_search() -> None:
+    assert catalog().search_places("фаберже")[0].slug == "faberge-museum"
+
+    modern_art = catalog().search_places("современное искусство")
+    assert any(place.slug == "erarta" for place in modern_art)
+
+    family = catalog().places_for_category("family")
+    assert any(place.slug == "grand-maket-russia" for place in family)
