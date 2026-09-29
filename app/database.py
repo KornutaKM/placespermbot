@@ -72,6 +72,24 @@ MIGRATIONS: tuple[Migration, ...] = (
             """,
         ),
     ),
+    Migration(
+        version=5,
+        name="create_saved_routes",
+        statements=(
+            """
+            CREATE TABLE IF NOT EXISTS saved_routes (
+                user_id INTEGER NOT NULL,
+                city_slug TEXT NOT NULL,
+                route_id TEXT NOT NULL,
+                interest TEXT NOT NULL,
+                budget_minutes INTEGER NOT NULL,
+                place_slugs_json TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, city_slug, route_id)
+            )
+            """,
+        ),
+    ),
 )
 
 KNOWN_SCHEMA_VERSIONS = frozenset(migration.version for migration in MIGRATIONS)
