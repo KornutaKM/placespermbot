@@ -95,3 +95,7 @@ def test_editorial_route_keyboard_exposes_google_maps_url() -> None:
     urls = url_values(route_details_keyboard(places))
 
     assert urls
+
+
+def test_home_exposes_near_me_action() -> None:
+    assert "menu:nearby" in callback_values(home_keyboard())

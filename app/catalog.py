@@ -79,6 +79,31 @@ class CityCatalog:
         ranked.sort(key=lambda item: item[1])
         return tuple(ranked[:limit])
 
+    def nearby_from_coordinates(
+        self,
+        latitude: float,
+        longitude: float,
+        *,
+        radius_km: float = 10.0,
+        limit: int = 8,
+    ) -> tuple[tuple[Place, float], ...]:
+        if radius_km <= 0 or limit <= 0:
+            return ()
+
+        ranked: list[tuple[Place, float]] = []
+        for place in self.places:
+            distance = coordinates_distance_km(
+                latitude,
+                longitude,
+                place.latitude,
+                place.longitude,
+            )
+            if distance <= radius_km:
+                ranked.append((place, distance))
+
+        ranked.sort(key=lambda item: (item[1], item[0].title))
+        return tuple(ranked[:limit])
+
 
 def _normalize(value: str) -> str:
     return " ".join(value.casefold().replace("ё", "е").split())

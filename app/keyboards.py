@@ -19,6 +19,9 @@ def home_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🗺 Маршруты", callback_data="menu:routes"),
         ],
         [
+            InlineKeyboardButton(text="📡 Рядом со мной", callback_data="menu:nearby"),
+        ],
+        [
             InlineKeyboardButton(text="🪄 Собрать маршрут", callback_data="builder:start"),
         ],
         [

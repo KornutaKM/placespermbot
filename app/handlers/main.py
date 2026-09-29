@@ -35,6 +35,16 @@ class RouteBuilderFlow(StatesGroup):
     waiting_interest = State()
 
 
+class NearbyFlow(StatesGroup):
+    waiting_location = State()
+
+
+LOCATION_REQUEST_STATES = {
+    RouteBuilderFlow.waiting_location.state,
+    NearbyFlow.waiting_location.state,
+}
+
+
 def current_catalog() -> CityCatalog:
     return get_catalog(get_settings().city_slug)
 
@@ -51,7 +61,7 @@ def home_text(catalog: CityCatalog) -> str:
 async def start(message: Message, state: FSMContext) -> None:
     previous_state = await state.get_state()
     await state.clear()
-    if previous_state == RouteBuilderFlow.waiting_location.state:
+    if previous_state in LOCATION_REQUEST_STATES:
         await message.answer(
             "Запрос геопозиции отменён.",
             reply_markup=ReplyKeyboardRemove(),
@@ -69,7 +79,7 @@ async def start(message: Message, state: FSMContext) -> None:
 async def menu_home(callback: CallbackQuery, state: FSMContext) -> None:
     previous_state = await state.get_state()
     await state.clear()
-    if previous_state == RouteBuilderFlow.waiting_location.state:
+    if previous_state in LOCATION_REQUEST_STATES:
         await callback.message.answer(
             "Запрос геопозиции отменён.",
             reply_markup=ReplyKeyboardRemove(),
@@ -216,11 +226,86 @@ async def nearby(callback: CallbackQuery) -> None:
     await callback.answer()
 
 
+@router.callback_query(F.data == "menu:nearby")
+async def near_me_start(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.clear()
+    await state.set_state(NearbyFlow.waiting_location)
+    await callback.message.answer(
+        "📡 <b>Рядом со мной</b>\n\n"
+        "Передайте текущую геопозицию, и я покажу ближайшие места из каталога "
+        "в радиусе 10 км. Координаты не сохраняются.",
+        reply_markup=request_location_keyboard(),
+    )
+    await callback.answer()
+
+
+@router.message(NearbyFlow.waiting_location, F.location)
+async def near_me_location(message: Message, state: FSMContext) -> None:
+    location = message.location
+    if location is None:
+        await message.answer("Не удалось прочитать геопозицию.")
+        return
+
+    catalog = current_catalog()
+    nearby_items = catalog.nearby_from_coordinates(
+        location.latitude,
+        location.longitude,
+    )
+    await state.clear()
+
+    await message.answer(
+        "✅ Геопозиция принята.",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    if not nearby_items:
+        await message.answer(
+            "В радиусе 10 км не нашлось точек из текущего каталога Петербурга. "
+            "Возможно, вы находитесь за пределами основной зоны каталога.",
+            reply_markup=home_keyboard(),
+        )
+        return
+
+    lines = [
+        f"{index}. {place.emoji} {place.title} — ~{distance:.1f} км"
+        for index, (place, distance) in enumerate(nearby_items, start=1)
+    ]
+    places = tuple(place for place, _ in nearby_items)
+
+    await message.answer(
+        "📡 <b>Ближайшие места</b>\n\n" + "\n".join(lines),
+        reply_markup=places_keyboard(
+            places,
+            back_callback="menu:home",
+            back_text="← Главное меню",
+        ),
+    )
+
+
+@router.message(NearbyFlow.waiting_location, F.text == "Отмена")
+async def near_me_cancel(message: Message, state: FSMContext) -> None:
+    await state.clear()
+    catalog = current_catalog()
+    await message.answer(
+        "Запрос геопозиции отменён.",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    await message.answer(home_text(catalog), reply_markup=home_keyboard())
+
+
+@router.message(NearbyFlow.waiting_location)
+async def near_me_invalid(message: Message) -> None:
+    await message.answer(
+        "Нажмите «📍 Отправить мою геопозицию» или выберите «Отмена».",
+        reply_markup=request_location_keyboard(),
+    )
+
+
 @router.callback_query(F.data == "builder:start")
 async def route_builder_start(callback: CallbackQuery, state: FSMContext) -> None:
     previous_state = await state.get_state()
     await state.clear()
-    if previous_state == RouteBuilderFlow.waiting_location.state:
+    if previous_state in LOCATION_REQUEST_STATES:
         await callback.message.answer(
             "Запрос геопозиции отменён.",
             reply_markup=ReplyKeyboardRemove(),
