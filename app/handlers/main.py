@@ -16,6 +16,7 @@ from app.keyboards import (
     generated_route_keyboard,
     home_keyboard,
     interests_keyboard,
+    paginated_places_keyboard,
     personalized_places_keyboard,
     place_keyboard,
     places_keyboard,
@@ -25,6 +26,7 @@ from app.keyboards import (
     route_interest_keyboard,
     routes_keyboard,
 )
+from app.pagination import paginate
 from app.planner import INTEREST_LABELS, build_route
 from app.recommendations import recommend_places
 from app.storage import FavoritesRepository, InterestsRepository
@@ -106,24 +108,51 @@ async def menu_places(callback: CallbackQuery) -> None:
     await callback.answer()
 
 
-@router.callback_query(F.data.startswith("cat:"))
-async def category(callback: CallbackQuery) -> None:
+async def show_category_page(
+    callback: CallbackQuery,
+    category_key: str,
+    page_index: int,
+) -> None:
     catalog = current_catalog()
-    key = callback.data.split(":", 1)[1]
-    places = catalog.places_for_category(key)
-    label = catalog.category_labels.get(key, "Подборка")
+    places = catalog.places_for_category(category_key)
+    label = catalog.category_labels.get(category_key)
 
-    if not places:
+    if label is None or not places:
         await callback.answer("Для этой подборки пока нет мест.", show_alert=True)
         return
 
+    page = paginate(places, page_index)
     await callback.message.edit_text(
         f"<b>{label}</b>\n\n"
-        "Выберите место. На первом этапе показываем стабильные описательные данные "
-        "без непроверенных цен и расписаний.",
-        reply_markup=places_keyboard(places),
+        f"Мест: {page.total_items} · страница {page.number}/{page.total_pages}\n\n"
+        "Выберите место. Динамические цены и расписания не фиксируются "
+        "как статические данные.",
+        reply_markup=paginated_places_keyboard(
+            page,
+            page_callback_prefix=f"catpage:{category_key}",
+            back_callback="menu:places",
+            back_text="← Категории",
+        ),
     )
     await callback.answer()
+
+
+@router.callback_query(F.data.startswith("cat:"))
+async def category(callback: CallbackQuery) -> None:
+    category_key = callback.data.split(":", 1)[1]
+    await show_category_page(callback, category_key, 0)
+
+
+@router.callback_query(F.data.startswith("catpage:"))
+async def category_page(callback: CallbackQuery) -> None:
+    try:
+        _, category_key, raw_page = callback.data.split(":", 2)
+        page_index = int(raw_page)
+    except (ValueError, AttributeError):
+        await callback.answer("Некорректная страница.", show_alert=True)
+        return
+
+    await show_category_page(callback, category_key, page_index)
 
 
 @router.callback_query(F.data.startswith("place:"))
@@ -235,10 +264,10 @@ async def nearby(callback: CallbackQuery) -> None:
     await callback.answer()
 
 
-@router.callback_query(F.data == "menu:personal")
-async def personal_recommendations(
+async def show_personal_page(
     callback: CallbackQuery,
     interests_repo: InterestsRepository,
+    page_index: int,
 ) -> None:
     catalog = current_catalog()
     interests = await interests_repo.list_interests(
@@ -255,16 +284,44 @@ async def personal_recommendations(
         await callback.answer()
         return
 
-    places = recommend_places(catalog, interests)
+    places = recommend_places(
+        catalog,
+        interests,
+        limit=len(catalog.places),
+    )
+    page = paginate(places, page_index)
     labels = " · ".join(INTEREST_LABELS[key] for key in interests)
 
     await callback.message.edit_text(
         "🎯 <b>Для меня</b>\n\n"
-        f"Ваши интересы: {labels}\n\n"
-        f"Подобрано мест: {len(places)}. Рейтинг строится только по данным каталога.",
-        reply_markup=personalized_places_keyboard(places),
+        f"Ваши интересы: {labels}\n"
+        f"Подобрано: {page.total_items} · страница {page.number}/{page.total_pages}.\n\n"
+        "Рейтинг строится только по данным текущего каталога.",
+        reply_markup=personalized_places_keyboard(page),
     )
     await callback.answer()
+
+
+@router.callback_query(F.data == "menu:personal")
+async def personal_recommendations(
+    callback: CallbackQuery,
+    interests_repo: InterestsRepository,
+) -> None:
+    await show_personal_page(callback, interests_repo, 0)
+
+
+@router.callback_query(F.data.startswith("personalpage:"))
+async def personal_recommendations_page(
+    callback: CallbackQuery,
+    interests_repo: InterestsRepository,
+) -> None:
+    try:
+        page_index = int(callback.data.rsplit(":", 1)[1])
+    except (ValueError, AttributeError):
+        await callback.answer("Некорректная страница.", show_alert=True)
+        return
+
+    await show_personal_page(callback, interests_repo, page_index)
 
 
 @router.callback_query(F.data == "pref:edit")
@@ -333,15 +390,7 @@ async def finish_interests(
         await callback.answer("Выберите хотя бы один интерес.", show_alert=True)
         return
 
-    places = recommend_places(catalog, interests)
-    labels = " · ".join(INTEREST_LABELS[key] for key in interests)
-    await callback.message.edit_text(
-        "🎯 <b>Для меня</b>\n\n"
-        f"Ваши интересы: {labels}\n\n"
-        f"Подобрано мест: {len(places)}.",
-        reply_markup=personalized_places_keyboard(places),
-    )
-    await callback.answer()
+    await show_personal_page(callback, interests_repo, 0)
 
 
 @router.callback_query(F.data == "menu:nearby")
@@ -669,10 +718,10 @@ async def events(callback: CallbackQuery) -> None:
     await callback.answer()
 
 
-@router.callback_query(F.data == "menu:favorites")
-async def favorites(
+async def show_favorites_page(
     callback: CallbackQuery,
     favorites_repo: FavoritesRepository,
+    page_index: int,
 ) -> None:
     catalog = current_catalog()
     slugs = await favorites_repo.list_place_slugs(callback.from_user.id, catalog.slug)
@@ -691,14 +740,44 @@ async def favorites(
         await callback.answer()
         return
 
+    page = paginate(places, page_index)
     await callback.message.edit_text(
-        f"❤️ <b>Избранное</b>\n\nСохранено мест: {len(places)}.",
-        reply_markup=places_keyboard(
-            places,
+        "❤️ <b>Избранное</b>\n\n"
+        f"Сохранено: {page.total_items} · страница {page.number}/{page.total_pages}.",
+        reply_markup=paginated_places_keyboard(
+            page,
+            page_callback_prefix="favpage",
             back_callback="menu:home",
             back_text="← Главное меню",
         ),
     )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "menu:favorites")
+async def favorites(
+    callback: CallbackQuery,
+    favorites_repo: FavoritesRepository,
+) -> None:
+    await show_favorites_page(callback, favorites_repo, 0)
+
+
+@router.callback_query(F.data.startswith("favpage:"))
+async def favorites_page(
+    callback: CallbackQuery,
+    favorites_repo: FavoritesRepository,
+) -> None:
+    try:
+        page_index = int(callback.data.rsplit(":", 1)[1])
+    except (ValueError, AttributeError):
+        await callback.answer("Некорректная страница.", show_alert=True)
+        return
+
+    await show_favorites_page(callback, favorites_repo, page_index)
+
+
+@router.callback_query(F.data == "noop")
+async def noop(callback: CallbackQuery) -> None:
     await callback.answer()
 
 
