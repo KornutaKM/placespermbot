@@ -4,7 +4,8 @@ Telegram-гид по городам России. Первый город MVP �
 
 ## Что уже реализовано
 
-- /start и главное меню города;
+- /start, /city и главное меню города;
+- пользовательский активный город с сохранением в SQLite;
 - расширяемый multi-city catalog layer;
 - каталог Санкт-Петербурга из 22+ проверяемых точек;
 - постраничный вывод категорий, избранного и персональных рекомендаций;
@@ -193,14 +194,14 @@ Docker healthcheck не обращается к Telegram API. Он провер�
 - что bot token настроен;
 - что активный city catalog существует и не пуст;
 - что SQLite уже инициализирована;
-- что присутствуют таблицы `favorites` и `user_interests`.
+- что присутствуют таблицы `favorites`, `user_interests` и `user_city_preferences`.
 
 Для диагностики:
 
     docker inspect --format='{{json .State.Health}}' placespermbot-bot-1
 
 CI дополнительно собирает реальный Docker image и запускает внутри него network-free
-`python -m app.smoke`, чтобы ловить ошибки упаковки, отсутствующие модули и broken imports.
+`python -m app.smoke`, чтобы ловить ошибки упаковки, отсутствующие модули, broken imports и загрузку реального `app.main`.
 
 
 ## SQLite migrations
@@ -211,7 +212,8 @@ CI дополнительно собирает реальный Docker image и 
 Текущие версии:
 
 1. `create_favorites`;
-2. `create_user_interests`.
+2. `create_user_interests`;
+3. `create_user_city_preferences`.
 
 Переход со старой БД безопасен: migrations используют существующие таблицы и не удаляют
 сохранённые строки. Повторный запуск idempotent. Если volume содержит неизвестную более новую
@@ -238,3 +240,20 @@ Server-side navigation stack не используется. Поэтому кн�
 рестарта процесса/контейнера. Старые callback без navigation context поддерживаются и
 безопасно возвращают пользователя к категориям. Все формируемые callback ограничены
 лимитом Telegram в 64 байта.
+
+
+## Multi-city и выбор города
+
+`PLACES_CITY_SLUG` теперь задаёт только default/fallback город. Активный город пользователя
+хранится отдельно в SQLite по Telegram `user_id` и выбирается через кнопку
+«🌆 Сменить город» или команду `/city`.
+
+Каждый Telegram update проходит через `CatalogMiddleware`, который резолвит пользовательский
+`CityCatalog` и помещает его в request-scoped context. Поэтому каталог одного пользователя
+не может протечь в запрос другого, а handlers не зависят от конкретного города.
+
+Если сохранённый city slug больше не зарегистрирован в текущей версии приложения, resolver
+безопасно использует default catalog. Сохранить неизвестный город через UI/service нельзя.
+
+Live-провайдеры экскурсий и событий также city-scoped: для города без подключённого provider
+раздел fail-closed показывает, что интеграция пока недоступна, вместо ссылок на другой город.

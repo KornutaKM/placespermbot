@@ -8,7 +8,14 @@ from app.catalog import get_catalog
 from app.config import Settings
 from app.database import KNOWN_SCHEMA_VERSIONS, get_applied_migration_versions
 
-EXPECTED_TABLES = frozenset({"schema_migrations", "favorites", "user_interests"})
+EXPECTED_TABLES = frozenset(
+    {
+        "schema_migrations",
+        "favorites",
+        "user_interests",
+        "user_city_preferences",
+    }
+)
 
 
 def validate_static_runtime(settings: Settings) -> None:

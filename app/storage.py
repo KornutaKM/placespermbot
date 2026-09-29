@@ -109,3 +109,44 @@ class InterestsRepository:
             rows = await cursor.fetchall()
             await cursor.close()
             return tuple(str(row[0]) for row in rows)
+
+
+
+class UserCityRepository:
+    def __init__(self, database_path: str) -> None:
+        self.database_path = Path(database_path)
+
+    async def initialize(self) -> None:
+        await migrate_database(self.database_path)
+
+    async def get_city_slug(self, user_id: int) -> str | None:
+        async with aiosqlite.connect(self.database_path) as database:
+            cursor = await database.execute(
+                """
+                SELECT city_slug
+                FROM user_city_preferences
+                WHERE user_id = ?
+                LIMIT 1
+                """,
+                (user_id,),
+            )
+            row = await cursor.fetchone()
+            await cursor.close()
+
+        if row is None:
+            return None
+        return str(row[0])
+
+    async def set_city_slug(self, user_id: int, city_slug: str) -> None:
+        async with aiosqlite.connect(self.database_path) as database:
+            await database.execute(
+                """
+                INSERT INTO user_city_preferences (user_id, city_slug)
+                VALUES (?, ?)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    city_slug = excluded.city_slug,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (user_id, city_slug),
+            )
+            await database.commit()

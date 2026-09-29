@@ -1,16 +1,19 @@
 from aiogram import F, Router
-from aiogram.filters import CommandStart
+from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
-from app.catalog import CityCatalog, get_catalog
+from app.catalog import CityCatalog
+from app.catalog_context import get_current_catalog
+from app.catalog_service import CatalogService
 from app.config import get_settings
 from app.events import get_event_providers
 from app.excursions import get_excursion_providers
 from app.keyboards import (
     back_home_keyboard,
     categories_keyboard,
+    cities_keyboard,
     event_providers_keyboard,
     excursion_providers_keyboard,
     generated_route_keyboard,
@@ -66,7 +69,7 @@ LOCATION_REQUEST_STATES = {
 
 
 def current_catalog() -> CityCatalog:
-    return get_catalog(get_settings().city_slug)
+    return get_current_catalog()
 
 
 def home_text(catalog: CityCatalog) -> str:
@@ -107,6 +110,74 @@ async def menu_home(callback: CallbackQuery, state: FSMContext) -> None:
     catalog = current_catalog()
     await callback.message.edit_text(home_text(catalog), reply_markup=home_keyboard())
     await callback.answer()
+
+
+@router.message(Command("city"))
+async def city_command(
+    message: Message,
+    state: FSMContext,
+    catalog_service: CatalogService,
+) -> None:
+    previous_state = await state.get_state()
+    await state.clear()
+    if previous_state in LOCATION_REQUEST_STATES:
+        await message.answer(
+            "Запрос геопозиции отменён.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
+    catalog = current_catalog()
+    await message.answer(
+        "🌆 <b>Выбор города</b>\n\n"
+        f"Сейчас выбран: <b>{catalog.name}</b>.\n"
+        "Выберите город из доступных каталогов:",
+        reply_markup=cities_keyboard(
+            catalog_service.available_catalogs(),
+            catalog.slug,
+        ),
+    )
+
+
+@router.callback_query(F.data == "menu:cities")
+async def menu_cities(
+    callback: CallbackQuery,
+    catalog_service: CatalogService,
+) -> None:
+    catalog = current_catalog()
+    await callback.message.edit_text(
+        "🌆 <b>Выбор города</b>\n\n"
+        f"Сейчас выбран: <b>{catalog.name}</b>.\n"
+        "Выберите город из доступных каталогов:",
+        reply_markup=cities_keyboard(
+            catalog_service.available_catalogs(),
+            catalog.slug,
+        ),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("city:set:"))
+async def set_city(
+    callback: CallbackQuery,
+    state: FSMContext,
+    catalog_service: CatalogService,
+) -> None:
+    city_slug = callback.data.removeprefix("city:set:").strip()
+    try:
+        catalog = await catalog_service.set_for_user(
+            callback.from_user.id,
+            city_slug,
+        )
+    except RuntimeError:
+        await callback.answer("Этот город недоступен.", show_alert=True)
+        return
+
+    await state.clear()
+    await callback.message.edit_text(
+        home_text(catalog),
+        reply_markup=home_keyboard(),
+    )
+    await callback.answer(f"Город: {catalog.name}")
 
 
 @router.callback_query(F.data == "menu:places")
@@ -463,7 +534,7 @@ async def near_me_location(message: Message, state: FSMContext) -> None:
 
     if not nearby_items:
         await message.answer(
-            "В радиусе 10 км не нашлось точек из текущего каталога Петербурга. "
+            f"В радиусе 10 км не нашлось точек из каталога «{catalog.name}». "
             "Возможно, вы находитесь за пределами основной зоны каталога.",
             reply_markup=home_keyboard(),
         )
@@ -599,7 +670,7 @@ async def route_builder_duration(callback: CallbackQuery, state: FSMContext) -> 
     await state.update_data(budget_minutes=budget_minutes)
     await state.set_state(RouteBuilderFlow.waiting_interest)
     await callback.message.edit_text(
-        "🪄 <b>Какой Петербург вам интересен?</b>\n\n"
+        "🪄 <b>Что вам интереснее?</b>\n\n"
         f"Доступное время: <b>{budget_minutes // 60} ч</b>.\n"
         "Выберите акцент маршрута:",
         reply_markup=route_interest_keyboard(),
@@ -717,7 +788,19 @@ async def route_card(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "menu:excursions")
 async def excursions(callback: CallbackQuery) -> None:
-    providers = get_excursion_providers(get_settings())
+    catalog = current_catalog()
+    providers = get_excursion_providers(
+        get_settings(),
+        city_slug=catalog.slug,
+    )
+    if not providers:
+        await callback.message.edit_text(
+            "🎟 <b>Экскурсии</b>\n\n"
+            f"Для города {catalog.name} live-провайдеры пока не подключены.",
+            reply_markup=back_home_keyboard(),
+        )
+        await callback.answer()
+        return
     freshness = max(provider.checked_at for provider in providers)
     source_lines = "\n".join(
         f"• <b>{provider.name}</b> — официальный live-каталог"
@@ -725,7 +808,7 @@ async def excursions(callback: CallbackQuery) -> None:
     )
 
     await callback.message.edit_text(
-        "🎟 <b>Экскурсии в Санкт-Петербурге</b>\n\n"
+        f"🎟 <b>Экскурсии · {catalog.name}</b>\n\n"
         f"{source_lines}\n\n"
         "Цены, расписание и наличие мест открываются напрямую у провайдера — "
         "бот не копирует их в локальную базу и не показывает устаревшие значения.\n\n"
@@ -737,7 +820,19 @@ async def excursions(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "menu:events")
 async def events(callback: CallbackQuery) -> None:
-    providers = get_event_providers(get_settings())
+    catalog = current_catalog()
+    providers = get_event_providers(
+        get_settings(),
+        city_slug=catalog.slug,
+    )
+    if not providers:
+        await callback.message.edit_text(
+            "🎭 <b>События</b>\n\n"
+            f"Для города {catalog.name} live-афиша пока не подключена.",
+            reply_markup=back_home_keyboard(),
+        )
+        await callback.answer()
+        return
     freshness = max(provider.checked_at for provider in providers)
     source_lines = "\n".join(
         f"• <b>{provider.name}</b> — live-афиша Петербурга"
@@ -745,7 +840,7 @@ async def events(callback: CallbackQuery) -> None:
     )
 
     await callback.message.edit_text(
-        "🎭 <b>События в Санкт-Петербурге</b>\n\n"
+        f"🎭 <b>События · {catalog.name}</b>\n\n"
         f"{source_lines}\n\n"
         "Даты, цены и наличие билетов открываются напрямую у источника. "
         "Бот не сохраняет динамическую афишу как постоянные локальные данные.\n\n"

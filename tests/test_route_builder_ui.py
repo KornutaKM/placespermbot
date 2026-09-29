@@ -1,9 +1,10 @@
-from app.catalog import get_catalog
+from app.catalog import get_catalog, list_catalogs
 from app.config import Settings
 from app.data.spb import CITY_SLUG
 from app.events import get_event_providers
 from app.excursions import get_excursion_providers
 from app.keyboards import (
+    cities_keyboard,
     event_providers_keyboard,
     excursion_providers_keyboard,
     generated_route_keyboard,
@@ -200,3 +201,37 @@ def test_place_keyboard_preserves_category_context_for_actions_and_back() -> Non
     assert f"nearby:{place.slug}|c.sights.2" in callbacks
     assert f"favorite:add:{place.slug}|c.sights.2" in callbacks
     assert "catpage:sights:2" in callbacks
+
+
+def test_home_exposes_city_selector() -> None:
+    assert "menu:cities" in callback_values(home_keyboard())
+
+
+def test_city_selector_marks_current_catalog() -> None:
+    catalogs = list_catalogs()
+    current = catalogs[0]
+    markup = cities_keyboard(catalogs, current.slug)
+    callbacks = callback_values(markup)
+
+    assert f"city:set:{current.slug}" in callbacks
+    assert "menu:home" in callbacks
+
+    selected_buttons = [
+        button
+        for row in markup.inline_keyboard
+        for button in row
+        if button.callback_data == f"city:set:{current.slug}"
+    ]
+    assert selected_buttons
+    assert selected_buttons[0].text.startswith("✅ ")
+
+
+def test_live_providers_fail_closed_for_unsupported_city() -> None:
+    assert get_excursion_providers(
+        Settings(),
+        city_slug="unsupported-city",
+    ) == ()
+    assert get_event_providers(
+        Settings(),
+        city_slug="unsupported-city",
+    ) == ()

@@ -153,3 +153,11 @@ def get_catalog(city_slug: str) -> CityCatalog:
         return _CATALOGS[city_slug]
     except KeyError as exc:
         raise RuntimeError(f"Unsupported city: {city_slug}") from exc
+
+
+def list_catalogs() -> tuple[CityCatalog, ...]:
+    return tuple(sorted(_CATALOGS.values(), key=lambda catalog: catalog.name))
+
+
+def has_catalog(city_slug: str) -> bool:
+    return city_slug in _CATALOGS

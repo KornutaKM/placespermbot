@@ -7,6 +7,7 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
 )
 
+from app.catalog import CityCatalog
 from app.domain import Place, RoutePlan
 from app.events import EventProvider
 from app.excursions import ExcursionProvider
@@ -26,6 +27,9 @@ from app.planner import INTEREST_LABELS
 
 def home_keyboard() -> InlineKeyboardMarkup:
     rows = [
+        [
+            InlineKeyboardButton(text="🌆 Сменить город", callback_data="menu:cities"),
+        ],
         [
             InlineKeyboardButton(text="📍 Куда сходить", callback_data="menu:places"),
             InlineKeyboardButton(text="🗺 Маршруты", callback_data="menu:routes"),
@@ -53,6 +57,23 @@ def home_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🔍 Поиск", callback_data="menu:search"),
         ],
     ]
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def cities_keyboard(
+    catalogs: tuple[CityCatalog, ...],
+    current_slug: str,
+) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=("✅ " if catalog.slug == current_slug else "") + catalog.name,
+                callback_data=f"city:set:{catalog.slug}",
+            )
+        ]
+        for catalog in catalogs
+    ]
+    rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 

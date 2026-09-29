@@ -23,7 +23,14 @@ class ExcursionProvider:
     note: str
 
 
-def get_excursion_providers(settings: Settings) -> tuple[ExcursionProvider, ...]:
+def get_excursion_providers(
+    settings: Settings,
+    *,
+    city_slug: str = "saint-petersburg",
+) -> tuple[ExcursionProvider, ...]:
+    if city_slug != "saint-petersburg":
+        return ()
+
     return (
         ExcursionProvider(
             provider_id="sputnik8",

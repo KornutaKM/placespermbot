@@ -23,7 +23,14 @@ class EventProvider:
     note: str
 
 
-def get_event_providers(settings: Settings) -> tuple[EventProvider, ...]:
+def get_event_providers(
+    settings: Settings,
+    *,
+    city_slug: str = "saint-petersburg",
+) -> tuple[EventProvider, ...]:
+    if city_slug != "saint-petersburg":
+        return ()
+
     return (
         EventProvider(
             provider_id="yandex-afisha",
