@@ -1,15 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Generic, TypeVar
-
-T = TypeVar("T")
 
 PAGE_SIZE = 6
 
 
 @dataclass(frozen=True, slots=True)
-class Page(Generic[T]):
+class Page[T]:
     items: tuple[T, ...]
     index: int
     total_pages: int
@@ -20,7 +17,7 @@ class Page(Generic[T]):
         return self.index + 1
 
 
-def paginate(
+def paginate[T](
     items: tuple[T, ...],
     page: int,
     *,
