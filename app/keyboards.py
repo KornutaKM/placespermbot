@@ -9,7 +9,6 @@ from aiogram.types import (
 
 from app.catalog import CityCatalog
 from app.domain import Place, RoutePlan
-from app.saved_routes import SavedRoute
 from app.events import EventProvider
 from app.excursions import ExcursionProvider
 from app.maps import google_maps_directions_to_place_url, google_maps_route_urls
@@ -27,6 +26,7 @@ from app.navigation import (
 )
 from app.pagination import Page
 from app.planner import INTEREST_LABELS
+from app.saved_routes import SavedRoute
 
 
 def home_keyboard() -> InlineKeyboardMarkup:
