@@ -1,6 +1,9 @@
 from app.catalog import get_catalog
+from app.config import Settings
 from app.data.spb import CITY_SLUG
+from app.excursions import get_excursion_providers
 from app.keyboards import (
+    excursion_providers_keyboard,
     generated_route_keyboard,
     home_keyboard,
     request_location_keyboard,
@@ -99,3 +102,10 @@ def test_editorial_route_keyboard_exposes_google_maps_url() -> None:
 
 def test_home_exposes_near_me_action() -> None:
     assert "menu:nearby" in callback_values(home_keyboard())
+
+
+def test_excursion_provider_keyboard_has_live_urls() -> None:
+    providers = get_excursion_providers(Settings())
+    urls = url_values(excursion_providers_keyboard(providers))
+
+    assert urls == {provider.catalog_url for provider in providers}

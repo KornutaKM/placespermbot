@@ -8,6 +8,7 @@ from aiogram.types import (
 )
 
 from app.domain import Place, RoutePlan
+from app.excursions import ExcursionProvider
 from app.maps import google_maps_route_urls
 from app.planner import INTEREST_LABELS
 
@@ -169,6 +170,22 @@ def _google_maps_rows(places: tuple[Place, ...]) -> list[list[InlineKeyboardButt
         ]
         for index, url in enumerate(urls, start=1)
     ]
+
+
+def excursion_providers_keyboard(
+    providers: tuple[ExcursionProvider, ...],
+) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"🎟 Открыть {provider.name}",
+                url=provider.catalog_url,
+            )
+        ]
+        for provider in providers
+    ]
+    rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def back_home_keyboard() -> InlineKeyboardMarkup:
