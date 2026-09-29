@@ -4,3 +4,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    volumes:
+      - places-data:/app/data
+
+volumes:
+  places-data:

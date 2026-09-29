@@ -14,6 +14,7 @@ from app.keyboards import (
     places_keyboard,
     routes_keyboard,
 )
+from app.storage import FavoritesRepository
 
 router = Router()
 
@@ -85,7 +86,10 @@ async def category(callback: CallbackQuery) -> None:
 
 
 @router.callback_query(F.data.startswith("place:"))
-async def place_card(callback: CallbackQuery) -> None:
+async def place_card(
+    callback: CallbackQuery,
+    favorites_repo: FavoritesRepository,
+) -> None:
     catalog = current_catalog()
     slug = callback.data.split(":", 1)[1]
     place = catalog.place_by_slug(slug)
@@ -95,6 +99,11 @@ async def place_card(callback: CallbackQuery) -> None:
 
     access = "💸 Бесплатное пространство" if place.is_free else "🎟 Условия посещения уточняются"
     tags = " · ".join(f"#{tag.replace(' ', '_')}" for tag in place.tags)
+    is_favorite = await favorites_repo.contains(
+        callback.from_user.id,
+        catalog.slug,
+        place.slug,
+    )
 
     await callback.message.edit_text(
         f"{place.emoji} <b>{place.title}</b>\n\n"
@@ -103,9 +112,37 @@ async def place_card(callback: CallbackQuery) -> None:
         f"⏱ Ориентир на посещение: ~{place.visit_minutes} мин\n"
         f"{access}\n\n"
         f"{tags}",
-        reply_markup=place_keyboard(place.slug),
+        reply_markup=place_keyboard(place.slug, is_favorite=is_favorite),
     )
     await callback.answer()
+
+
+@router.callback_query(F.data.startswith("favorite:"))
+async def favorite_action(
+    callback: CallbackQuery,
+    favorites_repo: FavoritesRepository,
+) -> None:
+    catalog = current_catalog()
+    _, action, slug = callback.data.split(":", 2)
+    place = catalog.place_by_slug(slug)
+
+    if place is None or action not in {"add", "remove"}:
+        await callback.answer("Не удалось изменить избранное.", show_alert=True)
+        return
+
+    if action == "add":
+        await favorites_repo.add(callback.from_user.id, catalog.slug, place.slug)
+        is_favorite = True
+        message = "Добавлено в избранное"
+    else:
+        await favorites_repo.remove(callback.from_user.id, catalog.slug, place.slug)
+        is_favorite = False
+        message = "Удалено из избранного"
+
+    await callback.message.edit_reply_markup(
+        reply_markup=place_keyboard(place.slug, is_favorite=is_favorite)
+    )
+    await callback.answer(message)
 
 
 @router.callback_query(F.data.startswith("geo:"))
@@ -207,9 +244,37 @@ async def excursions(callback: CallbackQuery) -> None:
     await callback.answer()
 
 
-@router.callback_query(F.data.in_({"menu:favorites", "stub:favorites"}))
-async def favorites(callback: CallbackQuery) -> None:
-    await callback.answer("Избранное добавим следующим шагом.", show_alert=True)
+@router.callback_query(F.data == "menu:favorites")
+async def favorites(
+    callback: CallbackQuery,
+    favorites_repo: FavoritesRepository,
+) -> None:
+    catalog = current_catalog()
+    slugs = await favorites_repo.list_place_slugs(callback.from_user.id, catalog.slug)
+    places = tuple(
+        place
+        for slug in slugs
+        if (place := catalog.place_by_slug(slug)) is not None
+    )
+
+    if not places:
+        await callback.message.edit_text(
+            "❤️ <b>Избранное</b>\n\n"
+            "Здесь пока пусто. Откройте карточку места и нажмите «❤️ В избранное».",
+            reply_markup=back_home_keyboard(),
+        )
+        await callback.answer()
+        return
+
+    await callback.message.edit_text(
+        f"❤️ <b>Избранное</b>\n\nСохранено мест: {len(places)}.",
+        reply_markup=places_keyboard(
+            places,
+            back_callback="menu:home",
+            back_text="← Главное меню",
+        ),
+    )
+    await callback.answer()
 
 
 @router.callback_query(F.data == "menu:search")

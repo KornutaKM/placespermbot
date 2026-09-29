@@ -72,7 +72,10 @@ def back_home_keyboard() -> InlineKeyboardMarkup:
     )
 
 
-def place_keyboard(place_slug: str) -> InlineKeyboardMarkup:
+def place_keyboard(place_slug: str, *, is_favorite: bool = False) -> InlineKeyboardMarkup:
+    favorite_text = "💔 Убрать из избранного" if is_favorite else "❤️ В избранное"
+    favorite_action = "remove" if is_favorite else "add"
+
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -86,7 +89,10 @@ def place_keyboard(place_slug: str) -> InlineKeyboardMarkup:
                     text="✨ Что рядом",
                     callback_data=f"nearby:{place_slug}",
                 ),
-                InlineKeyboardButton(text="❤️ В избранное", callback_data="stub:favorites"),
+                InlineKeyboardButton(
+                    text=favorite_text,
+                    callback_data=f"favorite:{favorite_action}:{place_slug}",
+                ),
             ],
             [
                 InlineKeyboardButton(text="🗺 Маршруты", callback_data="menu:routes"),

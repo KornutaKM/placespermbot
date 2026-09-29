@@ -9,17 +9,22 @@ from aiogram.types import BotCommand
 
 from app.config import get_settings
 from app.handlers.main import router
+from app.storage import FavoritesRepository
 
 
 async def main() -> None:
     logging.basicConfig(level=logging.INFO)
     settings = get_settings()
 
+    favorites_repo = FavoritesRepository(settings.database_path)
+    await favorites_repo.initialize()
+
     bot = Bot(
         token=settings.require_bot_token(),
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     dispatcher = Dispatcher(storage=MemoryStorage())
+    dispatcher["favorites_repo"] = favorites_repo
     dispatcher.include_router(router)
 
     await bot.set_my_commands(

@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     bot_token: str = ""
     environment: str = "development"
     city_slug: str = "saint-petersburg"
+    database_path: str = "data/places.db"
 
     model_config = SettingsConfigDict(
         env_file=".env",

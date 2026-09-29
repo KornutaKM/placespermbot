@@ -9,6 +9,7 @@ description = "Telegram city guide. Saint Petersburg is the first launch city."
 requires-python = ">=3.12"
 dependencies = [
   "aiogram>=3.13,<4",
+  "aiosqlite>=0.20,<1",
   "pydantic-settings>=2.5,<3",
 ]
 
