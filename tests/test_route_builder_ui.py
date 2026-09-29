@@ -4,6 +4,7 @@ from app.keyboards import (
     generated_route_keyboard,
     home_keyboard,
     request_location_keyboard,
+    route_details_keyboard,
     route_duration_keyboard,
     route_interest_keyboard,
 )
@@ -60,3 +61,37 @@ def test_location_keyboard_requests_native_telegram_location() -> None:
 
     assert location_button.request_location is True
     assert any(button.text == "Отмена" for row in markup.keyboard for button in row)
+
+
+def url_values(markup) -> set[str]:
+    return {
+        button.url
+        for row in markup.inline_keyboard
+        for button in row
+        if button.url is not None
+    }
+
+
+def test_generated_route_exposes_google_maps_url() -> None:
+    city = get_catalog(CITY_SLUG)
+    route = build_route(city, budget_minutes=240, interest="classic")
+
+    assert route is not None
+    urls = url_values(generated_route_keyboard(route.places))
+
+    assert urls
+    assert all(url.startswith("https://www.google.com/maps/") for url in urls)
+
+
+def test_editorial_route_keyboard_exposes_google_maps_url() -> None:
+    city = get_catalog(CITY_SLUG)
+    route = city.routes[0]
+    places = tuple(
+        place
+        for slug in route.place_slugs
+        if (place := city.place_by_slug(slug)) is not None
+    )
+
+    urls = url_values(route_details_keyboard(places))
+
+    assert urls
