@@ -8,6 +8,8 @@ from app.keyboards import (
     excursion_providers_keyboard,
     generated_route_keyboard,
     home_keyboard,
+    interests_keyboard,
+    personalized_places_keyboard,
     request_location_keyboard,
     route_details_keyboard,
     route_duration_keyboard,
@@ -122,3 +124,25 @@ def test_event_provider_keyboard_has_live_urls() -> None:
     urls = url_values(event_providers_keyboard(providers))
 
     assert urls == {provider.catalog_url for provider in providers}
+
+
+def test_home_exposes_personalized_action() -> None:
+    assert "menu:personal" in callback_values(home_keyboard())
+
+
+def test_interests_keyboard_contains_all_supported_interests() -> None:
+    callbacks = callback_values(interests_keyboard(("museums", "free")))
+
+    for interest in INTEREST_LABELS:
+        assert f"pref:toggle:{interest}" in callbacks
+    assert "pref:done" in callbacks
+
+
+def test_personalized_places_open_cards_and_preferences() -> None:
+    city = get_catalog(CITY_SLUG)
+    places = city.places[:3]
+    callbacks = callback_values(personalized_places_keyboard(places))
+
+    for place in places:
+        assert f"place:{place.slug}" in callbacks
+    assert "pref:edit" in callbacks
