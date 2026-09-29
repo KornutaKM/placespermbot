@@ -18,6 +18,8 @@ from app.keyboards import (
     route_details_keyboard,
     route_duration_keyboard,
     route_interest_keyboard,
+    saved_route_details_keyboard,
+    saved_routes_keyboard,
     visited_places_keyboard,
 )
 from app.navigation import (
@@ -25,10 +27,12 @@ from app.navigation import (
     personal_context,
     place_callback,
     route_context,
+    saved_route_context,
     visited_context,
 )
 from app.pagination import paginate
 from app.planner import INTEREST_LABELS, build_route
+from app.saved_routes import SavedRoute, build_save_callback
 
 
 def callback_values(markup) -> set[str]:
@@ -64,10 +68,17 @@ def test_generated_route_points_open_place_cards() -> None:
     route = build_route(catalog, budget_minutes=240, interest="classic")
 
     assert route is not None
-    callbacks = callback_values(generated_route_keyboard(route.places))
+    save_callback = build_save_callback(catalog, route)
+    callbacks = callback_values(
+        generated_route_keyboard(
+            route.places,
+            save_callback=save_callback,
+        )
+    )
 
     for place in route.places:
         assert place_callback(place.slug, route_context()) in callbacks
+    assert save_callback in callbacks
     assert "builder:start" in callbacks
 
 
@@ -294,5 +305,44 @@ def test_profile_keyboard_links_existing_user_flows() -> None:
         "pref:edit",
         "menu:favorites",
         "menu:visited",
+        "menu:savedroutes",
         "menu:home",
     }
+
+
+def test_saved_routes_keyboard_opens_saved_route() -> None:
+    route = SavedRoute(
+        route_id="abc123",
+        city_slug=CITY_SLUG,
+        interest="museums",
+        budget_minutes=240,
+        place_slugs=("hermitage",),
+        created_at="2026-09-29 12:00:00",
+    )
+    page = paginate((route,), 0)
+    callbacks = callback_values(saved_routes_keyboard(page))
+
+    assert "savedroute:abc123" in callbacks
+    assert "menu:profile" in callbacks
+
+
+def test_saved_route_details_preserve_route_context() -> None:
+    catalog = get_catalog(CITY_SLUG)
+    route = SavedRoute(
+        route_id="abc123",
+        city_slug=CITY_SLUG,
+        interest="classic",
+        budget_minutes=240,
+        place_slugs=tuple(place.slug for place in catalog.places[:2]),
+        created_at="2026-09-29 12:00:00",
+    )
+    places = catalog.places[:2]
+    callbacks = callback_values(saved_route_details_keyboard(route, places))
+
+    for place in places:
+        assert place_callback(
+            place.slug,
+            saved_route_context(route.route_id),
+        ) in callbacks
+    assert "savedroute:delete:abc123" in callbacks
+    assert "menu:savedroutes" in callbacks
