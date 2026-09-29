@@ -45,7 +45,7 @@ from app.navigation import (
 )
 from app.pagination import paginate
 from app.planner import INTEREST_LABELS, build_route
-from app.profile import build_profile_summary, profile_text
+from app.profile import ProfileSummary, build_profile_summary, profile_text
 from app.recommendations import recommend_places
 from app.storage import FavoritesRepository, InterestsRepository, VisitedRepository
 
@@ -121,7 +121,7 @@ async def build_current_profile(
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
-):
+) -> ProfileSummary:
     return await build_profile_summary(
         user_id,
         current_catalog(),
