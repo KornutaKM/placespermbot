@@ -6,9 +6,11 @@ from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
 from app.catalog import CityCatalog, get_catalog
 from app.config import get_settings
+from app.excursions import get_excursion_providers
 from app.keyboards import (
     back_home_keyboard,
     categories_keyboard,
+    excursion_providers_keyboard,
     generated_route_keyboard,
     home_keyboard,
     place_keyboard,
@@ -513,12 +515,20 @@ async def route_card(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "menu:excursions")
 async def excursions(callback: CallbackQuery) -> None:
+    providers = get_excursion_providers(get_settings())
+    freshness = max(provider.checked_at for provider in providers)
+    source_lines = "\n".join(
+        f"• <b>{provider.name}</b> — официальный live-каталог"
+        for provider in providers
+    )
+
     await callback.message.edit_text(
-        "🎟 <b>Экскурсии</b>\n\n"
-        "Раздел подготовлен под подключение актуальных предложений. "
-        "До подключения источника бот не будет показывать вымышленные цены, "
-        "расписания или наличие мест.",
-        reply_markup=back_home_keyboard(),
+        "🎟 <b>Экскурсии в Санкт-Петербурге</b>\n\n"
+        f"{source_lines}\n\n"
+        "Цены, расписание и наличие мест открываются напрямую у провайдера — "
+        "бот не копирует их в локальную базу и не показывает устаревшие значения.\n\n"
+        f"Источники проверены: <b>{freshness.strftime('%d.%m.%Y')}</b>.",
+        reply_markup=excursion_providers_keyboard(providers),
     )
     await callback.answer()
 
