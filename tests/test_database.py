@@ -29,12 +29,13 @@ def test_fresh_database_reaches_latest_schema(tmp_path) -> None:
         version = await migrate_database(database_path)
 
         assert version == LATEST_SCHEMA_VERSION
-        assert await get_applied_migration_versions(database_path) == (1, 2, 3)
+        assert await get_applied_migration_versions(database_path) == (1, 2, 3, 4)
         assert {
             "schema_migrations",
             "favorites",
             "user_interests",
             "user_city_preferences",
+            "visited_places",
         } <= table_names(database_path)
 
     asyncio.run(scenario())
@@ -98,7 +99,7 @@ def test_legacy_rows_survive_migration(tmp_path) -> None:
 
         assert favorite == (42, "saint-petersburg", "hermitage")
         assert interest == (42, "saint-petersburg", "museums")
-        assert await get_applied_migration_versions(database_path) == (1, 2, 3)
+        assert await get_applied_migration_versions(database_path) == (1, 2, 3, 4)
 
     asyncio.run(scenario())
 
@@ -112,14 +113,14 @@ def test_migration_is_idempotent(tmp_path) -> None:
 
         assert first == LATEST_SCHEMA_VERSION
         assert second == LATEST_SCHEMA_VERSION
-        assert await get_applied_migration_versions(database_path) == (1, 2, 3)
+        assert await get_applied_migration_versions(database_path) == (1, 2, 3, 4)
 
         with sqlite3.connect(database_path) as database:
             count = database.execute(
                 "SELECT COUNT(*) FROM schema_migrations"
             ).fetchone()
 
-        assert count == (3,)
+        assert count == (4,)
 
     asyncio.run(scenario())
 
