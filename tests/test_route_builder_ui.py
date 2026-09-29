@@ -1,5 +1,7 @@
 from app.catalog import get_catalog
+from app.config import Settings
 from app.data.spb import CITY_SLUG
+from app.excursions import get_excursion_providers
 from app.keyboards import (
     excursion_providers_keyboard,
     generated_route_keyboard,
@@ -9,8 +11,6 @@ from app.keyboards import (
     route_duration_keyboard,
     route_interest_keyboard,
 )
-from app.config import Settings
-from app.excursions import get_excursion_providers
 from app.planner import INTEREST_LABELS, build_route
 
 
