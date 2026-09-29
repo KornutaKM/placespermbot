@@ -14,9 +14,9 @@ from app.keyboards import (
     place_keyboard,
     places_keyboard,
     request_location_keyboard,
+    route_details_keyboard,
     route_duration_keyboard,
     route_interest_keyboard,
-    route_details_keyboard,
     routes_keyboard,
 )
 from app.planner import INTEREST_LABELS, build_route
