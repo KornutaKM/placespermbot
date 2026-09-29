@@ -24,8 +24,8 @@ Telegram-гид по городам России. Первый город MVP �
 - явные пользовательские интересы и детерминированная подборка «Для меня»;
 - реальные внешние каталоги экскурсий Sputnik8 и Tripster с provenance/freshness;
 - live-афиша Петербурга через Яндекс Афишу и KudaGo;
-- Docker с persistent volume для данных;
-- CI с Ruff и pytest.
+- Docker с persistent volume и healthcheck;
+- CI с Ruff, pytest и Docker image smoke.
 
 ## Конструктор маршрутов
 
@@ -175,3 +175,27 @@ URL override допускается только по HTTPS и только на
 `dir_action=navigate`. Параметр `origin` намеренно не передаётся: стартовая точка
 определяется на стороне карты/устройства, поэтому боту не нужно получать или сохранять
 геопозицию пользователя для этого сценария.
+
+
+## Проверка Docker runtime
+
+После запуска:
+
+    docker compose up --build -d
+    docker compose ps
+
+после короткого start period контейнер должен перейти в состояние `healthy`.
+
+Docker healthcheck не обращается к Telegram API. Он проверяет:
+
+- что bot token настроен;
+- что активный city catalog существует и не пуст;
+- что SQLite уже инициализирована;
+- что присутствуют таблицы `favorites` и `user_interests`.
+
+Для диагностики:
+
+    docker inspect --format='{{json .State.Health}}' placespermbot-bot-1
+
+CI дополнительно собирает реальный Docker image и запускает внутри него network-free
+`python -m app.smoke`, чтобы ловить ошибки упаковки, отсутствующие модули и broken imports.
