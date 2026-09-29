@@ -8,6 +8,7 @@ from aiogram.types import (
 )
 
 from app.domain import Place, RoutePlan
+from app.maps import google_maps_route_urls
 from app.planner import INTEREST_LABELS
 
 
@@ -129,9 +130,42 @@ def generated_route_keyboard(places: tuple[Place, ...]) -> InlineKeyboardMarkup:
         ]
         for index, place in enumerate(places, start=1)
     ]
+    rows.extend(_google_maps_rows(places))
     rows.append([InlineKeyboardButton(text="🪄 Новый маршрут", callback_data="builder:start")])
     rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def route_details_keyboard(places: tuple[Place, ...]) -> InlineKeyboardMarkup:
+    rows = _google_maps_rows(places)
+    rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _google_maps_rows(places: tuple[Place, ...]) -> list[list[InlineKeyboardButton]]:
+    urls = google_maps_route_urls(places)
+    if not urls:
+        return []
+
+    if len(urls) == 1:
+        return [
+            [
+                InlineKeyboardButton(
+                    text="🗺 Открыть маршрут в Google Maps",
+                    url=urls[0],
+                )
+            ]
+        ]
+
+    return [
+        [
+            InlineKeyboardButton(
+                text=f"🗺 Google Maps · часть {index}/{len(urls)}",
+                url=url,
+            )
+        ]
+        for index, url in enumerate(urls, start=1)
+    ]
 
 
 def back_home_keyboard() -> InlineKeyboardMarkup:

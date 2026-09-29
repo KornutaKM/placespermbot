@@ -14,6 +14,7 @@ from app.keyboards import (
     place_keyboard,
     places_keyboard,
     request_location_keyboard,
+    route_details_keyboard,
     route_duration_keyboard,
     route_interest_keyboard,
     routes_keyboard,
@@ -402,12 +403,15 @@ async def route_card(callback: CallbackQuery) -> None:
         await callback.answer("Маршрут не найден.", show_alert=True)
         return
 
-    titles = [
-        place.title
+    route_places = tuple(
+        place
         for place_slug in route.place_slugs
         if (place := catalog.place_by_slug(place_slug)) is not None
-    ]
-    stops = "\n".join(f"{index}. {title}" for index, title in enumerate(titles, start=1))
+    )
+    stops = "\n".join(
+        f"{index}. {place.title}"
+        for index, place in enumerate(route_places, start=1)
+    )
 
     await callback.message.edit_text(
         f"🧭 <b>{route.title}</b>\n\n"
@@ -415,9 +419,9 @@ async def route_card(callback: CallbackQuery) -> None:
         f"⏱ ~{route.duration_minutes // 60} ч {route.duration_minutes % 60:02d} мин\n"
         f"🚶 ~{route.distance_km:g} км\n\n"
         f"<b>Точки:</b>\n{stops}\n\n"
-        "Карточки точек уже содержат геопозицию; построение единого маршрута по карте "
-        "добавим отдельным слоем.",
-        reply_markup=back_home_keyboard(),
+        "Ниже можно открыть пешеходный маршрут в Google Maps. "
+        "Длинные прогулки разбиваются на несколько последовательных частей.",
+        reply_markup=route_details_keyboard(route_places),
     )
     await callback.answer()
 
