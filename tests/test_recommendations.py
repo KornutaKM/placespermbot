@@ -57,3 +57,42 @@ def test_limit_is_respected() -> None:
 def test_unknown_interest_fails_closed() -> None:
     with pytest.raises(ValueError, match="Unsupported interests"):
         recommend_places(catalog(), ("nightlife",))
+
+
+def test_excluded_places_are_not_recommended() -> None:
+    baseline = recommend_places(
+        catalog(),
+        ("museums",),
+        limit=20,
+    )
+    assert baseline
+
+    excluded = {baseline[0].slug}
+    filtered = recommend_places(
+        catalog(),
+        ("museums",),
+        limit=20,
+        exclude_slugs=excluded,
+    )
+
+    assert all(place.slug not in excluded for place in filtered)
+    assert len(filtered) == len(baseline) - 1
+
+
+def test_exclusions_are_applied_before_limit() -> None:
+    baseline = recommend_places(
+        catalog(),
+        ("classic", "architecture", "free"),
+        limit=3,
+    )
+    assert len(baseline) == 3
+
+    filtered = recommend_places(
+        catalog(),
+        ("classic", "architecture", "free"),
+        limit=3,
+        exclude_slugs={baseline[0].slug},
+    )
+
+    assert len(filtered) == 3
+    assert baseline[0].slug not in {place.slug for place in filtered}
