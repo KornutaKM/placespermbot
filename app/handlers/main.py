@@ -908,7 +908,7 @@ async def events(callback: CallbackQuery) -> None:
         return
     freshness = max(provider.checked_at for provider in providers)
     source_lines = "\n".join(
-        f"• <b>{provider.name}</b> — live-афиша Петербурга"
+        f"• <b>{provider.name}</b> — live-афиша"
         for provider in providers
     )
 
@@ -980,6 +980,63 @@ async def favorites_page(
         return
 
     await show_favorites_page(callback, favorites_repo, page_index)
+
+
+async def show_visited_page(
+    callback: CallbackQuery,
+    visited_repo: VisitedRepository,
+    page_index: int,
+) -> None:
+    catalog = current_catalog()
+    slugs = await visited_repo.list_place_slugs(
+        callback.from_user.id,
+        catalog.slug,
+    )
+    places = tuple(
+        place
+        for slug in slugs
+        if (place := catalog.place_by_slug(slug)) is not None
+    )
+
+    if not places:
+        await callback.message.edit_text(
+            "✅ <b>Посещённые</b>\n\n"
+            "Здесь пока пусто. В карточке места нажмите «✅ Уже был».",
+            reply_markup=back_home_keyboard(),
+        )
+        await callback.answer()
+        return
+
+    page = paginate(places, page_index)
+    await callback.message.edit_text(
+        "✅ <b>Посещённые</b>\n\n"
+        f"Отмечено: {page.total_items} · "
+        f"страница {page.number}/{page.total_pages}.",
+        reply_markup=visited_places_keyboard(page),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "menu:visited")
+async def visited_places(
+    callback: CallbackQuery,
+    visited_repo: VisitedRepository,
+) -> None:
+    await show_visited_page(callback, visited_repo, 0)
+
+
+@router.callback_query(F.data.startswith("visitedpage:"))
+async def visited_places_page(
+    callback: CallbackQuery,
+    visited_repo: VisitedRepository,
+) -> None:
+    try:
+        page_index = int(callback.data.rsplit(":", 1)[1])
+    except (ValueError, AttributeError):
+        await callback.answer("Некорректная страница.", show_alert=True)
+        return
+
+    await show_visited_page(callback, visited_repo, page_index)
 
 
 @router.callback_query(F.data == "noop")
