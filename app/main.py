@@ -7,10 +7,12 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand
 
+from app.catalog_context import CatalogMiddleware
+from app.catalog_service import CatalogService
 from app.config import get_settings
 from app.database import migrate_database
 from app.handlers.main import router
-from app.storage import FavoritesRepository, InterestsRepository
+from app.storage import FavoritesRepository, InterestsRepository, UserCityRepository
 
 
 async def main() -> None:
@@ -20,6 +22,11 @@ async def main() -> None:
     await migrate_database(settings.database_path)
     favorites_repo = FavoritesRepository(settings.database_path)
     interests_repo = InterestsRepository(settings.database_path)
+    user_city_repo = UserCityRepository(settings.database_path)
+    catalog_service = CatalogService(
+        default_city_slug=settings.city_slug,
+        user_city_repo=user_city_repo,
+    )
 
     bot = Bot(
         token=settings.require_bot_token(),
@@ -28,11 +35,14 @@ async def main() -> None:
     dispatcher = Dispatcher(storage=MemoryStorage())
     dispatcher["favorites_repo"] = favorites_repo
     dispatcher["interests_repo"] = interests_repo
+    dispatcher["catalog_service"] = catalog_service
+    dispatcher.update.outer_middleware(CatalogMiddleware(catalog_service))
     dispatcher.include_router(router)
 
     await bot.set_my_commands(
         [
             BotCommand(command="start", description="Открыть городской гид"),
+            BotCommand(command="city", description="Выбрать город"),
         ]
     )
     await dispatcher.start_polling(bot)
