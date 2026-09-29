@@ -1,5 +1,7 @@
 from aiogram import F, Router
 from aiogram.filters import CommandStart
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
 
 from app.catalog import CityCatalog, get_catalog
@@ -16,6 +18,10 @@ from app.keyboards import (
 router = Router()
 
 
+class SearchFlow(StatesGroup):
+    waiting_query = State()
+
+
 def current_catalog() -> CityCatalog:
     return get_catalog(get_settings().city_slug)
 
@@ -29,7 +35,8 @@ def home_text(catalog: CityCatalog) -> str:
 
 
 @router.message(CommandStart())
-async def start(message: Message) -> None:
+async def start(message: Message, state: FSMContext) -> None:
+    await state.clear()
     catalog = current_catalog()
     await message.answer(
         "👋 <b>Добро пожаловать!</b>\n\n"
@@ -40,7 +47,8 @@ async def start(message: Message) -> None:
 
 
 @router.callback_query(F.data == "menu:home")
-async def menu_home(callback: CallbackQuery) -> None:
+async def menu_home(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.clear()
     catalog = current_catalog()
     await callback.message.edit_text(home_text(catalog), reply_markup=home_keyboard())
     await callback.answer()
@@ -205,11 +213,43 @@ async def favorites(callback: CallbackQuery) -> None:
 
 
 @router.callback_query(F.data == "menu:search")
-async def search(callback: CallbackQuery) -> None:
+async def search(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.set_state(SearchFlow.waiting_query)
     await callback.message.edit_text(
-        "🔍 <b>Поиск</b>\n\n"
-        "Следующий шаг — поиск по названию, категории и тегам. "
-        "После этого добавим свободные запросы вроде «куда сходить вечером».",
+        "🔍 <b>Поиск по местам</b>\n\n"
+        "Напишите название, тип места, район или интерес.\n\n"
+        "Например: <i>Эрмитаж</i>, <i>музей</i>, <i>остров</i>, <i>архитектура</i>.",
         reply_markup=back_home_keyboard(),
     )
     await callback.answer()
+
+
+@router.message(SearchFlow.waiting_query, F.text)
+async def search_query(message: Message, state: FSMContext) -> None:
+    catalog = current_catalog()
+    query = message.text.strip()
+    results = catalog.search_places(query)
+    await state.clear()
+
+    if not results:
+        await message.answer(
+            f"🔍 По запросу <b>{query}</b> ничего не нашлось.\n\n"
+            "Попробуйте название места, «музей», «парк», «архитектура» или район.",
+            reply_markup=back_home_keyboard(),
+        )
+        return
+
+    await message.answer(
+        f"🔍 <b>Результаты поиска: {query}</b>\n\n"
+        f"Найдено: {len(results)}. Выберите место:",
+        reply_markup=places_keyboard(
+            results,
+            back_callback="menu:home",
+            back_text="← Главное меню",
+        ),
+    )
+
+
+@router.message(SearchFlow.waiting_query)
+async def search_non_text(message: Message) -> None:
+    await message.answer("Для поиска отправьте текстовый запрос.")
