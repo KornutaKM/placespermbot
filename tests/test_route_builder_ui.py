@@ -166,6 +166,7 @@ def test_paginated_places_keyboard_limits_rows_and_has_navigation() -> None:
         page_callback_prefix="catpage:museums",
         back_callback="menu:places",
         back_text="← Категории",
+        place_context=category_context("museums", page.index),
     )
     callbacks = callback_values(markup)
     place_callbacks = {value for value in callbacks if value.startswith("place:")}
