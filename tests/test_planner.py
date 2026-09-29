@@ -100,3 +100,76 @@ def test_invalid_budget_fails_closed() -> None:
 def test_unknown_interest_fails_closed() -> None:
     with pytest.raises(ValueError, match="Unsupported interest"):
         build_route(catalog(), budget_minutes=120, interest="nightlife")
+
+
+def test_location_origin_chooses_nearest_candidate() -> None:
+    city = catalog()
+    sevkabel = city.place_by_slug("sevkabel-port")
+    assert sevkabel is not None
+
+    without_location = build_route(
+        city,
+        budget_minutes=120,
+        interest="unusual",
+    )
+    with_location = build_route(
+        city,
+        budget_minutes=120,
+        interest="unusual",
+        start_latitude=sevkabel.latitude,
+        start_longitude=sevkabel.longitude,
+    )
+
+    assert without_location is not None
+    assert with_location is not None
+    assert without_location.places[0].slug == "new-holland"
+    assert with_location.places[0].slug == "sevkabel-port"
+
+
+def test_location_walk_is_included_in_budget_and_distance() -> None:
+    route = build_route(
+        catalog(),
+        budget_minutes=120,
+        interest="unusual",
+        start_latitude=59.9200,
+        start_longitude=30.2300,
+    )
+
+    assert route is not None
+    assert route.places[0].slug == "sevkabel-port"
+    assert route.distance_km > 0
+    assert route.estimated_minutes > route.places[0].visit_minutes
+    assert route.estimated_minutes <= route.budget_minutes
+
+
+def test_far_origin_can_produce_no_route() -> None:
+    route = build_route(
+        catalog(),
+        budget_minutes=120,
+        interest="classic",
+        start_latitude=55.7558,
+        start_longitude=37.6176,
+    )
+
+    assert route is None
+
+
+def test_partial_origin_fails_closed() -> None:
+    with pytest.raises(ValueError, match="provided together"):
+        build_route(
+            catalog(),
+            budget_minutes=120,
+            interest="classic",
+            start_latitude=59.93,
+        )
+
+
+def test_invalid_origin_range_fails_closed() -> None:
+    with pytest.raises(ValueError, match="start_latitude"):
+        build_route(
+            catalog(),
+            budget_minutes=120,
+            interest="classic",
+            start_latitude=100.0,
+            start_longitude=30.0,
+        )

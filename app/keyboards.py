@@ -1,6 +1,11 @@
 from collections.abc import Mapping
 
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+)
 
 from app.domain import Place, RoutePlan
 from app.planner import INTEREST_LABELS
@@ -68,7 +73,8 @@ def routes_keyboard(routes: tuple[RoutePlan, ...]) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def route_duration_keyboard() -> InlineKeyboardMarkup:
+def route_duration_keyboard(*, location_selected: bool = False) -> InlineKeyboardMarkup:
+    location_text = "✅ Старт: моя геопозиция" if location_selected else "📍 Начать рядом со мной"
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -76,8 +82,31 @@ def route_duration_keyboard() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(text="4 часа", callback_data="builder:duration:240"),
                 InlineKeyboardButton(text="6 часов", callback_data="builder:duration:360"),
             ],
+            [
+                InlineKeyboardButton(
+                    text=location_text,
+                    callback_data="builder:location",
+                )
+            ],
             [InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")],
         ]
+    )
+
+
+def request_location_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(
+                    text="📍 Отправить мою геопозицию",
+                    request_location=True,
+                )
+            ],
+            [KeyboardButton(text="Отмена")],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+        input_field_placeholder="Нажмите кнопку, чтобы поделиться геопозицией",
     )
 
 

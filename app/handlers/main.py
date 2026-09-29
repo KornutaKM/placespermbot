@@ -2,7 +2,7 @@ from aiogram import F, Router
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
 from app.catalog import CityCatalog, get_catalog
 from app.config import get_settings
@@ -13,6 +13,7 @@ from app.keyboards import (
     home_keyboard,
     place_keyboard,
     places_keyboard,
+    request_location_keyboard,
     route_duration_keyboard,
     route_interest_keyboard,
     routes_keyboard,
@@ -28,6 +29,7 @@ class SearchFlow(StatesGroup):
 
 
 class RouteBuilderFlow(StatesGroup):
+    waiting_location = State()
     waiting_duration = State()
     waiting_interest = State()
 
@@ -46,7 +48,13 @@ def home_text(catalog: CityCatalog) -> str:
 
 @router.message(CommandStart())
 async def start(message: Message, state: FSMContext) -> None:
+    previous_state = await state.get_state()
     await state.clear()
+    if previous_state == RouteBuilderFlow.waiting_location.state:
+        await message.answer(
+            "Запрос геопозиции отменён.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
     catalog = current_catalog()
     await message.answer(
         "👋 <b>Добро пожаловать!</b>\n\n"
@@ -58,7 +66,13 @@ async def start(message: Message, state: FSMContext) -> None:
 
 @router.callback_query(F.data == "menu:home")
 async def menu_home(callback: CallbackQuery, state: FSMContext) -> None:
+    previous_state = await state.get_state()
     await state.clear()
+    if previous_state == RouteBuilderFlow.waiting_location.state:
+        await callback.message.answer(
+            "Запрос геопозиции отменён.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
     catalog = current_catalog()
     await callback.message.edit_text(home_text(catalog), reply_markup=home_keyboard())
     await callback.answer()
@@ -203,15 +217,80 @@ async def nearby(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "builder:start")
 async def route_builder_start(callback: CallbackQuery, state: FSMContext) -> None:
+    previous_state = await state.get_state()
     await state.clear()
+    if previous_state == RouteBuilderFlow.waiting_location.state:
+        await callback.message.answer(
+            "Запрос геопозиции отменён.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
     await state.set_state(RouteBuilderFlow.waiting_duration)
     await callback.message.edit_text(
         "🪄 <b>Собрать маршрут</b>\n\n"
         "Сколько времени вы хотите провести на прогулке?\n\n"
-        "В расчёт входят посещение точек и примерное время пеших переходов.",
+        "Можно также поделиться геопозицией — тогда маршрут начнётся с ближайшей "
+        "подходящей точки. В расчёт входят посещение и пешие переходы.",
         reply_markup=route_duration_keyboard(),
     )
     await callback.answer()
+
+
+@router.callback_query(F.data == "builder:location")
+async def route_builder_request_location(
+    callback: CallbackQuery,
+    state: FSMContext,
+) -> None:
+    await state.set_state(RouteBuilderFlow.waiting_location)
+    await callback.message.answer(
+        "📍 <b>Старт от вашей геопозиции</b>\n\n"
+        "Нажмите кнопку ниже, чтобы один раз передать текущую точку. "
+        "Координаты используются только для расчёта этого маршрута и не сохраняются.",
+        reply_markup=request_location_keyboard(),
+    )
+    await callback.answer()
+
+
+@router.message(RouteBuilderFlow.waiting_location, F.location)
+async def route_builder_location(message: Message, state: FSMContext) -> None:
+    location = message.location
+    if location is None:
+        await message.answer("Не удалось прочитать геопозицию.")
+        return
+
+    await state.update_data(
+        start_latitude=location.latitude,
+        start_longitude=location.longitude,
+    )
+    await state.set_state(RouteBuilderFlow.waiting_duration)
+    await message.answer(
+        "✅ Геопозиция принята.",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    await message.answer(
+        "Теперь выберите, сколько времени есть на прогулку:",
+        reply_markup=route_duration_keyboard(location_selected=True),
+    )
+
+
+@router.message(RouteBuilderFlow.waiting_location, F.text == "Отмена")
+async def route_builder_location_cancel(message: Message, state: FSMContext) -> None:
+    await state.clear()
+    catalog = current_catalog()
+    await message.answer(
+        "Запрос геопозиции отменён.",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    await message.answer(home_text(catalog), reply_markup=home_keyboard())
+
+
+@router.message(RouteBuilderFlow.waiting_location)
+async def route_builder_location_invalid(message: Message) -> None:
+    await message.answer(
+        "Для старта от текущего места нажмите «📍 Отправить мою геопозицию» "
+        "или выберите «Отмена».",
+        reply_markup=request_location_keyboard(),
+    )
 
 
 @router.callback_query(F.data.startswith("builder:duration:"))
@@ -252,12 +331,26 @@ async def route_builder_interest(callback: CallbackQuery, state: FSMContext) -> 
         await callback.answer("Начните сбор маршрута заново.", show_alert=True)
         return
 
+    start_latitude = data.get("start_latitude")
+    start_longitude = data.get("start_longitude")
+    if start_latitude is not None and not isinstance(start_latitude, (int, float)):
+        await state.clear()
+        await callback.answer("Некорректная геопозиция. Начните заново.", show_alert=True)
+        return
+    if start_longitude is not None and not isinstance(start_longitude, (int, float)):
+        await state.clear()
+        await callback.answer("Некорректная геопозиция. Начните заново.", show_alert=True)
+        return
+
     catalog = current_catalog()
     route = build_route(
         catalog,
         budget_minutes=budget_minutes,
         interest=interest,
+        start_latitude=float(start_latitude) if start_latitude is not None else None,
+        start_longitude=float(start_longitude) if start_longitude is not None else None,
     )
+    location_used = start_latitude is not None and start_longitude is not None
     await state.clear()
 
     if route is None or not route.places:
@@ -277,8 +370,9 @@ async def route_builder_interest(callback: CallbackQuery, state: FSMContext) -> 
     await callback.message.edit_text(
         f"🪄 <b>{INTEREST_LABELS[route.interest]}</b>\n\n"
         f"Бюджет: {route.budget_minutes // 60} ч\n"
-        f"Оценка маршрута: ~{hours} ч {minutes:02d} мин\n"
-        f"Пешком между точками: ~{route.distance_km:g} км\n"
+        + ("Старт: от вашей геопозиции\n" if location_used else "")
+        + f"Оценка маршрута: ~{hours} ч {minutes:02d} мин\n"
+        f"Пешком по расчёту: ~{route.distance_km:g} км\n"
         f"Точек: {len(route.places)}\n\n"
         f"<b>Маршрут:</b>\n{stops}\n\n"
         "Время переходов рассчитано ориентировочно для пешей скорости 4,5 км/ч. "
