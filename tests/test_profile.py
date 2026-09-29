@@ -3,6 +3,7 @@ import asyncio
 from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
 from app.database import migrate_database
+from app.planner import INTEREST_LABELS
 from app.profile import build_profile_summary, profile_text
 from app.storage import FavoritesRepository, InterestsRepository, VisitedRepository
 
@@ -40,7 +41,10 @@ def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
         assert summary.city_name == "Санкт-Петербург"
         assert summary.favorites_count == 1
         assert summary.visited_count == 1
-        assert summary.interest_labels == ("Музеи", "Прогулки")
+        assert summary.interest_labels == (
+            INTEREST_LABELS["museums"],
+            INTEREST_LABELS["walks"],
+        )
 
     asyncio.run(scenario())
 
