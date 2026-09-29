@@ -11,6 +11,7 @@ from app.domain import Place, RoutePlan
 from app.events import EventProvider
 from app.excursions import ExcursionProvider
 from app.maps import google_maps_route_urls
+from app.pagination import Page
 from app.planner import INTEREST_LABELS
 
 
@@ -70,6 +71,58 @@ def places_keyboard(
         ]
         for place in places
     ]
+    rows.append([InlineKeyboardButton(text=back_text, callback_data=back_callback)])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def paginated_places_keyboard(
+    page: Page[Place],
+    *,
+    page_callback_prefix: str,
+    back_callback: str,
+    back_text: str,
+    extra_rows: list[list[InlineKeyboardButton]] | None = None,
+) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"{place.emoji} {place.title}",
+                callback_data=f"place:{place.slug}",
+            )
+        ]
+        for place in page.items
+    ]
+
+    navigation: list[InlineKeyboardButton] = []
+    if page.index > 0:
+        navigation.append(
+            InlineKeyboardButton(
+                text="←",
+                callback_data=f"{page_callback_prefix}:{page.index - 1}",
+            )
+        )
+
+    navigation.append(
+        InlineKeyboardButton(
+            text=f"{page.number}/{page.total_pages}",
+            callback_data="noop",
+        )
+    )
+
+    if page.index + 1 < page.total_pages:
+        navigation.append(
+            InlineKeyboardButton(
+                text="→",
+                callback_data=f"{page_callback_prefix}:{page.index + 1}",
+            )
+        )
+
+    if page.total_pages > 1:
+        rows.append(navigation)
+
+    if extra_rows:
+        rows.extend(extra_rows)
+
     rows.append([InlineKeyboardButton(text=back_text, callback_data=back_callback)])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -225,19 +278,23 @@ def interests_keyboard(selected: tuple[str, ...]) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def personalized_places_keyboard(places: tuple[Place, ...]) -> InlineKeyboardMarkup:
-    rows = [
-        [
-            InlineKeyboardButton(
-                text=f"{place.emoji} {place.title}",
-                callback_data=f"place:{place.slug}",
-            )
-        ]
-        for place in places
-    ]
-    rows.append([InlineKeyboardButton(text="⚙️ Изменить интересы", callback_data="pref:edit")])
-    rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
-    return InlineKeyboardMarkup(inline_keyboard=rows)
+def personalized_places_keyboard(
+    page: Page[Place],
+) -> InlineKeyboardMarkup:
+    return paginated_places_keyboard(
+        page,
+        page_callback_prefix="personalpage",
+        back_callback="menu:home",
+        back_text="← Главное меню",
+        extra_rows=[
+            [
+                InlineKeyboardButton(
+                    text="⚙️ Изменить интересы",
+                    callback_data="pref:edit",
+                )
+            ]
+        ],
+    )
 
 
 def back_home_keyboard() -> InlineKeyboardMarkup:
