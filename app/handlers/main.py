@@ -2,7 +2,7 @@ from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
+from aiogram.types import BufferedInputFile, CallbackQuery, Message, ReplyKeyboardRemove
 
 from app.catalog import CityCatalog
 from app.catalog_context import get_current_catalog
@@ -55,6 +55,11 @@ from app.storage import (
     InterestsRepository,
     SavedRoutesRepository,
     VisitedRepository,
+)
+from app.user_export import (
+    build_user_export,
+    export_filename,
+    serialize_user_export,
 )
 
 router = Router()
@@ -182,6 +187,74 @@ async def menu_profile(
         reply_markup=profile_keyboard(),
     )
     await callback.answer()
+
+
+async def send_user_export(
+    message: Message,
+    user_id: int,
+    favorites_repo: FavoritesRepository,
+    interests_repo: InterestsRepository,
+    visited_repo: VisitedRepository,
+    saved_routes_repo: SavedRoutesRepository,
+) -> None:
+    catalog = current_catalog()
+    data = await build_user_export(
+        user_id,
+        catalog,
+        favorites_repo=favorites_repo,
+        interests_repo=interests_repo,
+        visited_repo=visited_repo,
+        saved_routes_repo=saved_routes_repo,
+    )
+    document = BufferedInputFile(
+        serialize_user_export(data),
+        filename=export_filename(catalog),
+    )
+    await message.answer_document(
+        document,
+        caption=(
+            f"📦 Экспорт данных · {catalog.name}\n\n"
+            "Файл содержит только ваши явные данные в активном городе. "
+            "Геопозиция и история просмотров не экспортируются."
+        ),
+    )
+
+
+@router.message(Command("export"))
+async def export_command(
+    message: Message,
+    favorites_repo: FavoritesRepository,
+    interests_repo: InterestsRepository,
+    visited_repo: VisitedRepository,
+    saved_routes_repo: SavedRoutesRepository,
+) -> None:
+    await send_user_export(
+        message,
+        message.from_user.id,
+        favorites_repo,
+        interests_repo,
+        visited_repo,
+        saved_routes_repo,
+    )
+
+
+@router.callback_query(F.data == "profile:export")
+async def export_from_profile(
+    callback: CallbackQuery,
+    favorites_repo: FavoritesRepository,
+    interests_repo: InterestsRepository,
+    visited_repo: VisitedRepository,
+    saved_routes_repo: SavedRoutesRepository,
+) -> None:
+    await send_user_export(
+        callback.message,
+        callback.from_user.id,
+        favorites_repo,
+        interests_repo,
+        visited_repo,
+        saved_routes_repo,
+    )
+    await callback.answer("Экспорт подготовлен")
 
 
 @router.message(Command("city"))
