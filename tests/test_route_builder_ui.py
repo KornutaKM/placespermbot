@@ -3,6 +3,7 @@ from app.data.spb import CITY_SLUG
 from app.keyboards import (
     generated_route_keyboard,
     home_keyboard,
+    request_location_keyboard,
     route_duration_keyboard,
     route_interest_keyboard,
 )
@@ -47,3 +48,15 @@ def test_generated_route_points_open_place_cards() -> None:
     for place in route.places:
         assert f"place:{place.slug}" in callbacks
     assert "builder:start" in callbacks
+
+
+def test_duration_keyboard_offers_location_origin() -> None:
+    assert "builder:location" in callback_values(route_duration_keyboard())
+
+
+def test_location_keyboard_requests_native_telegram_location() -> None:
+    markup = request_location_keyboard()
+    location_button = markup.keyboard[0][0]
+
+    assert location_button.request_location is True
+    assert any(button.text == "Отмена" for row in markup.keyboard for button in row)
