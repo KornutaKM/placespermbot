@@ -1,0 +1,83 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from math import asin, cos, radians, sin, sqrt
+
+from app.data import spb
+from app.domain import Place, RoutePlan
+
+
+@dataclass(frozen=True, slots=True)
+class CityCatalog:
+    slug: str
+    name: str
+    category_labels: dict[str, str]
+    places: tuple[Place, ...]
+    routes: tuple[RoutePlan, ...]
+
+    def place_by_slug(self, slug: str) -> Place | None:
+        return next((place for place in self.places if place.slug == slug), None)
+
+    def route_by_slug(self, slug: str) -> RoutePlan | None:
+        return next((route for route in self.routes if route.slug == slug), None)
+
+    def places_for_category(self, category: str) -> tuple[Place, ...]:
+        if category == "free":
+            return tuple(place for place in self.places if place.is_free)
+        if category == "family":
+            return tuple(place for place in self.places if "с детьми" in place.tags)
+        return tuple(place for place in self.places if place.category == category)
+
+    def nearby_places(
+        self,
+        origin_slug: str,
+        *,
+        radius_km: float = 3.0,
+        limit: int = 5,
+    ) -> tuple[tuple[Place, float], ...]:
+        origin = self.place_by_slug(origin_slug)
+        if origin is None:
+            return ()
+
+        ranked: list[tuple[Place, float]] = []
+        for place in self.places:
+            if place.slug == origin.slug:
+                continue
+            distance = _distance_km(origin, place)
+            if distance <= radius_km:
+                ranked.append((place, distance))
+
+        ranked.sort(key=lambda item: item[1])
+        return tuple(ranked[:limit])
+
+
+def _distance_km(first: Place, second: Place) -> float:
+    earth_radius_km = 6371.0088
+    lat1 = radians(first.latitude)
+    lat2 = radians(second.latitude)
+    delta_lat = lat2 - lat1
+    delta_lon = radians(second.longitude - first.longitude)
+
+    haversine = (
+        sin(delta_lat / 2) ** 2
+        + cos(lat1) * cos(lat2) * sin(delta_lon / 2) ** 2
+    )
+    return 2 * earth_radius_km * asin(sqrt(haversine))
+
+
+_CATALOGS: dict[str, CityCatalog] = {
+    spb.CITY_SLUG: CityCatalog(
+        slug=spb.CITY_SLUG,
+        name=spb.CITY_NAME,
+        category_labels=spb.CATEGORY_LABELS,
+        places=spb.PLACES,
+        routes=spb.ROUTES,
+    )
+}
+
+
+def get_catalog(city_slug: str) -> CityCatalog:
+    try:
+        return _CATALOGS[city_slug]
+    except KeyError as exc:
+        raise RuntimeError(f"Unsupported city: {city_slug}") from exc
