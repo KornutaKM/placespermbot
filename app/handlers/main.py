@@ -26,6 +26,17 @@ from app.keyboards import (
     route_interest_keyboard,
     routes_keyboard,
 )
+from app.navigation import (
+    category_context,
+    favorites_context,
+    home_context,
+    nearby_child_context,
+    parse_favorite_callback,
+    parse_nearby_callback,
+    parse_place_callback,
+    place_callback,
+    search_context,
+)
 from app.pagination import paginate
 from app.planner import INTEREST_LABELS, build_route
 from app.recommendations import recommend_places
@@ -132,6 +143,7 @@ async def show_category_page(
             page_callback_prefix=f"catpage:{category_key}",
             back_callback="menu:places",
             back_text="← Категории",
+            place_context=category_context(category_key, page.index),
         ),
     )
     await callback.answer()
@@ -161,7 +173,12 @@ async def place_card(
     favorites_repo: FavoritesRepository,
 ) -> None:
     catalog = current_catalog()
-    slug = callback.data.split(":", 1)[1]
+    try:
+        slug, context = parse_place_callback(callback.data)
+    except ValueError:
+        await callback.answer("Некорректная карточка места.", show_alert=True)
+        return
+
     place = catalog.place_by_slug(slug)
     if place is None:
         await callback.answer("Место не найдено.", show_alert=True)
@@ -184,7 +201,11 @@ async def place_card(
         f"{tags}\n\n"
         f"🔎 Источник: <a href=\"{place.source.url}\">{place.source.name}</a>\n"
         f"Проверено: {place.source.checked_at.strftime('%d.%m.%Y')}",
-        reply_markup=place_keyboard(place, is_favorite=is_favorite),
+        reply_markup=place_keyboard(
+            place,
+            is_favorite=is_favorite,
+            context=context,
+        ),
     )
     await callback.answer()
 
@@ -195,10 +216,15 @@ async def favorite_action(
     favorites_repo: FavoritesRepository,
 ) -> None:
     catalog = current_catalog()
-    _, action, slug = callback.data.split(":", 2)
+    try:
+        action, slug, context = parse_favorite_callback(callback.data)
+    except ValueError:
+        await callback.answer("Не удалось изменить избранное.", show_alert=True)
+        return
+
     place = catalog.place_by_slug(slug)
 
-    if place is None or action not in {"add", "remove"}:
+    if place is None:
         await callback.answer("Не удалось изменить избранное.", show_alert=True)
         return
 
@@ -212,7 +238,11 @@ async def favorite_action(
         message = "Удалено из избранного"
 
     await callback.message.edit_reply_markup(
-        reply_markup=place_keyboard(place, is_favorite=is_favorite)
+        reply_markup=place_keyboard(
+            place,
+            is_favorite=is_favorite,
+            context=context,
+        )
     )
     await callback.answer(message)
 
@@ -236,7 +266,12 @@ async def place_location(callback: CallbackQuery) -> None:
 @router.callback_query(F.data.startswith("nearby:"))
 async def nearby(callback: CallbackQuery) -> None:
     catalog = current_catalog()
-    slug = callback.data.split(":", 1)[1]
+    try:
+        slug, context = parse_nearby_callback(callback.data)
+    except ValueError:
+        await callback.answer("Некорректный запрос ближайших мест.", show_alert=True)
+        return
+
     origin = catalog.place_by_slug(slug)
     if origin is None:
         await callback.answer("Место не найдено.", show_alert=True)
@@ -257,8 +292,9 @@ async def nearby(callback: CallbackQuery) -> None:
         f"✨ <b>Что рядом с «{origin.title}»</b>\n\n" + "\n".join(lines),
         reply_markup=places_keyboard(
             places,
-            back_callback=f"place:{origin.slug}",
+            back_callback=place_callback(origin.slug, context),
             back_text=f"← {origin.title}",
+            place_context=nearby_child_context(origin.slug, context),
         ),
     )
     await callback.answer()
@@ -445,6 +481,7 @@ async def near_me_location(message: Message, state: FSMContext) -> None:
             places,
             back_callback="menu:home",
             back_text="← Главное меню",
+            place_context=home_context(),
         ),
     )
 
@@ -749,6 +786,7 @@ async def show_favorites_page(
             page_callback_prefix="favpage",
             back_callback="menu:home",
             back_text="← Главное меню",
+            place_context=favorites_context(page.index),
         ),
     )
     await callback.answer()
@@ -815,6 +853,7 @@ async def search_query(message: Message, state: FSMContext) -> None:
             results,
             back_callback="menu:home",
             back_text="← Главное меню",
+            place_context=search_context(),
         ),
     )
 

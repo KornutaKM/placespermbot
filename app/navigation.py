@@ -1,0 +1,163 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+TELEGRAM_CALLBACK_MAX_BYTES = 64
+DEFAULT_CONTEXT = "d"
+
+
+@dataclass(frozen=True, slots=True)
+class BackTarget:
+    callback_data: str
+    text: str
+
+
+def place_callback(place_slug: str, context: str = DEFAULT_CONTEXT) -> str:
+    return _bounded_callback(f"place:{place_slug}|{normalize_context(context)}")
+
+
+def favorite_callback(action: str, place_slug: str, context: str) -> str:
+    if action not in {"add", "remove"}:
+        raise ValueError("unsupported favorite action")
+    return _bounded_callback(
+        f"favorite:{action}:{place_slug}|{normalize_context(context)}"
+    )
+
+
+def nearby_callback(place_slug: str, context: str) -> str:
+    return _bounded_callback(f"nearby:{place_slug}|{normalize_context(context)}")
+
+
+def parse_place_callback(data: str) -> tuple[str, str]:
+    if not data.startswith("place:"):
+        raise ValueError("not a place callback")
+    return _parse_slug_context(data.removeprefix("place:"))
+
+
+def parse_favorite_callback(data: str) -> tuple[str, str, str]:
+    if not data.startswith("favorite:"):
+        raise ValueError("not a favorite callback")
+
+    payload = data.removeprefix("favorite:")
+    action, separator, remainder = payload.partition(":")
+    if not separator or action not in {"add", "remove"}:
+        raise ValueError("invalid favorite callback")
+
+    slug, context = _parse_slug_context(remainder)
+    return action, slug, context
+
+
+def parse_nearby_callback(data: str) -> tuple[str, str]:
+    if not data.startswith("nearby:"):
+        raise ValueError("not a nearby callback")
+    return _parse_slug_context(data.removeprefix("nearby:"))
+
+
+def category_context(category_key: str, page_index: int) -> str:
+    return normalize_context(f"c.{category_key}.{max(page_index, 0)}")
+
+
+def favorites_context(page_index: int) -> str:
+    return normalize_context(f"f.{max(page_index, 0)}")
+
+
+def personal_context(page_index: int) -> str:
+    return normalize_context(f"p.{max(page_index, 0)}")
+
+
+def route_context() -> str:
+    return "r"
+
+
+def search_context() -> str:
+    return "s"
+
+
+def home_context() -> str:
+    return "h"
+
+
+def nearby_child_context(origin_slug: str, parent_context: str) -> str:
+    parent = normalize_context(parent_context)
+    context = f"n.{origin_slug}@{parent}"
+    return normalize_context(context)
+
+
+def back_target(context: str) -> BackTarget:
+    normalized = normalize_context(context)
+
+    if normalized.startswith("c."):
+        parts = normalized.split(".")
+        if len(parts) == 3 and parts[2].isdigit():
+            return BackTarget(
+                callback_data=f"catpage:{parts[1]}:{parts[2]}",
+                text="← К подборке",
+            )
+
+    if normalized.startswith("f."):
+        page = normalized.removeprefix("f.")
+        if page.isdigit():
+            return BackTarget(
+                callback_data=f"favpage:{page}",
+                text="← Избранное",
+            )
+
+    if normalized.startswith("p."):
+        page = normalized.removeprefix("p.")
+        if page.isdigit():
+            return BackTarget(
+                callback_data=f"personalpage:{page}",
+                text="← Для меня",
+            )
+
+    if normalized.startswith("n."):
+        payload = normalized.removeprefix("n.")
+        origin_slug, separator, parent = payload.partition("@")
+        if origin_slug:
+            return BackTarget(
+                callback_data=place_callback(
+                    origin_slug,
+                    parent if separator else DEFAULT_CONTEXT,
+                ),
+                text="← К исходному месту",
+            )
+
+    if normalized == "r":
+        return BackTarget(callback_data="menu:routes", text="← Маршруты")
+
+    if normalized == "s":
+        return BackTarget(callback_data="menu:search", text="← Новый поиск")
+
+    if normalized == "h":
+        return BackTarget(callback_data="menu:home", text="← Главное меню")
+
+    return BackTarget(callback_data="menu:places", text="← Категории")
+
+
+def normalize_context(context: str) -> str:
+    value = context.strip()
+    if not value:
+        return DEFAULT_CONTEXT
+
+    if "|" in value or ":" in value:
+        return DEFAULT_CONTEXT
+
+    if len(value.encode("utf-8")) > 40:
+        return DEFAULT_CONTEXT
+
+    return value
+
+
+def _parse_slug_context(payload: str) -> tuple[str, str]:
+    slug, separator, context = payload.partition("|")
+    slug = slug.strip()
+    if not slug:
+        raise ValueError("missing place slug")
+
+    return slug, normalize_context(context if separator else DEFAULT_CONTEXT)
+
+
+def _bounded_callback(value: str) -> str:
+    if len(value.encode("utf-8")) > TELEGRAM_CALLBACK_MAX_BYTES:
+        raise ValueError("callback_data exceeds Telegram 64-byte limit")
+    return value
