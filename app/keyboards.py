@@ -8,6 +8,7 @@ from aiogram.types import (
 )
 
 from app.domain import Place, RoutePlan
+from app.events import EventProvider
 from app.excursions import ExcursionProvider
 from app.maps import google_maps_route_urls
 from app.planner import INTEREST_LABELS
@@ -27,14 +28,17 @@ def home_keyboard() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(text="🎟 Экскурсии", callback_data="menu:excursions"),
+            InlineKeyboardButton(text="🎭 События", callback_data="menu:events"),
+        ],
+        [
             InlineKeyboardButton(text="✨ Необычные", callback_data="cat:unusual"),
-        ],
-        [
             InlineKeyboardButton(text="👨‍👩‍👧 С детьми", callback_data="cat:family"),
-            InlineKeyboardButton(text="💸 Бесплатно", callback_data="cat:free"),
         ],
         [
+            InlineKeyboardButton(text="💸 Бесплатно", callback_data="cat:free"),
             InlineKeyboardButton(text="❤️ Избранное", callback_data="menu:favorites"),
+        ],
+        [
             InlineKeyboardButton(text="🔍 Поиск", callback_data="menu:search"),
         ],
     ]
@@ -179,6 +183,22 @@ def excursion_providers_keyboard(
         [
             InlineKeyboardButton(
                 text=f"🎟 Открыть {provider.name}",
+                url=provider.catalog_url,
+            )
+        ]
+        for provider in providers
+    ]
+    rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def event_providers_keyboard(
+    providers: tuple[EventProvider, ...],
+) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"🎭 Открыть {provider.name}",
                 url=provider.catalog_url,
             )
         ]
