@@ -17,6 +17,12 @@ from app.keyboards import (
     route_duration_keyboard,
     route_interest_keyboard,
 )
+from app.navigation import (
+    category_context,
+    personal_context,
+    place_callback,
+    route_context,
+)
 from app.pagination import paginate
 from app.planner import INTEREST_LABELS, build_route
 
@@ -57,7 +63,7 @@ def test_generated_route_points_open_place_cards() -> None:
     callbacks = callback_values(generated_route_keyboard(route.places))
 
     for place in route.places:
-        assert f"place:{place.slug}" in callbacks
+        assert place_callback(place.slug, route_context()) in callbacks
     assert "builder:start" in callbacks
 
 
@@ -147,7 +153,7 @@ def test_personalized_places_open_cards_and_preferences() -> None:
     callbacks = callback_values(personalized_places_keyboard(page))
 
     for place in page.items:
-        assert f"place:{place.slug}" in callbacks
+        assert place_callback(place.slug, personal_context(page.index)) in callbacks
     assert "pref:edit" in callbacks
     assert "personalpage:1" in callbacks
 
@@ -165,6 +171,11 @@ def test_paginated_places_keyboard_limits_rows_and_has_navigation() -> None:
     place_callbacks = {value for value in callbacks if value.startswith("place:")}
 
     assert len(place_callbacks) <= 6
+    for place in page.items:
+        assert place_callback(
+            place.slug,
+            category_context("museums", page.index),
+        ) in callbacks
     assert "catpage:museums:0" in callbacks
     assert "catpage:museums:2" in callbacks
     assert "noop" in callbacks
@@ -178,3 +189,13 @@ def test_place_keyboard_exposes_walking_directions_url() -> None:
     assert len(urls) == 1
     url = next(iter(urls))
     assert url.startswith("https://www.google.com/maps/dir/")
+
+
+def test_place_keyboard_preserves_category_context_for_actions_and_back() -> None:
+    place = get_catalog(CITY_SLUG).places[0]
+    markup = place_keyboard(place, context="c.sights.2")
+    callbacks = callback_values(markup)
+
+    assert f"nearby:{place.slug}|c.sights.2" in callbacks
+    assert f"favorite:add:{place.slug}|c.sights.2" in callbacks
+    assert "catpage:sights:2" in callbacks
