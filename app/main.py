@@ -54,6 +54,7 @@ async def main() -> None:
             BotCommand(command="start", description="Открыть городской гид"),
             BotCommand(command="city", description="Выбрать город"),
             BotCommand(command="profile", description="Открыть «Мой гид»"),
+            BotCommand(command="export", description="Экспортировать мои данные"),
         ]
     )
     await dispatcher.start_polling(bot)
