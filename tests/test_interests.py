@@ -14,8 +14,8 @@ def test_interests_round_trip(tmp_path) -> None:
         await repository.add(1, "saint-petersburg", "free")
 
         assert await repository.list_interests(1, "saint-petersburg") == (
-            "museums",
             "free",
+            "museums",
         )
 
         await repository.remove(1, "saint-petersburg", "museums")
