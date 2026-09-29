@@ -6,10 +6,12 @@ from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
 from app.catalog import CityCatalog, get_catalog
 from app.config import get_settings
+from app.events import get_event_providers
 from app.excursions import get_excursion_providers
 from app.keyboards import (
     back_home_keyboard,
     categories_keyboard,
+    event_providers_keyboard,
     excursion_providers_keyboard,
     generated_route_keyboard,
     home_keyboard,
@@ -529,6 +531,26 @@ async def excursions(callback: CallbackQuery) -> None:
         "бот не копирует их в локальную базу и не показывает устаревшие значения.\n\n"
         f"Источники проверены: <b>{freshness.strftime('%d.%m.%Y')}</b>.",
         reply_markup=excursion_providers_keyboard(providers),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "menu:events")
+async def events(callback: CallbackQuery) -> None:
+    providers = get_event_providers(get_settings())
+    freshness = max(provider.checked_at for provider in providers)
+    source_lines = "\n".join(
+        f"• <b>{provider.name}</b> — live-афиша Петербурга"
+        for provider in providers
+    )
+
+    await callback.message.edit_text(
+        "🎭 <b>События в Санкт-Петербурге</b>\n\n"
+        f"{source_lines}\n\n"
+        "Даты, цены и наличие билетов открываются напрямую у источника. "
+        "Бот не сохраняет динамическую афишу как постоянные локальные данные.\n\n"
+        f"Источники проверены: <b>{freshness.strftime('%d.%m.%Y')}</b>.",
+        reply_markup=event_providers_keyboard(providers),
     )
     await callback.answer()
 
