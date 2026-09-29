@@ -11,6 +11,8 @@ class Place:
     district: str
     visit_minutes: int
     is_free: bool
+    latitude: float
+    longitude: float
     tags: tuple[str, ...] = ()
 
 
