@@ -5,7 +5,12 @@ from dataclasses import dataclass
 
 from app.catalog import CityCatalog
 from app.planner import INTEREST_LABELS
-from app.storage import FavoritesRepository, InterestsRepository, VisitedRepository
+from app.storage import (
+    FavoritesRepository,
+    InterestsRepository,
+    SavedRoutesRepository,
+    VisitedRepository,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,6 +19,7 @@ class ProfileSummary:
     interest_labels: tuple[str, ...]
     favorites_count: int
     visited_count: int
+    saved_routes_count: int
 
     @property
     def interests_text(self) -> str:
@@ -29,11 +35,13 @@ async def build_profile_summary(
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
+    saved_routes_repo: SavedRoutesRepository,
 ) -> ProfileSummary:
-    interests, favorite_slugs, visited_slugs = await asyncio.gather(
+    interests, favorite_slugs, visited_slugs, saved_routes = await asyncio.gather(
         interests_repo.list_interests(user_id, catalog.slug),
         favorites_repo.list_place_slugs(user_id, catalog.slug),
         visited_repo.list_place_slugs(user_id, catalog.slug),
+        saved_routes_repo.list_routes(user_id, catalog.slug),
     )
 
     labels = tuple(
@@ -45,6 +53,7 @@ async def build_profile_summary(
         interest_labels=labels,
         favorites_count=len(favorite_slugs),
         visited_count=len(visited_slugs),
+        saved_routes_count=len(saved_routes),
     )
 
 
@@ -54,7 +63,8 @@ def profile_text(summary: ProfileSummary) -> str:
         f"🌆 Город: <b>{summary.city_name}</b>\n"
         f"🎯 Интересы: {summary.interests_text}\n"
         f"❤️ Избранное: {summary.favorites_count}\n"
-        f"✅ Посещённые: {summary.visited_count}\n\n"
+        f"✅ Посещённые: {summary.visited_count}\n"
+        f"🧭 Сохранённые маршруты: {summary.saved_routes_count}\n\n"
         "Все данные относятся к активному городу и основаны только "
         "на ваших явных действиях в боте."
     )

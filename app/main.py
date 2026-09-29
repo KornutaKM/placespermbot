@@ -15,6 +15,7 @@ from app.handlers.main import router
 from app.storage import (
     FavoritesRepository,
     InterestsRepository,
+    SavedRoutesRepository,
     UserCityRepository,
     VisitedRepository,
 )
@@ -28,6 +29,7 @@ async def main() -> None:
     favorites_repo = FavoritesRepository(settings.database_path)
     interests_repo = InterestsRepository(settings.database_path)
     visited_repo = VisitedRepository(settings.database_path)
+    saved_routes_repo = SavedRoutesRepository(settings.database_path)
     user_city_repo = UserCityRepository(settings.database_path)
     catalog_service = CatalogService(
         default_city_slug=settings.city_slug,
@@ -42,6 +44,7 @@ async def main() -> None:
     dispatcher["favorites_repo"] = favorites_repo
     dispatcher["interests_repo"] = interests_repo
     dispatcher["visited_repo"] = visited_repo
+    dispatcher["saved_routes_repo"] = saved_routes_repo
     dispatcher["catalog_service"] = catalog_service
     dispatcher.update.outer_middleware(CatalogMiddleware(catalog_service))
     dispatcher.include_router(router)

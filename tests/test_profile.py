@@ -5,7 +5,12 @@ from app.data.spb import CITY_SLUG
 from app.database import migrate_database
 from app.planner import INTEREST_LABELS
 from app.profile import build_profile_summary, profile_text
-from app.storage import FavoritesRepository, InterestsRepository, VisitedRepository
+from app.storage import (
+    FavoritesRepository,
+    InterestsRepository,
+    SavedRoutesRepository,
+    VisitedRepository,
+)
 
 
 def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
@@ -16,6 +21,7 @@ def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
         favorites = FavoritesRepository(database_path)
         interests = InterestsRepository(database_path)
         visited = VisitedRepository(database_path)
+        saved_routes = SavedRoutesRepository(database_path)
 
         await favorites.add(1, CITY_SLUG, "hermitage")
         await favorites.add(1, "another-city", "other-place")
@@ -30,17 +36,34 @@ def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
         await interests.add(1, "another-city", "free")
         await interests.add(2, CITY_SLUG, "architecture")
 
+        await saved_routes.save(
+            1,
+            CITY_SLUG,
+            "museums",
+            240,
+            ("hermitage", "russian-museum"),
+        )
+        await saved_routes.save(
+            1,
+            "another-city",
+            "free",
+            120,
+            ("other-place",),
+        )
+
         summary = await build_profile_summary(
             1,
             get_catalog(CITY_SLUG),
             favorites_repo=favorites,
             interests_repo=interests,
             visited_repo=visited,
+            saved_routes_repo=saved_routes,
         )
 
         assert summary.city_name == "Санкт-Петербург"
         assert summary.favorites_count == 1
         assert summary.visited_count == 1
+        assert summary.saved_routes_count == 1
         assert summary.interest_labels == (
             INTEREST_LABELS["museums"],
             INTEREST_LABELS["walks"],
@@ -60,15 +83,18 @@ def test_profile_summary_handles_empty_state(tmp_path) -> None:
             favorites_repo=FavoritesRepository(database_path),
             interests_repo=InterestsRepository(database_path),
             visited_repo=VisitedRepository(database_path),
+            saved_routes_repo=SavedRoutesRepository(database_path),
         )
 
         assert summary.interests_text == "не выбраны"
         assert summary.favorites_count == 0
         assert summary.visited_count == 0
+        assert summary.saved_routes_count == 0
 
         text = profile_text(summary)
         assert "Интересы: не выбраны" in text
         assert "Избранное: 0" in text
         assert "Посещённые: 0" in text
+        assert "Сохранённые маршруты: 0" in text
 
     asyncio.run(scenario())
