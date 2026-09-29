@@ -2,26 +2,15 @@ from pathlib import Path
 
 import aiosqlite
 
+from app.database import migrate_database
+
 
 class FavoritesRepository:
     def __init__(self, database_path: str) -> None:
         self.database_path = Path(database_path)
 
     async def initialize(self) -> None:
-        self.database_path.parent.mkdir(parents=True, exist_ok=True)
-        async with aiosqlite.connect(self.database_path) as database:
-            await database.execute(
-                """
-                CREATE TABLE IF NOT EXISTS favorites (
-                    user_id INTEGER NOT NULL,
-                    city_slug TEXT NOT NULL,
-                    place_slug TEXT NOT NULL,
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (user_id, city_slug, place_slug)
-                )
-                """
-            )
-            await database.commit()
+        await migrate_database(self.database_path)
 
     async def add(self, user_id: int, city_slug: str, place_slug: str) -> None:
         async with aiosqlite.connect(self.database_path) as database:
@@ -82,20 +71,7 @@ class InterestsRepository:
         self.database_path = Path(database_path)
 
     async def initialize(self) -> None:
-        self.database_path.parent.mkdir(parents=True, exist_ok=True)
-        async with aiosqlite.connect(self.database_path) as database:
-            await database.execute(
-                """
-                CREATE TABLE IF NOT EXISTS user_interests (
-                    user_id INTEGER NOT NULL,
-                    city_slug TEXT NOT NULL,
-                    interest TEXT NOT NULL,
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (user_id, city_slug, interest)
-                )
-                """
-            )
-            await database.commit()
+        await migrate_database(self.database_path)
 
     async def add(self, user_id: int, city_slug: str, interest: str) -> None:
         async with aiosqlite.connect(self.database_path) as database:
