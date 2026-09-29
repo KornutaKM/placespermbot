@@ -30,6 +30,18 @@ def google_maps_route_urls(places: tuple[Place, ...]) -> tuple[str, ...]:
     return tuple(urls)
 
 
+def google_maps_directions_to_place_url(place: Place) -> str:
+    query = urlencode(
+        {
+            "api": "1",
+            "destination": _coordinates(place),
+            "travelmode": "walking",
+            "dir_action": "navigate",
+        }
+    )
+    return f"{GOOGLE_MAPS_DIRECTIONS_URL}?{query}"
+
+
 def google_maps_place_url(place: Place) -> str:
     query = urlencode(
         {

@@ -184,7 +184,7 @@ async def place_card(
         f"{tags}\n\n"
         f"🔎 Источник: <a href=\"{place.source.url}\">{place.source.name}</a>\n"
         f"Проверено: {place.source.checked_at.strftime('%d.%m.%Y')}",
-        reply_markup=place_keyboard(place.slug, is_favorite=is_favorite),
+        reply_markup=place_keyboard(place, is_favorite=is_favorite),
     )
     await callback.answer()
 
@@ -212,7 +212,7 @@ async def favorite_action(
         message = "Удалено из избранного"
 
     await callback.message.edit_reply_markup(
-        reply_markup=place_keyboard(place.slug, is_favorite=is_favorite)
+        reply_markup=place_keyboard(place, is_favorite=is_favorite)
     )
     await callback.answer(message)
 

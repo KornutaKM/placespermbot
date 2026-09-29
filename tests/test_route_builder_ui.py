@@ -11,6 +11,7 @@ from app.keyboards import (
     interests_keyboard,
     paginated_places_keyboard,
     personalized_places_keyboard,
+    place_keyboard,
     request_location_keyboard,
     route_details_keyboard,
     route_duration_keyboard,
@@ -167,3 +168,13 @@ def test_paginated_places_keyboard_limits_rows_and_has_navigation() -> None:
     assert "catpage:museums:0" in callbacks
     assert "catpage:museums:2" in callbacks
     assert "noop" in callbacks
+
+
+def test_place_keyboard_exposes_walking_directions_url() -> None:
+    place = get_catalog(CITY_SLUG).places[0]
+    markup = place_keyboard(place)
+    urls = url_values(markup)
+
+    assert len(urls) == 1
+    url = next(iter(urls))
+    assert url.startswith("https://www.google.com/maps/dir/")

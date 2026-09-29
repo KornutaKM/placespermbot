@@ -2,7 +2,7 @@ from urllib.parse import parse_qs, urlparse
 
 from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
-from app.maps import google_maps_route_urls
+from app.maps import google_maps_directions_to_place_url, google_maps_route_urls
 
 
 def catalog():
@@ -70,3 +70,18 @@ def test_long_route_is_split_into_overlapping_mobile_safe_segments() -> None:
 
 def test_empty_route_has_no_map_url() -> None:
     assert google_maps_route_urls(()) == ()
+
+
+def test_directions_to_place_uses_device_origin_and_walking_navigation() -> None:
+    place = catalog().places[0]
+
+    url = google_maps_directions_to_place_url(place)
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query)
+
+    assert parsed.path == "/maps/dir/"
+    assert query["api"] == ["1"]
+    assert query["destination"] == [coordinate(place)]
+    assert query["travelmode"] == ["walking"]
+    assert query["dir_action"] == ["navigate"]
+    assert "origin" not in query
