@@ -1,4 +1,12 @@
 from dataclasses import dataclass
+from datetime import date
+
+
+@dataclass(frozen=True, slots=True)
+class PlaceSource:
+    name: str
+    url: str
+    checked_at: date
 
 
 @dataclass(frozen=True, slots=True)
@@ -13,6 +21,7 @@ class Place:
     is_free: bool
     latitude: float
     longitude: float
+    source: PlaceSource
     tags: tuple[str, ...] = ()
 
 
