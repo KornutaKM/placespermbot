@@ -13,6 +13,7 @@ from app.keyboards import (
     paginated_places_keyboard,
     personalized_places_keyboard,
     place_keyboard,
+    profile_keyboard,
     request_location_keyboard,
     route_details_keyboard,
     route_duration_keyboard,
@@ -279,3 +280,19 @@ def test_visited_history_keyboard_preserves_page_context() -> None:
             visited_context(page.index),
         ) in callbacks
     assert "visitedpage:0" in callbacks
+
+
+def test_home_exposes_profile() -> None:
+    assert "menu:profile" in callback_values(home_keyboard())
+
+
+def test_profile_keyboard_links_existing_user_flows() -> None:
+    callbacks = callback_values(profile_keyboard())
+
+    assert callbacks == {
+        "menu:cities",
+        "pref:edit",
+        "menu:favorites",
+        "menu:visited",
+        "menu:home",
+    }

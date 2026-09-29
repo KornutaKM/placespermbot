@@ -31,6 +31,7 @@ def home_keyboard() -> InlineKeyboardMarkup:
     rows = [
         [
             InlineKeyboardButton(text="🌆 Сменить город", callback_data="menu:cities"),
+            InlineKeyboardButton(text="👤 Мой гид", callback_data="menu:profile"),
         ],
         [
             InlineKeyboardButton(text="📍 Куда сходить", callback_data="menu:places"),
@@ -61,6 +62,39 @@ def home_keyboard() -> InlineKeyboardMarkup:
         ],
     ]
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def profile_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🌆 Сменить город",
+                    callback_data="menu:cities",
+                ),
+                InlineKeyboardButton(
+                    text="🎯 Интересы",
+                    callback_data="pref:edit",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="❤️ Избранное",
+                    callback_data="menu:favorites",
+                ),
+                InlineKeyboardButton(
+                    text="✅ Посещённые",
+                    callback_data="menu:visited",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="← Главное меню",
+                    callback_data="menu:home",
+                )
+            ],
+        ]
+    )
 
 
 def cities_keyboard(
