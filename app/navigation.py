@@ -94,6 +94,13 @@ def route_context() -> str:
     return "r"
 
 
+def saved_route_context(route_id: str) -> str:
+    clean = route_id.strip()
+    if not clean or not clean.isalnum() or len(clean) > 20:
+        return DEFAULT_CONTEXT
+    return normalize_context(f"z.{clean}")
+
+
 def search_context() -> str:
     return "s"
 
@@ -153,6 +160,14 @@ def back_target(context: str) -> BackTarget:
                     parent if separator else DEFAULT_CONTEXT,
                 ),
                 text="← К исходному месту",
+            )
+
+    if normalized.startswith("z."):
+        route_id = normalized.removeprefix("z.")
+        if route_id and route_id.isalnum():
+            return BackTarget(
+                callback_data=f"savedroute:{route_id}",
+                text="← Сохранённый маршрут",
             )
 
     if normalized == "r":
