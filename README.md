@@ -20,6 +20,7 @@ Telegram-гид по городам России. Первый город MVP �
 - длинные маршруты автоматически разбиваются на mobile-safe сегменты;
 - постоянное пользовательское избранное в SQLite;
 - реальные внешние каталоги экскурсий Sputnik8 и Tripster с provenance/freshness;
+- live-афиша Петербурга через Яндекс Афишу и KudaGo;
 - Docker с persistent volume для данных;
 - CI с Ruff и pytest.
 
@@ -60,6 +61,8 @@ Telegram-гид по городам России. Первый город MVP �
     PLACES_DATABASE_PATH=data/places.db
     PLACES_SPUTNIK8_AFFILIATE_URL=
     PLACES_TRIPSTER_AFFILIATE_URL=
+    PLACES_YANDEX_AFISHA_URL=
+    PLACES_KUDAGO_EVENTS_URL=
 
 ## Данные
 
@@ -107,3 +110,14 @@ SQLite используется только как persistence для перв�
 Sputnik8 публично указывает API-интеграцию как партнёрский инструмент «по запросу». Когда
 будут выданы реальные API credentials и документация контракта, можно добавить API adapter
 за существующим provider interface без изменения Telegram flow.
+
+
+## События и афиша
+
+Раздел «События» ведёт в live-каталоги Яндекс Афиши и KudaGo для Санкт-Петербурга.
+Динамические даты, цены и наличие билетов не сохраняются в локальной базе. Для каждого
+источника сохраняются provider id, source URL, пользовательский catalog URL, integration mode
+и дата последней проверки.
+
+URL override допускается только по HTTPS и только на allowlisted домене конкретного источника.
+Некорректное значение автоматически заменяется официальным catalog URL.
