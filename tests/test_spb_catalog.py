@@ -12,6 +12,10 @@ def test_city_is_saint_petersburg() -> None:
     assert city.name == "Санкт-Петербург"
 
 
+def test_catalog_has_useful_seed_size() -> None:
+    assert len(catalog().places) >= 14
+
+
 def test_place_slugs_are_unique() -> None:
     city = catalog()
     slugs = [place.slug for place in city.places]
@@ -30,6 +34,12 @@ def test_free_collection_contains_only_free_places() -> None:
     free_places = catalog().places_for_category("free")
     assert free_places
     assert all(place.is_free for place in free_places)
+
+
+def test_family_collection_uses_family_tags() -> None:
+    family_places = catalog().places_for_category("family")
+    assert family_places
+    assert all("с детьми" in place.tags for place in family_places)
 
 
 def test_each_place_has_minimum_card_content_and_valid_coordinates() -> None:
@@ -52,6 +62,29 @@ def test_nearby_places_excludes_origin_and_is_distance_sorted() -> None:
 
     distances = [distance for _, distance in nearby]
     assert distances == sorted(distances)
+
+
+def test_search_finds_place_by_name() -> None:
+    results = catalog().search_places("эрмитаж")
+    assert results
+    assert results[0].slug == "hermitage"
+
+
+def test_search_finds_places_by_tag() -> None:
+    results = catalog().search_places("музей")
+    slugs = {place.slug for place in results}
+    assert "hermitage" in slugs
+    assert "russian-museum" in slugs
+    assert "kunstkammer" in slugs
+
+
+def test_search_is_case_insensitive() -> None:
+    results = catalog().search_places("АРХИТЕКТУРА")
+    assert results
+
+
+def test_blank_search_returns_nothing() -> None:
+    assert catalog().search_places("   ") == ()
 
 
 def test_unknown_city_fails_closed() -> None:
