@@ -1,3 +1,5 @@
+from collections.abc import Collection
+
 from app.catalog import CityCatalog
 from app.domain import Place
 from app.planner import INTEREST_LABELS
@@ -8,6 +10,7 @@ def recommend_places(
     interests: tuple[str, ...],
     *,
     limit: int = 8,
+    exclude_slugs: Collection[str] = (),
 ) -> tuple[Place, ...]:
     if limit <= 0 or not interests:
         return ()
@@ -17,8 +20,12 @@ def recommend_places(
         names = ", ".join(sorted(unknown))
         raise ValueError(f"Unsupported interests: {names}")
 
+    excluded = set(exclude_slugs)
     ranked: list[tuple[int, int, Place]] = []
     for index, place in enumerate(catalog.places):
+        if place.slug in excluded:
+            continue
+
         score = sum(_interest_score(place, interest) for interest in interests)
         if score > 0:
             ranked.append((score, index, place))
