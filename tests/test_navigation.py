@@ -14,6 +14,7 @@ from app.navigation import (
     parse_visited_callback,
     personal_context,
     place_callback,
+    saved_route_context,
     visited_callback,
     visited_context,
 )
@@ -56,6 +57,17 @@ def test_visited_action_preserves_context() -> None:
         "hermitage",
         "v.2",
     )
+
+
+
+
+def test_saved_route_context_returns_to_exact_route() -> None:
+    context = saved_route_context("abc123def456")
+    target = back_target(context)
+
+    assert context == "z.abc123def456"
+    assert target.callback_data == "savedroute:abc123def456"
+    assert target.text == "← Сохранённый маршрут"
 
 
 def test_old_place_callback_remains_compatible() -> None:
@@ -103,6 +115,7 @@ def test_current_catalog_callbacks_fit_telegram_limit() -> None:
             favorites_context(99),
             personal_context(99),
             visited_context(99),
+            saved_route_context("0123456789abcdef"),
             nearby_child_context("peter-paul-fortress", "c.sights.9"),
         ):
             callback = place_callback(place.slug, context)
