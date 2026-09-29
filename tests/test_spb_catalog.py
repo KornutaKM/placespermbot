@@ -94,3 +94,48 @@ def test_unknown_city_fails_closed() -> None:
         assert "Unsupported city" in str(exc)
     else:
         raise AssertionError("Unknown city must fail closed")
+
+
+def test_nearby_from_coordinates_is_sorted_and_limited() -> None:
+    city = catalog()
+    palace = city.place_by_slug("palace-square")
+    assert palace is not None
+
+    nearby = city.nearby_from_coordinates(
+        palace.latitude,
+        palace.longitude,
+        radius_km=10.0,
+        limit=3,
+    )
+
+    assert len(nearby) == 3
+    distances = [distance for _, distance in nearby]
+    assert distances == sorted(distances)
+    assert distances[0] == 0
+    assert all(distance <= 10.0 for distance in distances)
+
+
+def test_nearby_from_coordinates_far_from_city_is_empty() -> None:
+    nearby = catalog().nearby_from_coordinates(
+        55.7558,
+        37.6176,
+        radius_km=10.0,
+    )
+
+    assert nearby == ()
+
+
+def test_nearby_from_coordinates_rejects_nonpositive_window() -> None:
+    city = catalog()
+    place = city.places[0]
+
+    assert city.nearby_from_coordinates(
+        place.latitude,
+        place.longitude,
+        radius_km=0,
+    ) == ()
+    assert city.nearby_from_coordinates(
+        place.latitude,
+        place.longitude,
+        limit=0,
+    ) == ()
