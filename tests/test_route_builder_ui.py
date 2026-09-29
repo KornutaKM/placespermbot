@@ -1,8 +1,10 @@
 from app.catalog import get_catalog
 from app.config import Settings
 from app.data.spb import CITY_SLUG
+from app.events import get_event_providers
 from app.excursions import get_excursion_providers
 from app.keyboards import (
+    event_providers_keyboard,
     excursion_providers_keyboard,
     generated_route_keyboard,
     home_keyboard,
@@ -107,5 +109,16 @@ def test_home_exposes_near_me_action() -> None:
 def test_excursion_provider_keyboard_has_live_urls() -> None:
     providers = get_excursion_providers(Settings())
     urls = url_values(excursion_providers_keyboard(providers))
+
+    assert urls == {provider.catalog_url for provider in providers}
+
+
+def test_home_exposes_events_action() -> None:
+    assert "menu:events" in callback_values(home_keyboard())
+
+
+def test_event_provider_keyboard_has_live_urls() -> None:
+    providers = get_event_providers(Settings())
+    urls = url_values(event_providers_keyboard(providers))
 
     assert urls == {provider.catalog_url for provider in providers}
