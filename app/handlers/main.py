@@ -23,6 +23,7 @@ from app.keyboards import (
     personalized_places_keyboard,
     place_keyboard,
     places_keyboard,
+    profile_keyboard,
     request_location_keyboard,
     route_details_keyboard,
     route_duration_keyboard,
@@ -44,6 +45,7 @@ from app.navigation import (
 )
 from app.pagination import paginate
 from app.planner import INTEREST_LABELS, build_route
+from app.profile import build_profile_summary, profile_text
 from app.recommendations import recommend_places
 from app.storage import FavoritesRepository, InterestsRepository, VisitedRepository
 
@@ -111,6 +113,60 @@ async def menu_home(callback: CallbackQuery, state: FSMContext) -> None:
         )
     catalog = current_catalog()
     await callback.message.edit_text(home_text(catalog), reply_markup=home_keyboard())
+    await callback.answer()
+
+
+async def build_current_profile(
+    user_id: int,
+    favorites_repo: FavoritesRepository,
+    interests_repo: InterestsRepository,
+    visited_repo: VisitedRepository,
+):
+    return await build_profile_summary(
+        user_id,
+        current_catalog(),
+        favorites_repo=favorites_repo,
+        interests_repo=interests_repo,
+        visited_repo=visited_repo,
+    )
+
+
+@router.message(Command("profile"))
+async def profile_command(
+    message: Message,
+    favorites_repo: FavoritesRepository,
+    interests_repo: InterestsRepository,
+    visited_repo: VisitedRepository,
+) -> None:
+    summary = await build_current_profile(
+        message.from_user.id,
+        favorites_repo,
+        interests_repo,
+        visited_repo,
+    )
+    await message.answer(
+        profile_text(summary),
+        reply_markup=profile_keyboard(),
+    )
+
+
+@router.callback_query(F.data == "menu:profile")
+async def menu_profile(
+    callback: CallbackQuery,
+    favorites_repo: FavoritesRepository,
+    interests_repo: InterestsRepository,
+    visited_repo: VisitedRepository,
+) -> None:
+    summary = await build_current_profile(
+        callback.from_user.id,
+        favorites_repo,
+        interests_repo,
+        visited_repo,
+    )
+    await callback.message.edit_text(
+        profile_text(summary),
+        reply_markup=profile_keyboard(),
+    )
     await callback.answer()
 
 
