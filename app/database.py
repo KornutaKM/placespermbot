@@ -44,6 +44,19 @@ MIGRATIONS: tuple[Migration, ...] = (
             """,
         ),
     ),
+    Migration(
+        version=3,
+        name="create_user_city_preferences",
+        statements=(
+            """
+            CREATE TABLE IF NOT EXISTS user_city_preferences (
+                user_id INTEGER PRIMARY KEY,
+                city_slug TEXT NOT NULL,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+        ),
+    ),
 )
 
 KNOWN_SCHEMA_VERSIONS = frozenset(migration.version for migration in MIGRATIONS)
