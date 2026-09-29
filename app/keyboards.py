@@ -9,6 +9,7 @@ from aiogram.types import (
 
 from app.catalog import CityCatalog
 from app.domain import Place, RoutePlan
+from app.saved_routes import SavedRoute
 from app.events import EventProvider
 from app.excursions import ExcursionProvider
 from app.maps import google_maps_directions_to_place_url, google_maps_route_urls
@@ -20,6 +21,7 @@ from app.navigation import (
     personal_context,
     place_callback,
     route_context,
+    saved_route_context,
     visited_callback,
     visited_context,
 )
@@ -86,6 +88,12 @@ def profile_keyboard() -> InlineKeyboardMarkup:
                     text="✅ Посещённые",
                     callback_data="menu:visited",
                 ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🧭 Сохранённые маршруты",
+                    callback_data="menu:savedroutes",
+                )
             ],
             [
                 InlineKeyboardButton(
@@ -251,7 +259,11 @@ def route_interest_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def generated_route_keyboard(places: tuple[Place, ...]) -> InlineKeyboardMarkup:
+def generated_route_keyboard(
+    places: tuple[Place, ...],
+    *,
+    save_callback: str | None = None,
+) -> InlineKeyboardMarkup:
     rows = [
         [
             InlineKeyboardButton(
@@ -262,8 +274,95 @@ def generated_route_keyboard(places: tuple[Place, ...]) -> InlineKeyboardMarkup:
         for index, place in enumerate(places, start=1)
     ]
     rows.extend(_google_maps_rows(places))
+    if save_callback is not None:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text="💾 Сохранить маршрут",
+                    callback_data=save_callback,
+                )
+            ]
+        )
     rows.append([InlineKeyboardButton(text="🪄 Новый маршрут", callback_data="builder:start")])
     rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def saved_routes_keyboard(page: Page[SavedRoute]) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=(
+                    f"{INTEREST_LABELS.get(route.interest, route.interest)}"
+                    f" · {route.budget_minutes // 60} ч"
+                ),
+                callback_data=f"savedroute:{route.route_id}",
+            )
+        ]
+        for route in page.items
+    ]
+
+    navigation: list[InlineKeyboardButton] = []
+    if page.index > 0:
+        navigation.append(
+            InlineKeyboardButton(
+                text="←",
+                callback_data=f"savedroutes:{page.index - 1}",
+            )
+        )
+    navigation.append(
+        InlineKeyboardButton(
+            text=f"{page.number}/{page.total_pages}",
+            callback_data="noop",
+        )
+    )
+    if page.index + 1 < page.total_pages:
+        navigation.append(
+            InlineKeyboardButton(
+                text="→",
+                callback_data=f"savedroutes:{page.index + 1}",
+            )
+        )
+    if page.total_pages > 1:
+        rows.append(navigation)
+
+    rows.append(
+        [InlineKeyboardButton(text="← Мой гид", callback_data="menu:profile")]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def saved_route_details_keyboard(
+    route: SavedRoute,
+    places: tuple[Place, ...],
+) -> InlineKeyboardMarkup:
+    context = saved_route_context(route.route_id)
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"{index}. {place.emoji} {place.title}",
+                callback_data=place_callback(place.slug, context),
+            )
+        ]
+        for index, place in enumerate(places, start=1)
+    ]
+    rows.extend(_google_maps_rows(places))
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="🗑 Удалить маршрут",
+                callback_data=f"savedroute:delete:{route.route_id}",
+            )
+        ]
+    )
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="← Сохранённые маршруты",
+                callback_data="menu:savedroutes",
+            )
+        ]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
