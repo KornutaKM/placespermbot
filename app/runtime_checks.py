@@ -14,6 +14,7 @@ EXPECTED_TABLES = frozenset(
         "favorites",
         "user_interests",
         "user_city_preferences",
+        "visited_places",
     }
 )
 
