@@ -150,3 +150,68 @@ class UserCityRepository:
                 (user_id, city_slug),
             )
             await database.commit()
+
+
+
+class VisitedRepository:
+    def __init__(self, database_path: str) -> None:
+        self.database_path = Path(database_path)
+
+    async def initialize(self) -> None:
+        await migrate_database(self.database_path)
+
+    async def add(self, user_id: int, city_slug: str, place_slug: str) -> None:
+        async with aiosqlite.connect(self.database_path) as database:
+            await database.execute(
+                """
+                INSERT OR IGNORE INTO visited_places (
+                    user_id,
+                    city_slug,
+                    place_slug
+                )
+                VALUES (?, ?, ?)
+                """,
+                (user_id, city_slug, place_slug),
+            )
+            await database.commit()
+
+    async def remove(self, user_id: int, city_slug: str, place_slug: str) -> None:
+        async with aiosqlite.connect(self.database_path) as database:
+            await database.execute(
+                """
+                DELETE FROM visited_places
+                WHERE user_id = ? AND city_slug = ? AND place_slug = ?
+                """,
+                (user_id, city_slug, place_slug),
+            )
+            await database.commit()
+
+    async def contains(self, user_id: int, city_slug: str, place_slug: str) -> bool:
+        async with aiosqlite.connect(self.database_path) as database:
+            cursor = await database.execute(
+                """
+                SELECT 1
+                FROM visited_places
+                WHERE user_id = ? AND city_slug = ? AND place_slug = ?
+                LIMIT 1
+                """,
+                (user_id, city_slug, place_slug),
+            )
+            row = await cursor.fetchone()
+            await cursor.close()
+            return row is not None
+
+    async def list_place_slugs(self, user_id: int, city_slug: str) -> tuple[str, ...]:
+        async with aiosqlite.connect(self.database_path) as database:
+            cursor = await database.execute(
+                """
+                SELECT place_slug
+                FROM visited_places
+                WHERE user_id = ? AND city_slug = ?
+                ORDER BY visited_at DESC, place_slug ASC
+                """,
+                (user_id, city_slug),
+            )
+            rows = await cursor.fetchall()
+            await cursor.close()
+            return tuple(str(row[0]) for row in rows)

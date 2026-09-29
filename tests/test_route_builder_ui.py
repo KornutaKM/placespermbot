@@ -17,12 +17,14 @@ from app.keyboards import (
     route_details_keyboard,
     route_duration_keyboard,
     route_interest_keyboard,
+    visited_places_keyboard,
 )
 from app.navigation import (
     category_context,
     personal_context,
     place_callback,
     route_context,
+    visited_context,
 )
 from app.pagination import paginate
 from app.planner import INTEREST_LABELS, build_route
@@ -235,3 +237,45 @@ def test_live_providers_fail_closed_for_unsupported_city() -> None:
         Settings(),
         city_slug="unsupported-city",
     ) == ()
+
+
+def test_home_exposes_visited_history() -> None:
+    assert "menu:visited" in callback_values(home_keyboard())
+
+
+def test_place_keyboard_exposes_visited_toggle_and_preserves_context() -> None:
+    place = get_catalog(CITY_SLUG).places[0]
+    markup = place_keyboard(
+        place,
+        is_favorite=True,
+        is_visited=False,
+        context="c.sights.2",
+    )
+    callbacks = callback_values(markup)
+
+    assert f"visit:add:{place.slug}|c.sights.2" in callbacks
+    assert f"favorite:remove:{place.slug}|c.sights.2" in callbacks
+
+    visited_markup = place_keyboard(
+        place,
+        is_favorite=True,
+        is_visited=True,
+        context="v.1",
+    )
+    visited_callbacks = callback_values(visited_markup)
+
+    assert f"visit:remove:{place.slug}|v.1" in visited_callbacks
+    assert "visitedpage:1" in visited_callbacks
+
+
+def test_visited_history_keyboard_preserves_page_context() -> None:
+    city = get_catalog(CITY_SLUG)
+    page = paginate(city.places[:8], 1)
+    callbacks = callback_values(visited_places_keyboard(page))
+
+    for place in page.items:
+        assert place_callback(
+            place.slug,
+            visited_context(page.index),
+        ) in callbacks
+    assert "visitedpage:0" in callbacks

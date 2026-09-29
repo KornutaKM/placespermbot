@@ -28,6 +28,14 @@ def nearby_callback(place_slug: str, context: str) -> str:
     return _bounded_callback(f"nearby:{place_slug}|{normalize_context(context)}")
 
 
+def visited_callback(action: str, place_slug: str, context: str) -> str:
+    if action not in {"add", "remove"}:
+        raise ValueError("unsupported visited action")
+    return _bounded_callback(
+        f"visit:{action}:{place_slug}|{normalize_context(context)}"
+    )
+
+
 def parse_place_callback(data: str) -> tuple[str, str]:
     if not data.startswith("place:"):
         raise ValueError("not a place callback")
@@ -53,6 +61,19 @@ def parse_nearby_callback(data: str) -> tuple[str, str]:
     return _parse_slug_context(data.removeprefix("nearby:"))
 
 
+def parse_visited_callback(data: str) -> tuple[str, str, str]:
+    if not data.startswith("visit:"):
+        raise ValueError("not a visited callback")
+
+    payload = data.removeprefix("visit:")
+    action, separator, remainder = payload.partition(":")
+    if not separator or action not in {"add", "remove"}:
+        raise ValueError("invalid visited callback")
+
+    slug, context = _parse_slug_context(remainder)
+    return action, slug, context
+
+
 def category_context(category_key: str, page_index: int) -> str:
     return normalize_context(f"c.{category_key}.{max(page_index, 0)}")
 
@@ -63,6 +84,10 @@ def favorites_context(page_index: int) -> str:
 
 def personal_context(page_index: int) -> str:
     return normalize_context(f"p.{max(page_index, 0)}")
+
+
+def visited_context(page_index: int) -> str:
+    return normalize_context(f"v.{max(page_index, 0)}")
 
 
 def route_context() -> str:
@@ -108,6 +133,14 @@ def back_target(context: str) -> BackTarget:
             return BackTarget(
                 callback_data=f"personalpage:{page}",
                 text="← Для меня",
+            )
+
+    if normalized.startswith("v."):
+        page = normalized.removeprefix("v.")
+        if page.isdigit():
+            return BackTarget(
+                callback_data=f"visitedpage:{page}",
+                text="← Посещённые",
             )
 
     if normalized.startswith("n."):

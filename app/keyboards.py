@@ -20,6 +20,8 @@ from app.navigation import (
     personal_context,
     place_callback,
     route_context,
+    visited_callback,
+    visited_context,
 )
 from app.pagination import Page
 from app.planner import INTEREST_LABELS
@@ -54,6 +56,7 @@ def home_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="❤️ Избранное", callback_data="menu:favorites"),
         ],
         [
+            InlineKeyboardButton(text="✅ Посещённые", callback_data="menu:visited"),
             InlineKeyboardButton(text="🔍 Поиск", callback_data="menu:search"),
         ],
     ]
@@ -330,6 +333,16 @@ def personalized_places_keyboard(
     )
 
 
+def visited_places_keyboard(page: Page[Place]) -> InlineKeyboardMarkup:
+    return paginated_places_keyboard(
+        page,
+        page_callback_prefix="visitedpage",
+        back_callback="menu:home",
+        back_text="← Главное меню",
+        place_context=visited_context(page.index),
+    )
+
+
 def back_home_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -342,10 +355,13 @@ def place_keyboard(
     place: Place,
     *,
     is_favorite: bool = False,
+    is_visited: bool = False,
     context: str = DEFAULT_CONTEXT,
 ) -> InlineKeyboardMarkup:
     favorite_text = "💔 Убрать из избранного" if is_favorite else "❤️ В избранное"
     favorite_action = "remove" if is_favorite else "add"
+    visited_text = "↩️ Убрать «был»" if is_visited else "✅ Уже был"
+    visited_action = "remove" if is_visited else "add"
     back = back_target(context)
 
     return InlineKeyboardMarkup(
@@ -373,6 +389,16 @@ def place_keyboard(
                         context,
                     ),
                 ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text=visited_text,
+                    callback_data=visited_callback(
+                        visited_action,
+                        place.slug,
+                        context,
+                    ),
+                )
             ],
             [
                 InlineKeyboardButton(text="🗺 Маршруты", callback_data="menu:routes"),
