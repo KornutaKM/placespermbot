@@ -1,0 +1,96 @@
+from collections.abc import Mapping
+
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
+from app.domain import Place, RoutePlan
+
+
+def home_keyboard() -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(text="📍 Куда сходить", callback_data="menu:places"),
+            InlineKeyboardButton(text="🗺 Маршруты", callback_data="menu:routes"),
+        ],
+        [
+            InlineKeyboardButton(text="🎟 Экскурсии", callback_data="menu:excursions"),
+            InlineKeyboardButton(text="✨ Необычные", callback_data="cat:unusual"),
+        ],
+        [
+            InlineKeyboardButton(text="👨‍👩‍👧 С детьми", callback_data="cat:family"),
+            InlineKeyboardButton(text="💸 Бесплатно", callback_data="cat:free"),
+        ],
+        [
+            InlineKeyboardButton(text="❤️ Избранное", callback_data="menu:favorites"),
+            InlineKeyboardButton(text="🔍 Поиск", callback_data="menu:search"),
+        ],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def categories_keyboard(category_labels: Mapping[str, str]) -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton(text=label, callback_data=f"cat:{key}")]
+        for key, label in category_labels.items()
+    ]
+    rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def places_keyboard(
+    places: tuple[Place, ...],
+    *,
+    back_callback: str = "menu:places",
+    back_text: str = "← Категории",
+) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"{place.emoji} {place.title}",
+                callback_data=f"place:{place.slug}",
+            )
+        ]
+        for place in places
+    ]
+    rows.append([InlineKeyboardButton(text=back_text, callback_data=back_callback)])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def routes_keyboard(routes: tuple[RoutePlan, ...]) -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton(text=f"🧭 {route.title}", callback_data=f"route:{route.slug}")]
+        for route in routes
+    ]
+    rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def back_home_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")]
+        ]
+    )
+
+
+def place_keyboard(place_slug: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="📍 Показать на карте",
+                    callback_data=f"geo:{place_slug}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="✨ Что рядом",
+                    callback_data=f"nearby:{place_slug}",
+                ),
+                InlineKeyboardButton(text="❤️ В избранное", callback_data="stub:favorites"),
+            ],
+            [
+                InlineKeyboardButton(text="🗺 Маршруты", callback_data="menu:routes"),
+                InlineKeyboardButton(text="← Категории", callback_data="menu:places"),
+            ],
+        ]
+    )
