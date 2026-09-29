@@ -72,7 +72,7 @@ class CityCatalog:
         for place in self.places:
             if place.slug == origin.slug:
                 continue
-            distance = _distance_km(origin, place)
+            distance = distance_km(origin, place)
             if distance <= radius_km:
                 ranked.append((place, distance))
 
@@ -84,7 +84,7 @@ def _normalize(value: str) -> str:
     return " ".join(value.casefold().replace("ё", "е").split())
 
 
-def _distance_km(first: Place, second: Place) -> float:
+def distance_km(first: Place, second: Place) -> float:
     earth_radius_km = 6371.0088
     lat1 = radians(first.latitude)
     lat2 = radians(second.latitude)
