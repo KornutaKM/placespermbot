@@ -21,6 +21,7 @@ def home_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🗺 Маршруты", callback_data="menu:routes"),
         ],
         [
+            InlineKeyboardButton(text="🎯 Для меня", callback_data="menu:personal"),
             InlineKeyboardButton(text="📡 Рядом со мной", callback_data="menu:nearby"),
         ],
         [
@@ -204,6 +205,37 @@ def event_providers_keyboard(
         ]
         for provider in providers
     ]
+    rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def interests_keyboard(selected: tuple[str, ...]) -> InlineKeyboardMarkup:
+    selected_set = set(selected)
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=("✅ " if key in selected_set else "▫️ ") + label,
+                callback_data=f"pref:toggle:{key}",
+            )
+        ]
+        for key, label in INTEREST_LABELS.items()
+    ]
+    rows.append([InlineKeyboardButton(text="Готово", callback_data="pref:done")])
+    rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def personalized_places_keyboard(places: tuple[Place, ...]) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"{place.emoji} {place.title}",
+                callback_data=f"place:{place.slug}",
+            )
+        ]
+        for place in places
+    ]
+    rows.append([InlineKeyboardButton(text="⚙️ Изменить интересы", callback_data="pref:edit")])
     rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
