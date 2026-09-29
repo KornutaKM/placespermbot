@@ -152,7 +152,9 @@ async def place_card(
         f"📍 {place.district}\n"
         f"⏱ Ориентир на посещение: ~{place.visit_minutes} мин\n"
         f"{access}\n\n"
-        f"{tags}",
+        f"{tags}\n\n"
+        f"🔎 Источник: <a href=\"{place.source.url}\">{place.source.name}</a>\n"
+        f"Проверено: {place.source.checked_at.strftime('%d.%m.%Y')}",
         reply_markup=place_keyboard(place.slug, is_favorite=is_favorite),
     )
     await callback.answer()
