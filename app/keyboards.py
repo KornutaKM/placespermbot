@@ -101,8 +101,58 @@ def profile_keyboard() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
+                    text="🧹 Управление данными",
+                    callback_data="profile:data",
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text="← Главное меню",
                     callback_data="menu:home",
+                )
+            ],
+        ]
+    )
+
+
+def data_controls_keyboard(city_slug: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="📦 Экспорт данных",
+                    callback_data="profile:export",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🗑 Удалить данные этого города",
+                    callback_data=f"profile:data:confirm:{city_slug}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="← Мой гид",
+                    callback_data="menu:profile",
+                )
+            ],
+        ]
+    )
+
+
+def data_delete_confirm_keyboard(city_slug: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🔴 Да, удалить",
+                    callback_data=f"profile:data:delete:{city_slug}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="Отмена",
+                    callback_data="menu:profile",
                 )
             ],
         ]
