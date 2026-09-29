@@ -3,6 +3,7 @@ from collections.abc import Mapping
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from app.domain import Place, RoutePlan
+from app.planner import INTEREST_LABELS
 
 
 def home_keyboard() -> InlineKeyboardMarkup:
@@ -10,6 +11,9 @@ def home_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(text="📍 Куда сходить", callback_data="menu:places"),
             InlineKeyboardButton(text="🗺 Маршруты", callback_data="menu:routes"),
+        ],
+        [
+            InlineKeyboardButton(text="🪄 Собрать маршрут", callback_data="builder:start"),
         ],
         [
             InlineKeyboardButton(text="🎟 Экскурсии", callback_data="menu:excursions"),
@@ -60,6 +64,43 @@ def routes_keyboard(routes: tuple[RoutePlan, ...]) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text=f"🧭 {route.title}", callback_data=f"route:{route.slug}")]
         for route in routes
     ]
+    rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def route_duration_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="2 часа", callback_data="builder:duration:120"),
+                InlineKeyboardButton(text="4 часа", callback_data="builder:duration:240"),
+                InlineKeyboardButton(text="6 часов", callback_data="builder:duration:360"),
+            ],
+            [InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")],
+        ]
+    )
+
+
+def route_interest_keyboard() -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton(text=label, callback_data=f"builder:interest:{key}")]
+        for key, label in INTEREST_LABELS.items()
+    ]
+    rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def generated_route_keyboard(places: tuple[Place, ...]) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"{index}. {place.emoji} {place.title}",
+                callback_data=f"place:{place.slug}",
+            )
+        ]
+        for index, place in enumerate(places, start=1)
+    ]
+    rows.append([InlineKeyboardButton(text="🪄 Новый маршрут", callback_data="builder:start")])
     rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 

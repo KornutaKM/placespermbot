@@ -9,11 +9,15 @@ from app.config import get_settings
 from app.keyboards import (
     back_home_keyboard,
     categories_keyboard,
+    generated_route_keyboard,
     home_keyboard,
     place_keyboard,
     places_keyboard,
+    route_duration_keyboard,
+    route_interest_keyboard,
     routes_keyboard,
 )
+from app.planner import INTEREST_LABELS, build_route
 from app.storage import FavoritesRepository
 
 router = Router()
@@ -21,6 +25,11 @@ router = Router()
 
 class SearchFlow(StatesGroup):
     waiting_query = State()
+
+
+class RouteBuilderFlow(StatesGroup):
+    waiting_duration = State()
+    waiting_interest = State()
 
 
 def current_catalog() -> CityCatalog:
@@ -31,7 +40,7 @@ def home_text(catalog: CityCatalog) -> str:
     return (
         f"📍 <b>{catalog.name}</b>\n\n"
         "Что хотите сделать?\n\n"
-        "Можно выбрать места, готовую прогулку или подборку под настроение."
+        "Можно выбрать места, готовую прогулку или собрать маршрут под себя."
     )
 
 
@@ -188,6 +197,93 @@ async def nearby(callback: CallbackQuery) -> None:
             back_callback=f"place:{origin.slug}",
             back_text=f"← {origin.title}",
         ),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "builder:start")
+async def route_builder_start(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.clear()
+    await state.set_state(RouteBuilderFlow.waiting_duration)
+    await callback.message.edit_text(
+        "🪄 <b>Собрать маршрут</b>\n\n"
+        "Сколько времени вы хотите провести на прогулке?\n\n"
+        "В расчёт входят посещение точек и примерное время пеших переходов.",
+        reply_markup=route_duration_keyboard(),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("builder:duration:"))
+async def route_builder_duration(callback: CallbackQuery, state: FSMContext) -> None:
+    raw_minutes = callback.data.rsplit(":", 1)[1]
+    try:
+        budget_minutes = int(raw_minutes)
+    except ValueError:
+        await callback.answer("Некорректное время.", show_alert=True)
+        return
+
+    if budget_minutes not in {120, 240, 360}:
+        await callback.answer("Такой вариант времени не поддерживается.", show_alert=True)
+        return
+
+    await state.update_data(budget_minutes=budget_minutes)
+    await state.set_state(RouteBuilderFlow.waiting_interest)
+    await callback.message.edit_text(
+        "🪄 <b>Какой Петербург вам интересен?</b>\n\n"
+        f"Доступное время: <b>{budget_minutes // 60} ч</b>.\n"
+        "Выберите акцент маршрута:",
+        reply_markup=route_interest_keyboard(),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("builder:interest:"))
+async def route_builder_interest(callback: CallbackQuery, state: FSMContext) -> None:
+    interest = callback.data.rsplit(":", 1)[1]
+    if interest not in INTEREST_LABELS:
+        await callback.answer("Неизвестный тип маршрута.", show_alert=True)
+        return
+
+    data = await state.get_data()
+    budget_minutes = data.get("budget_minutes")
+    if not isinstance(budget_minutes, int) or budget_minutes not in {120, 240, 360}:
+        await state.clear()
+        await callback.answer("Начните сбор маршрута заново.", show_alert=True)
+        return
+
+    catalog = current_catalog()
+    route = build_route(
+        catalog,
+        budget_minutes=budget_minutes,
+        interest=interest,
+    )
+    await state.clear()
+
+    if route is None or not route.places:
+        await callback.message.edit_text(
+            "Не удалось собрать маршрут под эти условия из текущего каталога.",
+            reply_markup=back_home_keyboard(),
+        )
+        await callback.answer()
+        return
+
+    stops = "\n".join(
+        f"{index}. {place.emoji} {place.title} — ~{place.visit_minutes} мин"
+        for index, place in enumerate(route.places, start=1)
+    )
+    hours, minutes = divmod(route.estimated_minutes, 60)
+
+    await callback.message.edit_text(
+        f"🪄 <b>{INTEREST_LABELS[route.interest]}</b>\n\n"
+        f"Бюджет: {route.budget_minutes // 60} ч\n"
+        f"Оценка маршрута: ~{hours} ч {minutes:02d} мин\n"
+        f"Пешком между точками: ~{route.distance_km:g} км\n"
+        f"Точек: {len(route.places)}\n\n"
+        f"<b>Маршрут:</b>\n{stops}\n\n"
+        "Время переходов рассчитано ориентировочно для пешей скорости 4,5 км/ч. "
+        "Фактический путь может отличаться из-за мостов, переходов и дорожной сети.",
+        reply_markup=generated_route_keyboard(route.places),
     )
     await callback.answer()
 
