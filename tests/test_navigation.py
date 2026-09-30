@@ -7,6 +7,7 @@ from app.navigation import (
     back_target,
     category_context,
     dismissed_callback,
+    dismissed_context,
     favorite_callback,
     favorites_context,
     nearby_child_context,
@@ -42,6 +43,13 @@ def test_personal_context_returns_same_page() -> None:
 
     assert back_target(context).callback_data == "personalpage:1"
     assert back_target(context).text == "← Для меня"
+
+
+def test_dismissed_context_returns_same_page() -> None:
+    context = dismissed_context(2)
+
+    assert back_target(context).callback_data == "dismissedpage:2"
+    assert back_target(context).text == "← Скрытые рекомендации"
 
 
 def test_visited_context_returns_same_page() -> None:
@@ -126,6 +134,7 @@ def test_current_catalog_callbacks_fit_telegram_limit() -> None:
             category_context("museums", 99),
             favorites_context(99),
             personal_context(99),
+            dismissed_context(99),
             visited_context(99),
             saved_route_context("0123456789abcdef"),
             nearby_child_context("peter-paul-fortress", "c.sights.9"),

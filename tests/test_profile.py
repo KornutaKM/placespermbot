@@ -6,6 +6,7 @@ from app.database import migrate_database
 from app.planner import INTEREST_LABELS
 from app.profile import build_profile_summary, profile_text
 from app.storage import (
+    DismissedRepository,
     FavoritesRepository,
     InterestsRepository,
     SavedRoutesRepository,
@@ -18,10 +19,15 @@ def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
         database_path = str(tmp_path / "places.db")
         await migrate_database(database_path)
 
+        dismissed = DismissedRepository(database_path)
         favorites = FavoritesRepository(database_path)
         interests = InterestsRepository(database_path)
         visited = VisitedRepository(database_path)
         saved_routes = SavedRoutesRepository(database_path)
+
+        await dismissed.add(1, CITY_SLUG, "new-holland")
+        await dismissed.add(1, "another-city", "other-place")
+        await dismissed.add(2, CITY_SLUG, "summer-garden")
 
         await favorites.add(1, CITY_SLUG, "hermitage")
         await favorites.add(1, "another-city", "other-place")
@@ -54,6 +60,7 @@ def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
         summary = await build_profile_summary(
             1,
             get_catalog(CITY_SLUG),
+            dismissed_repo=dismissed,
             favorites_repo=favorites,
             interests_repo=interests,
             visited_repo=visited,
@@ -61,6 +68,7 @@ def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
         )
 
         assert summary.city_name == "Санкт-Петербург"
+        assert summary.dismissed_count == 1
         assert summary.favorites_count == 1
         assert summary.visited_count == 1
         assert summary.saved_routes_count == 1
@@ -80,6 +88,7 @@ def test_profile_summary_handles_empty_state(tmp_path) -> None:
         summary = await build_profile_summary(
             99,
             get_catalog(CITY_SLUG),
+            dismissed_repo=DismissedRepository(database_path),
             favorites_repo=FavoritesRepository(database_path),
             interests_repo=InterestsRepository(database_path),
             visited_repo=VisitedRepository(database_path),
@@ -87,6 +96,7 @@ def test_profile_summary_handles_empty_state(tmp_path) -> None:
         )
 
         assert summary.interests_text == "не выбраны"
+        assert summary.dismissed_count == 0
         assert summary.favorites_count == 0
         assert summary.visited_count == 0
         assert summary.saved_routes_count == 0
@@ -95,6 +105,7 @@ def test_profile_summary_handles_empty_state(tmp_path) -> None:
         assert "Интересы: не выбраны" in text
         assert "Избранное: 0" in text
         assert "Посещённые: 0" in text
+        assert "Не интересно: 0" in text
         assert "Сохранённые маршруты: 0" in text
 
     asyncio.run(scenario())

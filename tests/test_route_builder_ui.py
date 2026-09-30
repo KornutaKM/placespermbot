@@ -27,6 +27,7 @@ from app.keyboards import (
 )
 from app.navigation import (
     category_context,
+    dismissed_context,
     personal_context,
     place_callback,
     route_context,
@@ -335,6 +336,7 @@ def test_profile_keyboard_links_existing_user_flows() -> None:
         "pref:edit",
         "menu:favorites",
         "menu:visited",
+        "menu:dismissed",
         "menu:savedroutes",
         "profile:export",
         "profile:data",
@@ -450,3 +452,39 @@ def test_personal_route_duration_keyboard_marks_selected_location() -> None:
     ]
     assert len(location_buttons) == 1
     assert location_buttons[0].text == "✅ Старт: моя геопозиция"
+
+
+
+def test_dismissed_list_preserves_page_context_and_restore_action() -> None:
+    city = get_catalog(CITY_SLUG)
+    page = paginate(city.places[:8], 1)
+    markup = paginated_places_keyboard(
+        page,
+        page_callback_prefix="dismissedpage",
+        back_callback="menu:profile",
+        back_text="← Мой гид",
+        place_context=dismissed_context(page.index),
+    )
+    callbacks = callback_values(markup)
+
+    for place in page.items:
+        assert place_callback(
+            place.slug,
+            dismissed_context(page.index),
+        ) in callbacks
+    assert "dismissedpage:0" in callbacks
+    assert "menu:profile" in callbacks
+
+    place = page.items[0]
+    card = place_keyboard(
+        place,
+        is_dismissed=True,
+        context=dismissed_context(page.index),
+    )
+    card_callbacks = callback_values(card)
+
+    assert (
+        f"dismiss:remove:{place.slug}|{dismissed_context(page.index)}"
+        in card_callbacks
+    )
+    assert f"dismissedpage:{page.index}" in card_callbacks

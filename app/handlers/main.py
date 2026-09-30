@@ -38,6 +38,7 @@ from app.keyboards import (
 )
 from app.navigation import (
     category_context,
+    dismissed_context,
     favorites_context,
     home_context,
     nearby_child_context,
@@ -172,6 +173,7 @@ async def menu_home(callback: CallbackQuery, state: FSMContext) -> None:
 
 async def build_current_profile(
     user_id: int,
+    dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
@@ -180,6 +182,7 @@ async def build_current_profile(
     return await build_profile_summary(
         user_id,
         current_catalog(),
+        dismissed_repo=dismissed_repo,
         favorites_repo=favorites_repo,
         interests_repo=interests_repo,
         visited_repo=visited_repo,
@@ -190,6 +193,7 @@ async def build_current_profile(
 @router.message(Command("profile"))
 async def profile_command(
     message: Message,
+    dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
@@ -197,6 +201,7 @@ async def profile_command(
 ) -> None:
     summary = await build_current_profile(
         message.from_user.id,
+        dismissed_repo,
         favorites_repo,
         interests_repo,
         visited_repo,
@@ -211,6 +216,7 @@ async def profile_command(
 @router.callback_query(F.data == "menu:profile")
 async def menu_profile(
     callback: CallbackQuery,
+    dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
@@ -218,6 +224,7 @@ async def menu_profile(
 ) -> None:
     summary = await build_current_profile(
         callback.from_user.id,
+        dismissed_repo,
         favorites_repo,
         interests_repo,
         visited_repo,
@@ -1730,6 +1737,72 @@ async def events(callback: CallbackQuery) -> None:
         reply_markup=event_providers_keyboard(providers),
     )
     await callback.answer()
+
+
+async def show_dismissed_page(
+    callback: CallbackQuery,
+    dismissed_repo: DismissedRepository,
+    page_index: int,
+) -> None:
+    catalog = current_catalog()
+    slugs = await dismissed_repo.list_place_slugs(
+        callback.from_user.id,
+        catalog.slug,
+    )
+    places = tuple(
+        place
+        for slug in slugs
+        if (place := catalog.place_by_slug(slug)) is not None
+    )
+
+    if not places:
+        await callback.message.edit_text(
+            "🙈 <b>Скрытые рекомендации</b>\n\n"
+            "Здесь пока нет доступных скрытых мест. "
+            "В карточке места можно нажать «🙈 Не интересно», "
+            "а затем вернуть его отсюда.",
+            reply_markup=profile_keyboard(),
+        )
+        await callback.answer()
+        return
+
+    page = paginate(places, page_index)
+    await callback.message.edit_text(
+        "🙈 <b>Скрытые рекомендации</b>\n\n"
+        f"Скрыто доступных мест: {page.total_items} · "
+        f"страница {page.number}/{page.total_pages}.\n\n"
+        "Откройте карточку места и нажмите «↩️ Вернуть в рекомендации».",
+        reply_markup=paginated_places_keyboard(
+            page,
+            page_callback_prefix="dismissedpage",
+            back_callback="menu:profile",
+            back_text="← Мой гид",
+            place_context=dismissed_context(page.index),
+        ),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "menu:dismissed")
+async def dismissed_places(
+    callback: CallbackQuery,
+    dismissed_repo: DismissedRepository,
+) -> None:
+    await show_dismissed_page(callback, dismissed_repo, 0)
+
+
+@router.callback_query(F.data.startswith("dismissedpage:"))
+async def dismissed_places_page(
+    callback: CallbackQuery,
+    dismissed_repo: DismissedRepository,
+) -> None:
+    try:
+        page_index = int(callback.data.rsplit(":", 1)[1])
+    except (ValueError, AttributeError):
+        await callback.answer("Некорректная страница.", show_alert=True)
+        return
+
+    await show_dismissed_page(callback, dismissed_repo, page_index)
 
 
 async def show_favorites_page(
