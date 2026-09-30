@@ -318,6 +318,8 @@ def generated_route_keyboard(
     places: tuple[Place, ...],
     *,
     save_callback: str | None = None,
+    restart_callback: str = "builder:start",
+    restart_text: str = "🪄 Новый маршрут",
 ) -> InlineKeyboardMarkup:
     rows = [
         [
@@ -338,7 +340,9 @@ def generated_route_keyboard(
                 )
             ]
         )
-    rows.append([InlineKeyboardButton(text="🪄 Новый маршрут", callback_data="builder:start")])
+    rows.append(
+        [InlineKeyboardButton(text=restart_text, callback_data=restart_callback)]
+    )
     rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
