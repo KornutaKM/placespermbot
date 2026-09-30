@@ -22,6 +22,7 @@ from app.keyboards import (
     home_keyboard,
     interests_keyboard,
     paginated_places_keyboard,
+    personal_route_duration_keyboard,
     personalized_places_keyboard,
     place_keyboard,
     places_keyboard,
@@ -49,10 +50,16 @@ from app.navigation import (
     search_context,
 )
 from app.pagination import Page, paginate
-from app.planner import INTEREST_LABELS, build_route
+from app.planner import INTEREST_LABELS, build_ranked_route, build_route
 from app.profile import ProfileSummary, build_profile_summary, profile_text
 from app.recommendations import recommend_personalized
-from app.saved_routes import build_save_callback, parse_save_callback
+from app.saved_routes import (
+    PERSONAL_ROUTE_INTEREST,
+    PERSONAL_ROUTE_LABEL,
+    build_save_callback,
+    parse_save_callback,
+    route_interest_label,
+)
 from app.storage import (
     DismissedRepository,
     FavoritesRepository,
@@ -861,6 +868,125 @@ async def personal_recommendations_page(
     )
 
 
+@router.callback_query(F.data == "personalroute:start")
+async def personal_route_start(
+    callback: CallbackQuery,
+    interests_repo: InterestsRepository,
+) -> None:
+    catalog = current_catalog()
+    interests = await interests_repo.list_interests(
+        callback.from_user.id,
+        catalog.slug,
+    )
+    if not interests:
+        await callback.answer(
+            "Сначала выберите хотя бы один интерес.",
+            show_alert=True,
+        )
+        return
+
+    await callback.message.edit_text(
+        "🪄 <b>Маршрут для меня</b>\n\n"
+        "Сколько времени у вас есть? Маршрут будет собран только из "
+        "ваших актуальных персональных рекомендаций.",
+        reply_markup=personal_route_duration_keyboard(),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("personalroute:duration:"))
+async def personal_route_duration(
+    callback: CallbackQuery,
+    dismissed_repo: DismissedRepository,
+    favorites_repo: FavoritesRepository,
+    interests_repo: InterestsRepository,
+    visited_repo: VisitedRepository,
+) -> None:
+    try:
+        budget_minutes = int(callback.data.rsplit(":", 1)[1])
+    except (ValueError, AttributeError):
+        await callback.answer("Некорректное время.", show_alert=True)
+        return
+
+    if budget_minutes not in {120, 240, 360}:
+        await callback.answer(
+            "Такой вариант времени не поддерживается.",
+            show_alert=True,
+        )
+        return
+
+    catalog = current_catalog()
+    interests = await interests_repo.list_interests(
+        callback.from_user.id,
+        catalog.slug,
+    )
+    if not interests:
+        await callback.answer(
+            "Сначала выберите хотя бы один интерес.",
+            show_alert=True,
+        )
+        return
+
+    dismissed_slugs = await dismissed_repo.list_place_slugs(
+        callback.from_user.id,
+        catalog.slug,
+    )
+    favorite_slugs = await favorites_repo.list_place_slugs(
+        callback.from_user.id,
+        catalog.slug,
+    )
+    visited_slugs = await visited_repo.list_place_slugs(
+        callback.from_user.id,
+        catalog.slug,
+    )
+    recommendations = recommend_personalized(
+        catalog,
+        interests,
+        limit=len(catalog.places),
+        favorite_slugs=favorite_slugs,
+        exclude_slugs=set(visited_slugs) | set(dismissed_slugs),
+    )
+    candidates = tuple(item.place for item in recommendations)
+    route = build_ranked_route(
+        candidates,
+        budget_minutes=budget_minutes,
+        route_interest=PERSONAL_ROUTE_INTEREST,
+    )
+
+    if route is None:
+        await callback.message.edit_text(
+            "🎯 Подходящих новых мест для такого бюджета времени сейчас нет. "
+            "Можно изменить интересы или вернуть некоторые места в рекомендации.",
+            reply_markup=personal_route_duration_keyboard(),
+        )
+        await callback.answer()
+        return
+
+    stops = "\n".join(
+        f"{index}. {place.emoji} {place.title} — ~{place.visit_minutes} мин"
+        for index, place in enumerate(route.places, start=1)
+    )
+    hours, minutes = divmod(route.estimated_minutes, 60)
+
+    await callback.message.edit_text(
+        f"🪄 <b>{PERSONAL_ROUTE_LABEL}</b>\n\n"
+        f"Бюджет: {route.budget_minutes // 60} ч\n"
+        f"Оценка маршрута: ~{hours} ч {minutes:02d} мин\n"
+        f"Пешком между точками: ~{route.distance_km:g} км\n"
+        f"Точек: {len(route.places)}\n\n"
+        f"<b>Маршрут:</b>\n{stops}\n\n"
+        "Использованы только текущие явные интересы и избранное; "
+        "посещённые и отмеченные «Не интересно» места исключены.",
+        reply_markup=generated_route_keyboard(
+            route.places,
+            save_callback=build_save_callback(catalog, route),
+            restart_callback="personalroute:start",
+            restart_text="🪄 Собрать заново",
+        ),
+    )
+    await callback.answer()
+
+
 @router.callback_query(F.data == "pref:edit")
 async def edit_interests(
     callback: CallbackQuery,
@@ -1310,7 +1436,7 @@ async def saved_route_card(
         for slug in route.place_slugs
         if (place := catalog.place_by_slug(slug)) is not None
     )
-    label = INTEREST_LABELS.get(route.interest, route.interest)
+    label = route_interest_label(route.interest)
     stops = "\n".join(
         f"{index}. {place.emoji} {place.title}"
         for index, place in enumerate(places, start=1)
