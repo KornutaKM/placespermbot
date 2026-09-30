@@ -34,6 +34,25 @@ def similar_callback(place_slug: str, context: str) -> str:
     )
 
 
+def place_route_callback(place_slug: str, context: str) -> str:
+    return _bounded_callback(
+        f"proute:{place_slug}|{normalize_context(context)}"
+    )
+
+
+def place_route_duration_callback(
+    budget_minutes: int,
+    place_slug: str,
+    context: str,
+) -> str:
+    if budget_minutes not in {120, 240, 360}:
+        raise ValueError("unsupported place-route budget")
+    return _bounded_callback(
+        f"prouted:{budget_minutes // 60}:{place_slug}|"
+        f"{normalize_context(context)}"
+    )
+
+
 def dismissed_callback(action: str, place_slug: str, context: str) -> str:
     if action not in {"add", "remove"}:
         raise ValueError("unsupported dismissed action")
@@ -79,6 +98,35 @@ def parse_similar_callback(data: str) -> tuple[str, str]:
     if not data.startswith("similar:"):
         raise ValueError("not a similar callback")
     return _parse_slug_context(data.removeprefix("similar:"))
+
+
+def parse_place_route_callback(data: str) -> tuple[str, str]:
+    if not data.startswith("proute:"):
+        raise ValueError("not a place-route callback")
+    return _parse_slug_context(data.removeprefix("proute:"))
+
+
+def parse_place_route_duration_callback(
+    data: str,
+) -> tuple[int, str, str]:
+    if not data.startswith("prouted:"):
+        raise ValueError("not a place-route duration callback")
+
+    payload = data.removeprefix("prouted:")
+    raw_hours, separator, remainder = payload.partition(":")
+    if not separator:
+        raise ValueError("invalid place-route duration callback")
+
+    try:
+        budget_minutes = int(raw_hours) * 60
+    except ValueError as exc:
+        raise ValueError("invalid place-route duration") from exc
+
+    if budget_minutes not in {120, 240, 360}:
+        raise ValueError("unsupported place-route budget")
+
+    place_slug, context = _parse_slug_context(remainder)
+    return budget_minutes, place_slug, context
 
 
 def parse_dismissed_callback(data: str) -> tuple[str, str, str]:
