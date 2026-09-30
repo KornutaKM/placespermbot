@@ -14,6 +14,8 @@ from app.keyboards import (
     back_home_keyboard,
     categories_keyboard,
     cities_keyboard,
+    data_controls_keyboard,
+    data_delete_confirm_keyboard,
     event_providers_keyboard,
     excursion_providers_keyboard,
     generated_route_keyboard,
@@ -55,6 +57,10 @@ from app.storage import (
     InterestsRepository,
     SavedRoutesRepository,
     VisitedRepository,
+)
+from app.user_data_controls import (
+    UserDataControlsRepository,
+    bound_city_slug,
 )
 from app.user_export import (
     build_user_export,
@@ -255,6 +261,84 @@ async def export_from_profile(
         saved_routes_repo,
     )
     await callback.answer("Экспорт подготовлен")
+
+
+@router.callback_query(F.data == "profile:data")
+async def data_controls(callback: CallbackQuery) -> None:
+    catalog = current_catalog()
+    await callback.message.edit_text(
+        "🧹 <b>Управление данными</b>\n\n"
+        f"Активный город: <b>{catalog.name}</b>.\n\n"
+        "Можно сначала выгрузить JSON-экспорт, а затем удалить "
+        "ваши интересы, избранное, посещённые места и сохранённые маршруты "
+        "в этом городе. Выбор активного города останется сохранён.",
+        reply_markup=data_controls_keyboard(catalog.slug),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("profile:data:confirm:"))
+async def data_delete_confirm(callback: CallbackQuery) -> None:
+    catalog = current_catalog()
+    try:
+        city_slug = bound_city_slug(
+            callback.data,
+            prefix="profile:data:confirm:",
+            current_city_slug=catalog.slug,
+        )
+    except ValueError:
+        await callback.answer(
+            "Активный город изменился. Откройте управление данными заново.",
+            show_alert=True,
+        )
+        return
+
+    await callback.message.edit_text(
+        "⚠️ <b>Подтвердите удаление</b>\n\n"
+        f"Город: <b>{catalog.name}</b>.\n\n"
+        "Будут безвозвратно удалены ваши интересы, избранное, "
+        "посещённые места и сохранённые маршруты этого города.\n\n"
+        "Сам каталог и выбор активного города не удаляются.",
+        reply_markup=data_delete_confirm_keyboard(city_slug),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("profile:data:delete:"))
+async def delete_city_user_data(
+    callback: CallbackQuery,
+    data_controls_repo: UserDataControlsRepository,
+) -> None:
+    catalog = current_catalog()
+    try:
+        city_slug = bound_city_slug(
+            callback.data,
+            prefix="profile:data:delete:",
+            current_city_slug=catalog.slug,
+        )
+    except ValueError:
+        await callback.answer(
+            "Активный город изменился. Удаление отменено.",
+            show_alert=True,
+        )
+        return
+
+    result = await data_controls_repo.delete_city_data(
+        callback.from_user.id,
+        city_slug,
+    )
+    await callback.message.edit_text(
+        "🧹 <b>Данные удалены</b>\n\n"
+        f"Город: <b>{catalog.name}</b>\n"
+        f"🎯 Интересы: {result.interests}\n"
+        f"❤️ Избранное: {result.favorites}\n"
+        f"✅ Посещённые: {result.visited}\n"
+        f"🧭 Сохранённые маршруты: {result.saved_routes}\n\n"
+        f"Всего удалено записей: <b>{result.total}</b>.\n"
+        "Активный город остался выбран.",
+        reply_markup=profile_keyboard(),
+    )
+    await callback.answer("Данные удалены")
 
 
 @router.message(Command("city"))
