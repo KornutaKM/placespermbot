@@ -3,7 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import asin, cos, radians, sin, sqrt
 
-from app.data import (\n    kaliningrad,\n    kazan,\n    moscow,\n    nizhny_novgorod,\n    novosibirsk,\n    perm,\n    spb,\n    yekaterinburg,\n)
+from app.data import (
+    kaliningrad,
+    kazan,
+    moscow,
+    nizhny_novgorod,
+    novosibirsk,
+    perm,
+    spb,
+    yekaterinburg,
+)
 from app.domain import Place, RoutePlan
 
 
