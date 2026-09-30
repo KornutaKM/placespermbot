@@ -9,6 +9,8 @@ from app.planner import INTEREST_LABELS
 
 PERSONAL_ROUTE_INTEREST = "personal"
 PERSONAL_ROUTE_LABEL = "🎯 Для меня"
+PLACE_ROUTE_INTEREST = "place"
+PLACE_ROUTE_LABEL = "📍 От выбранного места"
 
 _INTEREST_CODES = {
     "classic": "c",
@@ -19,6 +21,7 @@ _INTEREST_CODES = {
     "family": "f",
     "free": "r",
     PERSONAL_ROUTE_INTEREST: "p",
+    PLACE_ROUTE_INTEREST: "o",
 }
 _CODE_INTERESTS = {value: key for key, value in _INTEREST_CODES.items()}
 _BASE36 = "0123456789abcdefghijklmnopqrstuvwxyz"
@@ -116,6 +119,8 @@ def parse_save_callback(
 def route_interest_label(interest: str) -> str:
     if interest == PERSONAL_ROUTE_INTEREST:
         return PERSONAL_ROUTE_LABEL
+    if interest == PLACE_ROUTE_INTEREST:
+        return PLACE_ROUTE_LABEL
     return INTEREST_LABELS.get(interest, interest)
 
 
