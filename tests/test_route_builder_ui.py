@@ -13,6 +13,7 @@ from app.keyboards import (
     home_keyboard,
     interests_keyboard,
     paginated_places_keyboard,
+    personal_route_duration_keyboard,
     personalized_places_keyboard,
     place_keyboard,
     profile_keyboard,
@@ -33,8 +34,12 @@ from app.navigation import (
     visited_context,
 )
 from app.pagination import paginate
-from app.planner import INTEREST_LABELS, build_route
-from app.saved_routes import SavedRoute, build_save_callback
+from app.planner import INTEREST_LABELS, build_ranked_route, build_route
+from app.saved_routes import (
+    PERSONAL_ROUTE_INTEREST,
+    SavedRoute,
+    build_save_callback,
+)
 
 
 def callback_values(markup) -> set[str]:
@@ -171,6 +176,7 @@ def test_personalized_places_open_cards_and_preferences() -> None:
 
     for place in page.items:
         assert place_callback(place.slug, personal_context(page.index)) in callbacks
+    assert "personalroute:start" in callbacks
     assert "pref:edit" in callbacks
     assert "personalpage:1" in callbacks
 
@@ -372,3 +378,39 @@ def test_data_delete_confirmation_requires_explicit_second_click() -> None:
         f"profile:data:delete:{CITY_SLUG}",
         "menu:profile",
     }
+
+
+
+def test_personal_route_duration_keyboard_contains_supported_budgets() -> None:
+    callbacks = callback_values(personal_route_duration_keyboard())
+
+    assert callbacks == {
+        "personalroute:duration:120",
+        "personalroute:duration:240",
+        "personalroute:duration:360",
+        "menu:personal",
+    }
+
+
+def test_personal_generated_route_can_restart_personal_flow() -> None:
+    catalog = get_catalog(CITY_SLUG)
+    route = build_ranked_route(
+        catalog.places[:6],
+        budget_minutes=240,
+        route_interest=PERSONAL_ROUTE_INTEREST,
+    )
+    assert route is not None
+
+    save_callback = build_save_callback(catalog, route)
+    callbacks = callback_values(
+        generated_route_keyboard(
+            route.places,
+            save_callback=save_callback,
+            restart_callback="personalroute:start",
+            restart_text="🪄 Собрать заново",
+        )
+    )
+
+    assert save_callback in callbacks
+    assert "personalroute:start" in callbacks
+    assert "builder:start" not in callbacks

@@ -26,19 +26,39 @@ def build_route(
     start_latitude: float | None = None,
     start_longitude: float | None = None,
 ) -> GeneratedRoute | None:
-    if budget_minutes <= 0:
-        raise ValueError("budget_minutes must be positive")
     if interest not in INTEREST_LABELS:
         raise ValueError(f"Unsupported interest: {interest}")
 
+    return build_ranked_route(
+        tuple(_candidates(catalog, interest)),
+        budget_minutes=budget_minutes,
+        route_interest=interest,
+        start_latitude=start_latitude,
+        start_longitude=start_longitude,
+    )
+
+
+def build_ranked_route(
+    candidates: tuple[Place, ...],
+    *,
+    budget_minutes: int,
+    route_interest: str,
+    start_latitude: float | None = None,
+    start_longitude: float | None = None,
+) -> GeneratedRoute | None:
+    if budget_minutes <= 0:
+        raise ValueError("budget_minutes must be positive")
+    if not route_interest.strip():
+        raise ValueError("route_interest must not be blank")
+
     _validate_origin(start_latitude, start_longitude)
 
-    candidates = _candidates(catalog, interest)
-    if not candidates:
+    ordered = _deduplicate_candidates(candidates)
+    if not ordered:
         return None
 
     first, first_distance, first_cost = _choose_first(
-        candidates,
+        ordered,
         budget_minutes=budget_minutes,
         start_latitude=start_latitude,
         start_longitude=start_longitude,
@@ -47,7 +67,7 @@ def build_route(
         return None
 
     selected = [first]
-    remaining = [place for place in candidates if place.slug != first.slug]
+    remaining = [place for place in ordered if place.slug != first.slug]
     used_minutes = first_cost
     total_distance = first_distance
 
@@ -57,7 +77,7 @@ def build_route(
             remaining,
             key=lambda place: (
                 distance_km(current, place),
-                candidates.index(place),
+                ordered.index(place),
                 place.title,
             ),
         )
@@ -86,12 +106,23 @@ def build_route(
         total_distance += chosen_distance
 
     return GeneratedRoute(
-        interest=interest,
+        interest=route_interest,
         budget_minutes=budget_minutes,
         estimated_minutes=used_minutes,
         distance_km=round(total_distance, 1),
         places=tuple(selected),
     )
+
+
+def _deduplicate_candidates(candidates: tuple[Place, ...]) -> list[Place]:
+    seen: set[str] = set()
+    ordered: list[Place] = []
+    for place in candidates:
+        if place.slug in seen:
+            continue
+        seen.add(place.slug)
+        ordered.append(place)
+    return ordered
 
 
 def _choose_first(

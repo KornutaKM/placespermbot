@@ -2,7 +2,7 @@ import pytest
 
 from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
-from app.planner import INTEREST_LABELS, build_route
+from app.planner import INTEREST_LABELS, build_ranked_route, build_route
 
 
 def catalog():
@@ -172,4 +172,62 @@ def test_invalid_origin_range_fails_closed() -> None:
             interest="classic",
             start_latitude=100.0,
             start_longitude=30.0,
+        )
+
+
+
+def test_ranked_route_uses_highest_ranked_place_that_fits() -> None:
+    city = catalog()
+    summer_garden = city.place_by_slug("summer-garden")
+    palace_square = city.place_by_slug("palace-square")
+    kazan = city.place_by_slug("kazan-cathedral")
+    assert summer_garden is not None
+    assert palace_square is not None
+    assert kazan is not None
+
+    route = build_ranked_route(
+        (summer_garden, palace_square, kazan),
+        budget_minutes=120,
+        route_interest="personal",
+    )
+
+    assert route is not None
+    assert route.places[0].slug == "summer-garden"
+    assert route.estimated_minutes <= 120
+
+
+def test_ranked_route_is_deterministic_and_deduplicates_candidates() -> None:
+    city = catalog()
+    candidates = (
+        city.places[0],
+        city.places[0],
+        city.places[1],
+        city.places[2],
+        city.places[3],
+    )
+
+    first = build_ranked_route(
+        candidates,
+        budget_minutes=240,
+        route_interest="personal",
+    )
+    second = build_ranked_route(
+        candidates,
+        budget_minutes=240,
+        route_interest="personal",
+    )
+
+    assert first == second
+    assert first is not None
+    slugs = [place.slug for place in first.places]
+    assert len(slugs) == len(set(slugs))
+    assert first.estimated_minutes <= 240
+
+
+def test_ranked_route_rejects_blank_route_interest() -> None:
+    with pytest.raises(ValueError, match="route_interest"):
+        build_ranked_route(
+            catalog().places,
+            budget_minutes=120,
+            route_interest=" ",
         )

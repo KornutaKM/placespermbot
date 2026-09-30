@@ -5,6 +5,10 @@ from hashlib import sha256
 
 from app.catalog import CityCatalog
 from app.domain import GeneratedRoute, Place
+from app.planner import INTEREST_LABELS
+
+PERSONAL_ROUTE_INTEREST = "personal"
+PERSONAL_ROUTE_LABEL = "🎯 Для меня"
 
 _INTEREST_CODES = {
     "classic": "c",
@@ -14,6 +18,7 @@ _INTEREST_CODES = {
     "unusual": "u",
     "family": "f",
     "free": "r",
+    PERSONAL_ROUTE_INTEREST: "p",
 }
 _CODE_INTERESTS = {value: key for key, value in _INTEREST_CODES.items()}
 _BASE36 = "0123456789abcdefghijklmnopqrstuvwxyz"
@@ -106,6 +111,12 @@ def parse_save_callback(
         budget_minutes=budget_minutes,
         places=tuple(places),
     )
+
+
+def route_interest_label(interest: str) -> str:
+    if interest == PERSONAL_ROUTE_INTEREST:
+        return PERSONAL_ROUTE_LABEL
+    return INTEREST_LABELS.get(interest, interest)
 
 
 def route_id_for(

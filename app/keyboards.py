@@ -27,7 +27,7 @@ from app.navigation import (
 )
 from app.pagination import Page
 from app.planner import INTEREST_LABELS
-from app.saved_routes import SavedRoute
+from app.saved_routes import SavedRoute, route_interest_label
 
 
 def home_keyboard() -> InlineKeyboardMarkup:
@@ -318,6 +318,8 @@ def generated_route_keyboard(
     places: tuple[Place, ...],
     *,
     save_callback: str | None = None,
+    restart_callback: str = "builder:start",
+    restart_text: str = "🪄 Новый маршрут",
 ) -> InlineKeyboardMarkup:
     rows = [
         [
@@ -338,7 +340,9 @@ def generated_route_keyboard(
                 )
             ]
         )
-    rows.append([InlineKeyboardButton(text="🪄 Новый маршрут", callback_data="builder:start")])
+    rows.append(
+        [InlineKeyboardButton(text=restart_text, callback_data=restart_callback)]
+    )
     rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -348,7 +352,7 @@ def saved_routes_keyboard(page: Page[SavedRoute]) -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(
                 text=(
-                    f"{INTEREST_LABELS.get(route.interest, route.interest)}"
+                    f"{route_interest_label(route.interest)}"
                     f" · {route.budget_minutes // 60} ч"
                 ),
                 callback_data=f"savedroute:{route.route_id}",
@@ -513,11 +517,44 @@ def personalized_places_keyboard(
         extra_rows=[
             [
                 InlineKeyboardButton(
+                    text="🪄 Маршрут для меня",
+                    callback_data="personalroute:start",
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text="⚙️ Изменить интересы",
                     callback_data="pref:edit",
                 )
-            ]
+            ],
         ],
+    )
+
+
+def personal_route_duration_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="2 часа",
+                    callback_data="personalroute:duration:120",
+                ),
+                InlineKeyboardButton(
+                    text="4 часа",
+                    callback_data="personalroute:duration:240",
+                ),
+                InlineKeyboardButton(
+                    text="6 часов",
+                    callback_data="personalroute:duration:360",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="← Для меня",
+                    callback_data="menu:personal",
+                )
+            ],
+        ]
     )
 
 
