@@ -24,6 +24,9 @@ async def mark_saved_route_visited(
     route: SavedRoute,
     visited_repo: VisitedRepository,
 ) -> RouteCompletionResult:
+    if route.city_slug != catalog.slug:
+        raise ValueError("saved route city does not match active catalog")
+
     available_slugs = _available_unique_slugs(catalog, route.place_slugs)
     unavailable_count = len(set(route.place_slugs)) - len(available_slugs)
 
