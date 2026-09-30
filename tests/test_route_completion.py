@@ -2,7 +2,7 @@ import asyncio
 
 from app.catalog import get_catalog
 from app.route_completion import RouteCompletionResult, complete_saved_route
-from app.storage import SavedRoutesRepository, VisitedRepository
+from app.storage import CompletedRoutesRepository, SavedRoutesRepository, VisitedRepository
 
 
 CITY_SLUG = "saint-petersburg"
@@ -63,6 +63,7 @@ def test_complete_saved_route_is_idempotent(tmp_path) -> None:
         database_path = str(tmp_path / "bot.sqlite3")
         saved_routes = SavedRoutesRepository(database_path)
         visited = VisitedRepository(database_path)
+        completed = CompletedRoutesRepository(database_path)
         await saved_routes.initialize()
         catalog = get_catalog(CITY_SLUG)
         slugs = tuple(place.slug for place in catalog.places[:2])
@@ -75,6 +76,7 @@ def test_complete_saved_route_is_idempotent(tmp_path) -> None:
             saved_routes=saved_routes,
             visited=visited,
             catalog=catalog,
+            completed_routes=completed,
         )
         second = await complete_saved_route(
             user_id=202,
@@ -83,11 +85,14 @@ def test_complete_saved_route_is_idempotent(tmp_path) -> None:
             saved_routes=saved_routes,
             visited=visited,
             catalog=catalog,
+            completed_routes=completed,
         )
 
         assert first == RouteCompletionResult(added=2, already_visited=0, unavailable=0)
         assert second == RouteCompletionResult(added=0, already_visited=2, unavailable=0)
         assert set(await visited.list_place_slugs(202, CITY_SLUG)) == set(slugs)
+        assert await completed.contains(202, CITY_SLUG, saved.route_id)
+        assert await completed.count(202, CITY_SLUG) == 1
 
     asyncio.run(scenario())
 
