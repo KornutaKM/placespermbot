@@ -989,6 +989,7 @@ async def show_personal_page(
         interests,
         limit=len(catalog.places),
         favorite_slugs=favorite_slugs,
+        visited_slugs=visited_slugs,
         exclude_slugs=set(visited_slugs) | set(dismissed_slugs),
     )
     page = paginate(recommendations, page_index)
@@ -1010,7 +1011,7 @@ async def show_personal_page(
             "<b>Почему эти места:</b>\n"
             f"{reason_lines}\n\n"
             "Посещённые и отмеченные «Не интересно» места исключены. "
-            "Избранное даёт небольшой приоритет."
+            "Избранное и история посещений помогают ранжировать похожие места."
         )
     else:
         details = "Все подходящие места уже отмечены как посещённые."

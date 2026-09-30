@@ -331,3 +331,72 @@ def test_exclusion_overrides_favorite_affinity() -> None:
         item.place.slug
         for item in filtered
     }
+
+
+def test_visited_affinity_boosts_similar_unvisited_place() -> None:
+    baseline = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+    )
+    with_history = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+        visited_slugs={"hermitage"},
+        exclude_slugs={"hermitage"},
+    )
+
+    baseline_russian = _recommendation_by_slug(baseline, "russian-museum")
+    history_russian = _recommendation_by_slug(with_history, "russian-museum")
+
+    assert history_russian.score > baseline_russian.score
+    assert any(
+        reason.startswith("похоже на посещённое:")
+        for reason in history_russian.reasons
+    )
+    assert "hermitage" not in {
+        item.place.slug
+        for item in with_history
+    }
+
+
+def test_foreign_visited_slug_has_no_affinity_effect() -> None:
+    baseline = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+    )
+    with_foreign_history = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+        visited_slugs={"perm-bear"},
+    )
+
+    assert with_foreign_history == baseline
+
+
+def test_service_tags_do_not_create_false_visited_affinity() -> None:
+    baseline = recommend_personalized(
+        catalog(),
+        ("free",),
+        limit=50,
+        exclude_slugs={"palace-square"},
+    )
+    with_history = recommend_personalized(
+        catalog(),
+        ("free",),
+        limit=50,
+        visited_slugs={"palace-square"},
+        exclude_slugs={"palace-square"},
+    )
+
+    baseline_field = _recommendation_by_slug(baseline, "field-of-mars")
+    history_field = _recommendation_by_slug(with_history, "field-of-mars")
+
+    assert history_field.score == baseline_field.score
+    assert not any(
+        reason.startswith("похоже на посещённое:")
+        for reason in history_field.reasons
+    )
