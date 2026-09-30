@@ -198,3 +198,27 @@ def test_personalized_unknown_interest_fails_closed() -> None:
             catalog(),
             ("nightlife",),
         )
+
+
+
+def test_excluded_favorite_cannot_return_to_personalized_results() -> None:
+    baseline = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=20,
+    )
+    assert baseline
+
+    dismissed_slug = baseline[0].place.slug
+    filtered = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=20,
+        favorite_slugs={dismissed_slug},
+        exclude_slugs={dismissed_slug},
+    )
+
+    assert dismissed_slug not in {
+        item.place.slug
+        for item in filtered
+    }
