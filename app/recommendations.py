@@ -1,8 +1,75 @@
 from collections.abc import Collection
+from dataclasses import dataclass
 
 from app.catalog import CityCatalog
 from app.domain import Place
 from app.planner import INTEREST_LABELS
+
+FAVORITE_BONUS = 1
+MULTI_INTEREST_BONUS = 2
+
+
+@dataclass(frozen=True, slots=True)
+class PersonalRecommendation:
+    place: Place
+    score: int
+    reasons: tuple[str, ...]
+
+
+def recommend_personalized(
+    catalog: CityCatalog,
+    interests: tuple[str, ...],
+    *,
+    limit: int = 8,
+    favorite_slugs: Collection[str] = (),
+    exclude_slugs: Collection[str] = (),
+) -> tuple[PersonalRecommendation, ...]:
+    if limit <= 0 or not interests:
+        return ()
+
+    _validate_interests(interests)
+
+    favorites = set(favorite_slugs)
+    excluded = set(exclude_slugs)
+    ranked: list[tuple[int, int, PersonalRecommendation]] = []
+
+    for index, place in enumerate(catalog.places):
+        if place.slug in excluded:
+            continue
+
+        matches = tuple(
+            (interest, score)
+            for interest in interests
+            if (score := _interest_score(place, interest)) > 0
+        )
+        if not matches:
+            continue
+
+        score = sum(match_score for _, match_score in matches)
+        reasons = [_interest_reason(matches)]
+
+        if len(matches) > 1:
+            score += MULTI_INTEREST_BONUS
+
+        if place.slug in favorites:
+            score += FAVORITE_BONUS
+            reasons.append("уже в избранном")
+
+        recommendation = PersonalRecommendation(
+            place=place,
+            score=score,
+            reasons=tuple(reasons),
+        )
+        ranked.append((score, index, recommendation))
+
+    ranked.sort(
+        key=lambda item: (
+            -item[0],
+            item[1],
+            item[2].place.title,
+        )
+    )
+    return tuple(item[2] for item in ranked[:limit])
 
 
 def recommend_places(
@@ -15,10 +82,7 @@ def recommend_places(
     if limit <= 0 or not interests:
         return ()
 
-    unknown = set(interests) - set(INTEREST_LABELS)
-    if unknown:
-        names = ", ".join(sorted(unknown))
-        raise ValueError(f"Unsupported interests: {names}")
+    _validate_interests(interests)
 
     excluded = set(exclude_slugs)
     ranked: list[tuple[int, int, Place]] = []
@@ -32,6 +96,20 @@ def recommend_places(
 
     ranked.sort(key=lambda item: (-item[0], item[1], item[2].title))
     return tuple(place for _, _, place in ranked[:limit])
+
+
+def _validate_interests(interests: tuple[str, ...]) -> None:
+    unknown = set(interests) - set(INTEREST_LABELS)
+    if unknown:
+        names = ", ".join(sorted(unknown))
+        raise ValueError(f"Unsupported interests: {names}")
+
+
+def _interest_reason(matches: tuple[tuple[str, int], ...]) -> str:
+    labels = tuple(INTEREST_LABELS[interest] for interest, _ in matches)
+    if len(labels) == 1:
+        return f"интерес: {labels[0]}"
+    return "несколько интересов: " + " · ".join(labels)
 
 
 def _interest_score(place: Place, interest: str) -> int:
