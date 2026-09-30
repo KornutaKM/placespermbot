@@ -63,7 +63,7 @@ def test_large_new_city_catalogs_have_enough_discovery_depth() -> None:
 
 
 def test_core_city_catalogs_have_richer_discovery_depth() -> None:
-    for city_slug in ("kazan", "moscow", "nizhny-novgorod", "yekaterinburg"):
+    for city_slug in ("kaliningrad", "kazan", "moscow", "nizhny-novgorod", "novosibirsk", "perm", "yekaterinburg"):
         catalog = get_catalog(city_slug)
 
         assert len(catalog.places) >= 12
