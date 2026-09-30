@@ -5,6 +5,7 @@ import pytest
 from app.data.spb import CITY_SLUG
 from app.database import migrate_database
 from app.storage import (
+    DismissedRepository,
     FavoritesRepository,
     InterestsRepository,
     SavedRoutesRepository,
@@ -24,6 +25,7 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
         database_path = str(tmp_path / "places.db")
         await migrate_database(database_path)
 
+        dismissed = DismissedRepository(database_path)
         favorites = FavoritesRepository(database_path)
         interests = InterestsRepository(database_path)
         visited = VisitedRepository(database_path)
@@ -33,6 +35,7 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
 
         await city_preferences.set_city_slug(1, CITY_SLUG)
 
+        await dismissed.add(1, CITY_SLUG, "new-holland")
         await favorites.add(1, CITY_SLUG, "hermitage")
         await interests.add(1, CITY_SLUG, "museums")
         await visited.add(1, CITY_SLUG, "summer-garden")
@@ -44,6 +47,7 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
             ("palace-square", "hermitage"),
         )
 
+        await dismissed.add(1, "another-city", "other-place")
         await favorites.add(1, "another-city", "other-place")
         await interests.add(1, "another-city", "free")
         await visited.add(1, "another-city", "other-place")
@@ -55,6 +59,7 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
             ("other-place",),
         )
 
+        await dismissed.add(2, CITY_SLUG, "summer-garden")
         await favorites.add(2, CITY_SLUG, "palace-square")
         await interests.add(2, CITY_SLUG, "walks")
         await visited.add(2, CITY_SLUG, "hermitage")
@@ -68,12 +73,14 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
 
         result = await controls.delete_city_data(1, CITY_SLUG)
 
+        assert result.dismissed == 1
         assert result.favorites == 1
         assert result.interests == 1
         assert result.visited == 1
         assert result.saved_routes == 1
-        assert result.total == 4
+        assert result.total == 5
 
+        assert await dismissed.list_place_slugs(1, CITY_SLUG) == ()
         assert await favorites.list_place_slugs(1, CITY_SLUG) == ()
         assert await interests.list_interests(1, CITY_SLUG) == ()
         assert await visited.list_place_slugs(1, CITY_SLUG) == ()
@@ -81,6 +88,9 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
 
         assert await city_preferences.get_city_slug(1) == CITY_SLUG
 
+        assert await dismissed.list_place_slugs(1, "another-city") == (
+            "other-place",
+        )
         assert await favorites.list_place_slugs(1, "another-city") == (
             "other-place",
         )
@@ -97,6 +107,9 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
             is not None
         )
 
+        assert await dismissed.list_place_slugs(2, CITY_SLUG) == (
+            "summer-garden",
+        )
         assert await favorites.list_place_slugs(2, CITY_SLUG) == (
             "palace-square",
         )
