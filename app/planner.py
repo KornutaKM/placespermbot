@@ -8,7 +8,7 @@ from app.domain import GeneratedRoute, Place
 WALKING_SPEED_KMH = 4.5
 
 INTEREST_LABELS: dict[str, str] = {
-    "classic": "🏛 Классический Петербург",
+    "classic": "🏛 Главные места",
     "museums": "🖼 Музеи",
     "architecture": "🏛 Архитектура",
     "walks": "🌿 Прогулки",
