@@ -12,7 +12,6 @@ from app.catalog_service import CatalogService
 from app.config import get_settings
 from app.database import migrate_database
 from app.handlers.main import router
-from app.user_data_controls import UserDataControlsRepository
 from app.storage import (
     FavoritesRepository,
     InterestsRepository,
@@ -20,6 +19,7 @@ from app.storage import (
     UserCityRepository,
     VisitedRepository,
 )
+from app.user_data_controls import UserDataControlsRepository
 
 
 async def main() -> None:
