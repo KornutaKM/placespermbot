@@ -1,0 +1,44 @@
+from datetime import date
+
+from app.domain import Place, PlaceSource, RoutePlan
+
+CITY_SLUG = "kaliningrad"
+CITY_NAME = "Калининград"
+SOURCE_CHECKED_AT = date(2026, 10, 1)
+
+VISIT_KALININGRAD = PlaceSource(
+    name="Туристский информационный центр Калининградской области",
+    url="https://visit-kaliningrad.ru/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+ACCESSIBLE_KALININGRAD = PlaceSource(
+    name="Visit Kaliningrad — доступный туризм",
+    url="https://visit-kaliningrad.ru/tourism/lechebnaya-verkhovaya-ezda/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+
+CATEGORY_LABELS = {
+    "sights": "🏛 Достопримечательности",
+    "unusual": "✨ Необычные места",
+    "museums": "🖼 Музеи и культура",
+    "parks": "🌿 Парки и прогулки",
+    "family": "👨‍👩‍👧 С детьми",
+    "free": "💸 Бесплатно",
+}
+
+PLACES = (
+    Place("kant-island", "Остров Канта", "parks", "Историческое пространство на острове Кнайпхоф вокруг Кафедрального собора.", "🌳", "Московский район", 90, True, 54.7064, 20.5115, VISIT_KALININGRAD, ("история", "прогулка", "архитектура", "центр", "бесплатно")),
+    Place("konigsberg-cathedral", "Кафедральный собор", "sights", "Главная историческая доминанта острова Канта и один из символов Калининграда.", "⛪", "Московский район", 60, False, 54.7063, 20.5117, VISIT_KALININGRAD, ("история", "архитектура", "кант", "центр")),
+    Place("fish-village", "Рыбная деревня", "sights", "Современный квартал у Преголи с прогулочной набережной и видами на остров Канта.", "🏘", "Московский район", 60, True, 54.7044, 20.5157, VISIT_KALININGRAD, ("набережная", "прогулка", "архитектура", "бесплатно")),
+    Place("museum-world-ocean", "Музей Мирового океана", "museums", "Большой музейный комплекс на набережной с морскими коллекциями и музейными судами.", "⚓", "Ленинградский район", 180, False, 54.7069, 20.5010, VISIT_KALININGRAD, ("музей", "море", "корабли", "с детьми")),
+    Place("amber-museum", "Музей янтаря", "museums", "Музей, посвящённый янтарю, в исторической башне Дона у Верхнего озера.", "🟠", "Ленинградский район", 90, False, 54.7228, 20.5214, VISIT_KALININGRAD, ("музей", "янтарь", "история")),
+    Place("king-gate", "Королевские ворота", "sights", "Исторические городские ворота и музейный объект фортификационного наследия.", "🏰", "Ленинградский район", 45, False, 54.7164, 20.5360, ACCESSIBLE_KALININGRAD, ("фортификация", "история", "архитектура")),
+    Place("friedrichsburg-gate", "Фридрихсбургские ворота", "sights", "Сохранившийся элемент бывшей крепости Фридрихсбург, связанный с историей городских укреплений.", "🏰", "Московский район", 45, False, 54.7025, 20.4925, ACCESSIBLE_KALININGRAD, ("фортификация", "история", "архитектура")),
+    Place("victory-square-kaliningrad", "Площадь Победы", "sights", "Главная современная площадь Калининграда и удобная точка знакомства с центром.", "🏙", "Центральный район", 30, True, 54.7207, 20.5004, VISIT_KALININGRAD, ("центр", "прогулка", "бесплатно")),
+)
+
+ROUTES = (
+    RoutePlan("kaliningrad-first-walk", "Калининград впервые", "Остров Канта, собор, Рыбная деревня и морская набережная.", 300, 3.0, ("kant-island", "konigsberg-cathedral", "fish-village", "museum-world-ocean")),
+    RoutePlan("kaliningrad-fortifications", "Городские ворота", "Знакомство с сохранившимися элементами фортификационного наследия города.", 210, 5.5, ("friedrichsburg-gate", "king-gate")),
+    RoutePlan("kaliningrad-museums", "Музейный Калининград", "Янтарь, море и исторический центр в одном насыщенном дне.", 420, 6.0, ("amber-museum", "museum-world-ocean", "kant-island")),
+)
