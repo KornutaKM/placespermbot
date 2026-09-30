@@ -28,6 +28,12 @@ def nearby_callback(place_slug: str, context: str) -> str:
     return _bounded_callback(f"nearby:{place_slug}|{normalize_context(context)}")
 
 
+def similar_callback(place_slug: str, context: str) -> str:
+    return _bounded_callback(
+        f"similar:{place_slug}|{normalize_context(context)}"
+    )
+
+
 def dismissed_callback(action: str, place_slug: str, context: str) -> str:
     if action not in {"add", "remove"}:
         raise ValueError("unsupported dismissed action")
@@ -67,6 +73,12 @@ def parse_nearby_callback(data: str) -> tuple[str, str]:
     if not data.startswith("nearby:"):
         raise ValueError("not a nearby callback")
     return _parse_slug_context(data.removeprefix("nearby:"))
+
+
+def parse_similar_callback(data: str) -> tuple[str, str]:
+    if not data.startswith("similar:"):
+        raise ValueError("not a similar callback")
+    return _parse_slug_context(data.removeprefix("similar:"))
 
 
 def parse_dismissed_callback(data: str) -> tuple[str, str, str]:
@@ -140,6 +152,12 @@ def nearby_child_context(origin_slug: str, parent_context: str) -> str:
     return normalize_context(context)
 
 
+def similar_child_context(origin_slug: str, parent_context: str) -> str:
+    parent = normalize_context(parent_context)
+    context = f"m.{origin_slug}@{parent}"
+    return normalize_context(context)
+
+
 def back_target(context: str) -> BackTarget:
     normalized = normalize_context(context)
 
@@ -185,6 +203,18 @@ def back_target(context: str) -> BackTarget:
 
     if normalized.startswith("n."):
         payload = normalized.removeprefix("n.")
+        origin_slug, separator, parent = payload.partition("@")
+        if origin_slug:
+            return BackTarget(
+                callback_data=place_callback(
+                    origin_slug,
+                    parent if separator else DEFAULT_CONTEXT,
+                ),
+                text="← К исходному месту",
+            )
+
+    if normalized.startswith("m."):
+        payload = normalized.removeprefix("m.")
         origin_slug, separator, parent = payload.partition("@")
         if origin_slug:
             return BackTarget(
