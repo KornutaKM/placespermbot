@@ -8,6 +8,7 @@ from app.planner import INTEREST_LABELS
 FAVORITE_BONUS = 1
 FAVORITE_AFFINITY_BONUS_CAP = 2
 MULTI_INTEREST_BONUS = 2
+VISITED_AFFINITY_BONUS_CAP = 3
 
 _AFFINITY_IGNORED_TAGS = frozenset(
     {
@@ -32,6 +33,7 @@ def recommend_personalized(
     *,
     limit: int = 8,
     favorite_slugs: Collection[str] = (),
+    visited_slugs: Collection[str] = (),
     exclude_slugs: Collection[str] = (),
 ) -> tuple[PersonalRecommendation, ...]:
     if limit <= 0 or not interests:
@@ -44,6 +46,12 @@ def recommend_personalized(
         place
         for place in catalog.places
         if place.slug in favorites
+    )
+    visited = set(visited_slugs)
+    visited_places = tuple(
+        place
+        for place in catalog.places
+        if place.slug in visited
     )
     excluded = set(exclude_slugs)
     ranked: list[tuple[int, int, PersonalRecommendation]] = []
@@ -81,6 +89,19 @@ def recommend_personalized(
             )
             reasons.append(
                 "похоже на избранное: " + ", ".join(affinity_tags)
+            )
+
+        visited_affinity_tags = _place_affinity_tags(
+            place,
+            reference_places=visited_places,
+        )
+        if visited_affinity_tags:
+            score += min(
+                len(visited_affinity_tags),
+                VISITED_AFFINITY_BONUS_CAP,
+            )
+            reasons.append(
+                "похоже на посещённое: " + ", ".join(visited_affinity_tags)
             )
 
         recommendation = PersonalRecommendation(
@@ -145,17 +166,28 @@ def _favorite_affinity_tags(
     *,
     favorite_places: tuple[Place, ...],
 ) -> tuple[str, ...]:
+    return _place_affinity_tags(
+        place,
+        reference_places=favorite_places,
+    )
+
+
+def _place_affinity_tags(
+    place: Place,
+    *,
+    reference_places: tuple[Place, ...],
+) -> tuple[str, ...]:
     candidate_tags = set(place.tags) - _AFFINITY_IGNORED_TAGS
     if not candidate_tags:
         return ()
 
     shared: set[str] = set()
-    for favorite in favorite_places:
-        if favorite.slug == place.slug:
+    for reference in reference_places:
+        if reference.slug == place.slug:
             continue
 
-        favorite_tags = set(favorite.tags) - _AFFINITY_IGNORED_TAGS
-        shared.update(candidate_tags & favorite_tags)
+        reference_tags = set(reference.tags) - _AFFINITY_IGNORED_TAGS
+        shared.update(candidate_tags & reference_tags)
 
     return tuple(sorted(shared))
 
