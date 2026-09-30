@@ -15,6 +15,7 @@ from app.maps import google_maps_directions_to_place_url, google_maps_route_urls
 from app.navigation import (
     DEFAULT_CONTEXT,
     back_target,
+    dismissed_callback,
     favorite_callback,
     nearby_callback,
     personal_context,
@@ -541,10 +542,17 @@ def back_home_keyboard() -> InlineKeyboardMarkup:
 def place_keyboard(
     place: Place,
     *,
+    is_dismissed: bool = False,
     is_favorite: bool = False,
     is_visited: bool = False,
     context: str = DEFAULT_CONTEXT,
 ) -> InlineKeyboardMarkup:
+    dismissed_text = (
+        "↩️ Вернуть в рекомендации"
+        if is_dismissed
+        else "🙈 Не интересно"
+    )
+    dismissed_action = "remove" if is_dismissed else "add"
     favorite_text = "💔 Убрать из избранного" if is_favorite else "❤️ В избранное"
     favorite_action = "remove" if is_favorite else "add"
     visited_text = "↩️ Убрать «был»" if is_visited else "✅ Уже был"
@@ -585,7 +593,15 @@ def place_keyboard(
                         place.slug,
                         context,
                     ),
-                )
+                ),
+                InlineKeyboardButton(
+                    text=dismissed_text,
+                    callback_data=dismissed_callback(
+                        dismissed_action,
+                        place.slug,
+                        context,
+                    ),
+                ),
             ],
             [
                 InlineKeyboardButton(text="🗺 Маршруты", callback_data="menu:routes"),
