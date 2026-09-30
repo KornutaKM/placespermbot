@@ -90,6 +90,21 @@ MIGRATIONS: tuple[Migration, ...] = (
             """,
         ),
     ),
+    Migration(
+        version=6,
+        name="create_dismissed_places",
+        statements=(
+            """
+            CREATE TABLE IF NOT EXISTS dismissed_places (
+                user_id INTEGER NOT NULL,
+                city_slug TEXT NOT NULL,
+                place_slug TEXT NOT NULL,
+                dismissed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, city_slug, place_slug)
+            )
+            """,
+        ),
+    ),
 )
 
 KNOWN_SCHEMA_VERSIONS = frozenset(migration.version for migration in MIGRATIONS)
