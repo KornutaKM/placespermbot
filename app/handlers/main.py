@@ -896,6 +896,14 @@ async def personal_route_start(
     state: FSMContext,
     interests_repo: InterestsRepository,
 ) -> None:
+    previous_state = await state.get_state()
+    await state.clear()
+    if previous_state in LOCATION_REQUEST_STATES:
+        await callback.message.answer(
+            "Запрос геопозиции отменён.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
     catalog = current_catalog()
     interests = await interests_repo.list_interests(
         callback.from_user.id,
@@ -908,13 +916,6 @@ async def personal_route_start(
         )
         return
 
-    previous_state = await state.get_state()
-    await state.clear()
-    if previous_state in LOCATION_REQUEST_STATES:
-        await callback.message.answer(
-            "Запрос геопозиции отменён.",
-            reply_markup=ReplyKeyboardRemove(),
-        )
     await state.set_state(PersonalRouteFlow.waiting_duration)
 
     await callback.message.edit_text(
@@ -932,6 +933,10 @@ async def personal_route_request_location(
     callback: CallbackQuery,
     state: FSMContext,
 ) -> None:
+    await state.update_data(
+        start_latitude=None,
+        start_longitude=None,
+    )
     await state.set_state(PersonalRouteFlow.waiting_location)
     await callback.message.answer(
         "📍 <b>Старт персонального маршрута</b>\n\n"
