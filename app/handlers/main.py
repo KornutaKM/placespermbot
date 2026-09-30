@@ -54,7 +54,6 @@ from app.personal_route import build_personal_route
 from app.planner import INTEREST_LABELS, build_route
 from app.profile import ProfileSummary, build_profile_summary, profile_text
 from app.recommendations import recommend_personalized
-from app.search_ui import search_not_found_text, search_prompt, search_results_text
 from app.saved_routes import (
     PERSONAL_ROUTE_INTEREST,
     PERSONAL_ROUTE_LABEL,
@@ -62,6 +61,7 @@ from app.saved_routes import (
     parse_save_callback,
     route_interest_label,
 )
+from app.search_ui import search_not_found_text, search_prompt, search_results_text
 from app.storage import (
     DismissedRepository,
     FavoritesRepository,
