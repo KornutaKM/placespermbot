@@ -1,4 +1,5 @@
 from app.catalog import get_catalog, list_catalogs
+from app.catalog_validation import validate_catalogs
 
 
 EXPECTED_CITIES = {
@@ -9,6 +10,8 @@ EXPECTED_CITIES = {
     "novosibirsk": "Новосибирск",
     "perm": "Пермь",
     "saint-petersburg": "Санкт-Петербург",
+    "sochi": "Сочи",
+    "yaroslavl": "Ярославль",
     "yekaterinburg": "Екатеринбург",
 }
 
@@ -63,7 +66,7 @@ def test_large_new_city_catalogs_have_enough_discovery_depth() -> None:
 
 
 def test_core_city_catalogs_have_richer_discovery_depth() -> None:
-    for city_slug in ("kaliningrad", "kazan", "moscow", "nizhny-novgorod", "novosibirsk", "perm", "yekaterinburg"):
+    for city_slug in ("kaliningrad", "kazan", "moscow", "nizhny-novgorod", "novosibirsk", "perm", "sochi", "yaroslavl", "yekaterinburg"):
         catalog = get_catalog(city_slug)
 
         assert len(catalog.places) >= 12

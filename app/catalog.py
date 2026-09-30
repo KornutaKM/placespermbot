@@ -10,7 +10,9 @@ from app.data import (
     nizhny_novgorod,
     novosibirsk,
     perm,
+    sochi,
     spb,
+    yaroslavl,
     yekaterinburg,
 )
 from app.domain import Place, RoutePlan
@@ -147,6 +149,20 @@ def distance_km(first: Place, second: Place) -> float:
 
 
 _CATALOGS: dict[str, CityCatalog] = {
+    sochi.CITY_SLUG: CityCatalog(
+        slug=sochi.CITY_SLUG,
+        name=sochi.CITY_NAME,
+        category_labels=sochi.CATEGORY_LABELS,
+        places=sochi.PLACES,
+        routes=sochi.ROUTES,
+    ),
+    yaroslavl.CITY_SLUG: CityCatalog(
+        slug=yaroslavl.CITY_SLUG,
+        name=yaroslavl.CITY_NAME,
+        category_labels=yaroslavl.CATEGORY_LABELS,
+        places=yaroslavl.PLACES,
+        routes=yaroslavl.ROUTES,
+    ),
     kaliningrad.CITY_SLUG: CityCatalog(
         slug=kaliningrad.CITY_SLUG,
         name=kaliningrad.CITY_NAME,
