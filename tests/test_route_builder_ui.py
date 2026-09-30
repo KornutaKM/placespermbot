@@ -16,6 +16,7 @@ from app.keyboards import (
     personal_route_duration_keyboard,
     personalized_places_keyboard,
     place_keyboard,
+    place_route_duration_keyboard,
     profile_keyboard,
     request_location_keyboard,
     route_details_keyboard,
@@ -224,6 +225,7 @@ def test_place_keyboard_preserves_category_context_for_actions_and_back() -> Non
 
     assert f"nearby:{place.slug}|c.sights.2" in callbacks
     assert f"similar:{place.slug}|c.sights.2" in callbacks
+    assert f"proute:{place.slug}|c.sights.2" in callbacks
     assert f"favorite:add:{place.slug}|c.sights.2" in callbacks
     assert f"dismiss:add:{place.slug}|c.sights.2" in callbacks
     assert "catpage:sights:2" in callbacks
@@ -511,3 +513,19 @@ def test_similar_child_place_returns_to_origin() -> None:
     callbacks = callback_values(markup)
 
     assert "place:hermitage|c.museums.2" in callbacks
+
+
+
+def test_place_route_duration_keyboard_preserves_origin_and_context() -> None:
+    markup = place_route_duration_keyboard(
+        "hermitage",
+        "c.museums.2",
+    )
+    callbacks = callback_values(markup)
+
+    assert callbacks == {
+        "prouted:2:hermitage|c.museums.2",
+        "prouted:4:hermitage|c.museums.2",
+        "prouted:6:hermitage|c.museums.2",
+        "place:hermitage|c.museums.2",
+    }
