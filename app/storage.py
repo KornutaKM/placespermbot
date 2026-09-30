@@ -177,6 +177,32 @@ class VisitedRepository:
             )
             await database.commit()
 
+    async def add_many(
+        self,
+        user_id: int,
+        city_slug: str,
+        place_slugs: tuple[str, ...],
+    ) -> None:
+        if not place_slugs:
+            return
+
+        async with aiosqlite.connect(self.database_path) as database:
+            await database.executemany(
+                """
+                INSERT OR IGNORE INTO visited_places (
+                    user_id,
+                    city_slug,
+                    place_slug
+                )
+                VALUES (?, ?, ?)
+                """,
+                (
+                    (user_id, city_slug, place_slug)
+                    for place_slug in place_slugs
+                ),
+            )
+            await database.commit()
+
     async def remove(self, user_id: int, city_slug: str, place_slug: str) -> None:
         async with aiosqlite.connect(self.database_path) as database:
             await database.execute(
