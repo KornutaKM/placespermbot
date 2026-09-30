@@ -47,10 +47,10 @@ from app.navigation import (
     place_callback,
     search_context,
 )
-from app.pagination import paginate
+from app.pagination import Page, paginate
 from app.planner import INTEREST_LABELS, build_route
 from app.profile import ProfileSummary, build_profile_summary, profile_text
-from app.recommendations import recommend_places
+from app.recommendations import recommend_personalized
 from app.saved_routes import build_save_callback, parse_save_callback
 from app.storage import (
     FavoritesRepository,
@@ -659,6 +659,7 @@ async def nearby(callback: CallbackQuery) -> None:
 
 async def show_personal_page(
     callback: CallbackQuery,
+    favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
     page_index: int,
@@ -678,30 +679,51 @@ async def show_personal_page(
         await callback.answer()
         return
 
+    favorite_slugs = await favorites_repo.list_place_slugs(
+        callback.from_user.id,
+        catalog.slug,
+    )
     visited_slugs = await visited_repo.list_place_slugs(
         callback.from_user.id,
         catalog.slug,
     )
-    places = recommend_places(
+    recommendations = recommend_personalized(
         catalog,
         interests,
         limit=len(catalog.places),
+        favorite_slugs=favorite_slugs,
         exclude_slugs=visited_slugs,
     )
-    page = paginate(places, page_index)
+    page = paginate(recommendations, page_index)
+    place_page = Page(
+        items=tuple(item.place for item in page.items),
+        index=page.index,
+        total_pages=page.total_pages,
+        total_items=page.total_items,
+    )
     labels = " · ".join(INTEREST_LABELS[key] for key in interests)
+
+    if recommendations:
+        reason_lines = "\n".join(
+            f"{index}. {item.place.emoji} <b>{item.place.title}</b>\n"
+            f"   ↳ {' · '.join(item.reasons)}"
+            for index, item in enumerate(page.items, start=1)
+        )
+        details = (
+            "<b>Почему эти места:</b>\n"
+            f"{reason_lines}\n\n"
+            "Посещённые места исключены. Избранное даёт небольшой приоритет."
+        )
+    else:
+        details = "Все подходящие места уже отмечены как посещённые."
 
     await callback.message.edit_text(
         "🎯 <b>Для меня</b>\n\n"
         f"Ваши интересы: {labels}\n"
         f"Подобрано новых мест: {page.total_items} · "
         f"страница {page.number}/{page.total_pages}.\n\n"
-        + (
-            "Все подходящие места уже отмечены как посещённые."
-            if not places
-            else "Посещённые места исключены из этой подборки."
-        ),
-        reply_markup=personalized_places_keyboard(page),
+        f"{details}",
+        reply_markup=personalized_places_keyboard(place_page),
     )
     await callback.answer()
 
@@ -709,15 +731,23 @@ async def show_personal_page(
 @router.callback_query(F.data == "menu:personal")
 async def personal_recommendations(
     callback: CallbackQuery,
+    favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
 ) -> None:
-    await show_personal_page(callback, interests_repo, visited_repo, 0)
+    await show_personal_page(
+        callback,
+        favorites_repo,
+        interests_repo,
+        visited_repo,
+        0,
+    )
 
 
 @router.callback_query(F.data.startswith("personalpage:"))
 async def personal_recommendations_page(
     callback: CallbackQuery,
+    favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
 ) -> None:
@@ -727,7 +757,13 @@ async def personal_recommendations_page(
         await callback.answer("Некорректная страница.", show_alert=True)
         return
 
-    await show_personal_page(callback, interests_repo, visited_repo, page_index)
+    await show_personal_page(
+        callback,
+        favorites_repo,
+        interests_repo,
+        visited_repo,
+        page_index,
+    )
 
 
 @router.callback_query(F.data == "pref:edit")
@@ -785,6 +821,7 @@ async def toggle_interest(
 @router.callback_query(F.data == "pref:done")
 async def finish_interests(
     callback: CallbackQuery,
+    favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
 ) -> None:
@@ -797,7 +834,13 @@ async def finish_interests(
         await callback.answer("Выберите хотя бы один интерес.", show_alert=True)
         return
 
-    await show_personal_page(callback, interests_repo, visited_repo, 0)
+    await show_personal_page(
+        callback,
+        favorites_repo,
+        interests_repo,
+        visited_repo,
+        0,
+    )
 
 
 @router.callback_query(F.data == "menu:nearby")
