@@ -62,6 +62,7 @@ from app.place_route import build_place_route
 from app.planner import INTEREST_LABELS, build_route
 from app.profile import ProfileSummary, build_profile_summary, profile_text
 from app.recommendations import recommend_personalized
+from app.route_completion import complete_saved_route
 from app.saved_routes import (
     PERSONAL_ROUTE_INTEREST,
     PERSONAL_ROUTE_LABEL,
@@ -1726,6 +1727,42 @@ async def saved_routes_page(
         return
 
     await show_saved_routes_page(callback, saved_routes_repo, page_index)
+
+
+@router.callback_query(F.data.startswith("savedroute:complete:"))
+async def complete_saved_route_callback(
+    callback: CallbackQuery,
+    saved_routes_repo: SavedRoutesRepository,
+    visited_repo: VisitedRepository,
+) -> None:
+    route_id = callback.data.removeprefix("savedroute:complete:").strip()
+    if not route_id:
+        await callback.answer("Некорректный маршрут.", show_alert=True)
+        return
+
+    catalog = current_catalog()
+    result = await complete_saved_route(
+        user_id=callback.from_user.id,
+        city_slug=catalog.slug,
+        route_id=route_id,
+        saved_routes=saved_routes_repo,
+        visited=visited_repo,
+        catalog=catalog,
+    )
+    if result is None:
+        await callback.answer(
+            "Сохранённый маршрут не найден.",
+            show_alert=True,
+        )
+        return
+
+    await callback.answer(
+        "Маршрут отмечен как пройденный. "
+        f"Новых мест: {result.added}; "
+        f"уже были отмечены: {result.already_visited}; "
+        f"недоступно: {result.unavailable}.",
+        show_alert=True,
+    )
 
 
 @router.callback_query(F.data.startswith("savedroute:delete:"))
