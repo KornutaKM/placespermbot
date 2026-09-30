@@ -107,6 +107,10 @@ def personal_context(page_index: int) -> str:
     return normalize_context(f"p.{max(page_index, 0)}")
 
 
+def dismissed_context(page_index: int) -> str:
+    return normalize_context(f"x.{max(page_index, 0)}")
+
+
 def visited_context(page_index: int) -> str:
     return normalize_context(f"v.{max(page_index, 0)}")
 
@@ -169,6 +173,14 @@ def back_target(context: str) -> BackTarget:
             return BackTarget(
                 callback_data=f"visitedpage:{page}",
                 text="← Посещённые",
+            )
+
+    if normalized.startswith("x."):
+        page = normalized.removeprefix("x.")
+        if page.isdigit():
+            return BackTarget(
+                callback_data=f"dismissedpage:{page}",
+                text="← Скрытые рекомендации",
             )
 
     if normalized.startswith("n."):
