@@ -175,15 +175,14 @@ def cities_keyboard(
     *,
     include_home: bool = True,
 ) -> InlineKeyboardMarkup:
-    rows = [
-        [
-            InlineKeyboardButton(
-                text=("✅ " if catalog.slug == current_slug else "") + catalog.name,
-                callback_data=f"city:set:{catalog.slug}",
-            )
-        ]
+    buttons = [
+        InlineKeyboardButton(
+            text=("✅ " if catalog.slug == current_slug else "") + catalog.name,
+            callback_data=f"city:set:{catalog.slug}",
+        )
         for catalog in catalogs
     ]
+    rows = [buttons[index : index + 2] for index in range(0, len(buttons), 2)]
     if include_home:
         rows.append(
             [
