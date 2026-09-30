@@ -382,6 +382,7 @@ def test_saved_route_details_preserve_route_context() -> None:
             place.slug,
             saved_route_context(route.route_id),
         ) in callbacks
+    assert "savedroute:complete:abc123" in callbacks
     assert "savedroute:delete:abc123" in callbacks
     assert "menu:savedroutes" in callbacks
 
