@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     tripster_affiliate_url: str = ""
     yandex_afisha_url: str = ""
     kudago_events_url: str = ""
+    sputnik8_perm_affiliate_url: str = ""
+    tripster_perm_affiliate_url: str = ""
+    yandex_afisha_perm_url: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",

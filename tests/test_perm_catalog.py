@@ -134,10 +134,18 @@ def test_perm_personal_recommendations_and_route_are_generic() -> None:
     }
 
 
-def test_perm_live_dynamic_providers_fail_closed() -> None:
+def test_perm_live_dynamic_providers_are_city_scoped() -> None:
     settings = Settings()
-    assert get_excursion_providers(settings, city_slug=CITY_SLUG) == ()
-    assert get_event_providers(settings, city_slug=CITY_SLUG) == ()
+    excursions = get_excursion_providers(settings, city_slug=CITY_SLUG)
+    events = get_event_providers(settings, city_slug=CITY_SLUG)
+
+    assert {provider.provider_id for provider in excursions} == {
+        "sputnik8",
+        "tripster",
+    }
+    assert {provider.provider_id for provider in events} == {
+        "yandex-afisha",
+    }
 
 
 def test_classic_interest_label_is_city_neutral() -> None:
