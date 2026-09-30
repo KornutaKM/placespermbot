@@ -1,4 +1,5 @@
 from app.catalog import get_catalog, list_catalogs
+from app.catalog_validation import validate_catalogs
 
 
 EXPECTED_CITIES = {
@@ -8,7 +9,9 @@ EXPECTED_CITIES = {
     "nizhny-novgorod": "Нижний Новгород",
     "novosibirsk": "Новосибирск",
     "perm": "Пермь",
-    "saint-petersburg": "Санкт-Петербург",\n    "sochi": "Сочи",\n    "yaroslavl": "Ярославль",
+    "saint-petersburg": "Санкт-Петербург",
+    "sochi": "Сочи",
+    "yaroslavl": "Ярославль",
     "yekaterinburg": "Екатеринбург",
 }
 
