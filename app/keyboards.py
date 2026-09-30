@@ -162,7 +162,9 @@ def data_delete_confirm_keyboard(city_slug: str) -> InlineKeyboardMarkup:
 
 def cities_keyboard(
     catalogs: tuple[CityCatalog, ...],
-    current_slug: str,
+    current_slug: str | None,
+    *,
+    include_home: bool = True,
 ) -> InlineKeyboardMarkup:
     rows = [
         [
@@ -173,7 +175,15 @@ def cities_keyboard(
         ]
         for catalog in catalogs
     ]
-    rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
+    if include_home:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text="← Главное меню",
+                    callback_data="menu:home",
+                )
+            ]
+        )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
