@@ -6,7 +6,17 @@ from app.domain import Place
 from app.planner import INTEREST_LABELS
 
 FAVORITE_BONUS = 1
+FAVORITE_AFFINITY_BONUS_CAP = 2
 MULTI_INTEREST_BONUS = 2
+
+_AFFINITY_IGNORED_TAGS = frozenset(
+    {
+        "бесплатно",
+        "с детьми",
+        "центр",
+        "прогулка",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,6 +40,11 @@ def recommend_personalized(
     _validate_interests(interests)
 
     favorites = set(favorite_slugs)
+    favorite_places = tuple(
+        place
+        for place in catalog.places
+        if place.slug in favorites
+    )
     excluded = set(exclude_slugs)
     ranked: list[tuple[int, int, PersonalRecommendation]] = []
 
@@ -54,6 +69,19 @@ def recommend_personalized(
         if place.slug in favorites:
             score += FAVORITE_BONUS
             reasons.append("уже в избранном")
+
+        affinity_tags = _favorite_affinity_tags(
+            place,
+            favorite_places=favorite_places,
+        )
+        if affinity_tags:
+            score += min(
+                len(affinity_tags),
+                FAVORITE_AFFINITY_BONUS_CAP,
+            )
+            reasons.append(
+                "похоже на избранное: " + ", ".join(affinity_tags)
+            )
 
         recommendation = PersonalRecommendation(
             place=place,
@@ -110,6 +138,26 @@ def _interest_reason(matches: tuple[tuple[str, int], ...]) -> str:
     if len(labels) == 1:
         return f"интерес: {labels[0]}"
     return "несколько интересов: " + " · ".join(labels)
+
+
+def _favorite_affinity_tags(
+    place: Place,
+    *,
+    favorite_places: tuple[Place, ...],
+) -> tuple[str, ...]:
+    candidate_tags = set(place.tags) - _AFFINITY_IGNORED_TAGS
+    if not candidate_tags:
+        return ()
+
+    shared: set[str] = set()
+    for favorite in favorite_places:
+        if favorite.slug == place.slug:
+            continue
+
+        favorite_tags = set(favorite.tags) - _AFFINITY_IGNORED_TAGS
+        shared.update(candidate_tags & favorite_tags)
+
+    return tuple(sorted(shared))
 
 
 def _interest_score(place: Place, interest: str) -> int:
