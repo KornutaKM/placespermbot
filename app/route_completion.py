@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.catalog import CityCatalog
-from app.storage import SavedRoutesRepository, VisitedRepository
+from app.storage import CompletedRoutesRepository, SavedRoutesRepository, VisitedRepository
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +21,7 @@ async def complete_saved_route(
     saved_routes: SavedRoutesRepository,
     visited: VisitedRepository,
     catalog: CityCatalog,
+    completed_routes: CompletedRoutesRepository | None = None,
 ) -> RouteCompletionResult | None:
     """Mark all available places from a saved route as visited.
 
@@ -48,6 +49,9 @@ async def complete_saved_route(
 
         await visited.add(user_id, city_slug, place_slug)
         added += 1
+
+    if completed_routes is not None:
+        await completed_routes.add(user_id, city_slug, route_id)
 
     return RouteCompletionResult(
         added=added,
