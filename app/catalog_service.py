@@ -11,15 +11,21 @@ class CatalogService:
     default_city_slug: str
     user_city_repo: UserCityRepository
 
-    async def for_user(self, user_id: int) -> CityCatalog:
+    async def selected_for_user(self, user_id: int) -> CityCatalog | None:
         city_slug = await self.user_city_repo.get_city_slug(user_id)
         if city_slug is None:
-            return get_catalog(self.default_city_slug)
+            return None
 
         try:
             return get_catalog(city_slug)
         except RuntimeError:
-            return get_catalog(self.default_city_slug)
+            return None
+
+    async def for_user(self, user_id: int) -> CityCatalog:
+        selected = await self.selected_for_user(user_id)
+        if selected is not None:
+            return selected
+        return get_catalog(self.default_city_slug)
 
     async def set_for_user(self, user_id: int, city_slug: str) -> CityCatalog:
         catalog = get_catalog(city_slug)
