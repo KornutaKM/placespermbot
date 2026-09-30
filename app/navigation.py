@@ -28,6 +28,14 @@ def nearby_callback(place_slug: str, context: str) -> str:
     return _bounded_callback(f"nearby:{place_slug}|{normalize_context(context)}")
 
 
+def dismissed_callback(action: str, place_slug: str, context: str) -> str:
+    if action not in {"add", "remove"}:
+        raise ValueError("unsupported dismissed action")
+    return _bounded_callback(
+        f"dismiss:{action}:{place_slug}|{normalize_context(context)}"
+    )
+
+
 def visited_callback(action: str, place_slug: str, context: str) -> str:
     if action not in {"add", "remove"}:
         raise ValueError("unsupported visited action")
@@ -59,6 +67,19 @@ def parse_nearby_callback(data: str) -> tuple[str, str]:
     if not data.startswith("nearby:"):
         raise ValueError("not a nearby callback")
     return _parse_slug_context(data.removeprefix("nearby:"))
+
+
+def parse_dismissed_callback(data: str) -> tuple[str, str, str]:
+    if not data.startswith("dismiss:"):
+        raise ValueError("not a dismissed callback")
+
+    payload = data.removeprefix("dismiss:")
+    action, separator, remainder = payload.partition(":")
+    if not separator or action not in {"add", "remove"}:
+        raise ValueError("invalid dismissed callback")
+
+    slug, context = _parse_slug_context(remainder)
+    return action, slug, context
 
 
 def parse_visited_callback(data: str) -> tuple[str, str, str]:

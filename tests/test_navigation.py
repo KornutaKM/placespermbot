@@ -6,9 +6,11 @@ from app.navigation import (
     TELEGRAM_CALLBACK_MAX_BYTES,
     back_target,
     category_context,
+    dismissed_callback,
     favorite_callback,
     favorites_context,
     nearby_child_context,
+    parse_dismissed_callback,
     parse_favorite_callback,
     parse_place_callback,
     parse_visited_callback,
@@ -47,6 +49,16 @@ def test_visited_context_returns_same_page() -> None:
 
     assert back_target(context).callback_data == "visitedpage:4"
     assert back_target(context).text == "← Посещённые"
+
+
+def test_dismissed_action_preserves_context() -> None:
+    callback = dismissed_callback("add", "hermitage", "p.2")
+
+    assert parse_dismissed_callback(callback) == (
+        "add",
+        "hermitage",
+        "p.2",
+    )
 
 
 def test_visited_action_preserves_context() -> None:
@@ -123,6 +135,9 @@ def test_current_catalog_callbacks_fit_telegram_limit() -> None:
 
         visited = visited_callback("add", place.slug, visited_context(99))
         assert len(visited.encode("utf-8")) <= TELEGRAM_CALLBACK_MAX_BYTES
+
+        dismissed = dismissed_callback("add", place.slug, personal_context(99))
+        assert len(dismissed.encode("utf-8")) <= TELEGRAM_CALLBACK_MAX_BYTES
 
 
 def test_oversized_callback_fails_closed() -> None:

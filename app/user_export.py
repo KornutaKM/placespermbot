@@ -7,26 +7,35 @@ from typing import Any
 from app.catalog import CityCatalog
 from app.planner import INTEREST_LABELS
 from app.storage import (
+    DismissedRepository,
     FavoritesRepository,
     InterestsRepository,
     SavedRoutesRepository,
     VisitedRepository,
 )
 
-EXPORT_SCHEMA_VERSION = 1
+EXPORT_SCHEMA_VERSION = 2
 
 
 async def build_user_export(
     user_id: int,
     catalog: CityCatalog,
     *,
+    dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
     saved_routes_repo: SavedRoutesRepository,
 ) -> dict[str, Any]:
-    interests, favorite_slugs, visited_slugs, saved_routes = await asyncio.gather(
+    (
+        interests,
+        dismissed_slugs,
+        favorite_slugs,
+        visited_slugs,
+        saved_routes,
+    ) = await asyncio.gather(
         interests_repo.list_interests(user_id, catalog.slug),
+        dismissed_repo.list_place_slugs(user_id, catalog.slug),
         favorites_repo.list_place_slugs(user_id, catalog.slug),
         visited_repo.list_place_slugs(user_id, catalog.slug),
         saved_routes_repo.list_routes(user_id, catalog.slug),
@@ -44,6 +53,10 @@ async def build_user_export(
                 "label": INTEREST_LABELS.get(interest, interest),
             }
             for interest in interests
+        ],
+        "dismissed": [
+            _place_reference(catalog, slug)
+            for slug in dismissed_slugs
         ],
         "favorites": [
             _place_reference(catalog, slug)

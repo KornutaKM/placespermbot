@@ -5,6 +5,7 @@ from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
 from app.database import migrate_database
 from app.storage import (
+    DismissedRepository,
     FavoritesRepository,
     InterestsRepository,
     SavedRoutesRepository,
@@ -22,10 +23,16 @@ def test_export_is_user_and_city_scoped_and_preserves_route_order(tmp_path) -> N
     async def scenario() -> None:
         database_path = str(tmp_path / "places.db")
         await migrate_database(database_path)
+        dismissed = DismissedRepository(database_path)
         favorites = FavoritesRepository(database_path)
         interests = InterestsRepository(database_path)
         visited = VisitedRepository(database_path)
         saved_routes = SavedRoutesRepository(database_path)
+
+        await dismissed.add(1, CITY_SLUG, "new-holland")
+        await dismissed.add(1, CITY_SLUG, "stale-dismissed")
+        await dismissed.add(1, "another-city", "other-place")
+        await dismissed.add(2, CITY_SLUG, "palace-square")
 
         await favorites.add(1, CITY_SLUG, "hermitage")
         await favorites.add(1, CITY_SLUG, "stale-place")
@@ -64,6 +71,7 @@ def test_export_is_user_and_city_scoped_and_preserves_route_order(tmp_path) -> N
         data = await build_user_export(
             1,
             get_catalog(CITY_SLUG),
+            dismissed_repo=dismissed,
             favorites_repo=favorites,
             interests_repo=interests,
             visited_repo=visited,
@@ -78,6 +86,15 @@ def test_export_is_user_and_city_scoped_and_preserves_route_order(tmp_path) -> N
         assert data["interests"] == [
             {"id": "museums", "label": "🖼 Музеи"}
         ]
+
+        dismissed_by_slug = {
+            item["place_slug"]: item
+            for item in data["dismissed"]
+        }
+        assert dismissed_by_slug["new-holland"]["title"] == "Новая Голландия"
+        assert dismissed_by_slug["stale-dismissed"]["title"] is None
+        assert "other-place" not in dismissed_by_slug
+        assert "palace-square" not in dismissed_by_slug
 
         favorites_by_slug = {
             item["place_slug"]: item
@@ -117,6 +134,7 @@ def test_serialized_export_is_utf8_deterministic_and_has_no_location_data(tmp_pa
         data = await build_user_export(
             99,
             catalog,
+            dismissed_repo=DismissedRepository(database_path),
             favorites_repo=FavoritesRepository(database_path),
             interests_repo=InterestsRepository(database_path),
             visited_repo=VisitedRepository(database_path),

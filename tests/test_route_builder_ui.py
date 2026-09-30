@@ -216,6 +216,7 @@ def test_place_keyboard_preserves_category_context_for_actions_and_back() -> Non
 
     assert f"nearby:{place.slug}|c.sights.2" in callbacks
     assert f"favorite:add:{place.slug}|c.sights.2" in callbacks
+    assert f"dismiss:add:{place.slug}|c.sights.2" in callbacks
     assert "catpage:sights:2" in callbacks
 
 
@@ -272,6 +273,7 @@ def test_place_keyboard_exposes_visited_toggle_and_preserves_context() -> None:
 
     visited_markup = place_keyboard(
         place,
+        is_dismissed=True,
         is_favorite=True,
         is_visited=True,
         context="v.1",
@@ -279,6 +281,7 @@ def test_place_keyboard_exposes_visited_toggle_and_preserves_context() -> None:
     visited_callbacks = callback_values(visited_markup)
 
     assert f"visit:remove:{place.slug}|v.1" in visited_callbacks
+    assert f"dismiss:remove:{place.slug}|v.1" in visited_callbacks
     assert "visitedpage:1" in visited_callbacks
 
 

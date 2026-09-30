@@ -40,6 +40,7 @@ from app.navigation import (
     favorites_context,
     home_context,
     nearby_child_context,
+    parse_dismissed_callback,
     parse_favorite_callback,
     parse_nearby_callback,
     parse_place_callback,
@@ -53,6 +54,7 @@ from app.profile import ProfileSummary, build_profile_summary, profile_text
 from app.recommendations import recommend_personalized
 from app.saved_routes import build_save_callback, parse_save_callback
 from app.storage import (
+    DismissedRepository,
     FavoritesRepository,
     InterestsRepository,
     SavedRoutesRepository,
@@ -198,6 +200,7 @@ async def menu_profile(
 async def send_user_export(
     message: Message,
     user_id: int,
+    dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
@@ -207,6 +210,7 @@ async def send_user_export(
     data = await build_user_export(
         user_id,
         catalog,
+        dismissed_repo=dismissed_repo,
         favorites_repo=favorites_repo,
         interests_repo=interests_repo,
         visited_repo=visited_repo,
@@ -229,6 +233,7 @@ async def send_user_export(
 @router.message(Command("export"))
 async def export_command(
     message: Message,
+    dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
@@ -237,6 +242,7 @@ async def export_command(
     await send_user_export(
         message,
         message.from_user.id,
+        dismissed_repo,
         favorites_repo,
         interests_repo,
         visited_repo,
@@ -247,6 +253,7 @@ async def export_command(
 @router.callback_query(F.data == "profile:export")
 async def export_from_profile(
     callback: CallbackQuery,
+    dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
@@ -255,6 +262,7 @@ async def export_from_profile(
     await send_user_export(
         callback.message,
         callback.from_user.id,
+        dismissed_repo,
         favorites_repo,
         interests_repo,
         visited_repo,
@@ -270,7 +278,8 @@ async def data_controls(callback: CallbackQuery) -> None:
         "🧹 <b>Управление данными</b>\n\n"
         f"Активный город: <b>{catalog.name}</b>.\n\n"
         "Можно сначала выгрузить JSON-экспорт, а затем удалить "
-        "ваши интересы, избранное, посещённые места и сохранённые маршруты "
+        "ваши интересы, избранное, посещённые места, скрытые рекомендации "
+        "и сохранённые маршруты "
         "в этом городе. Выбор активного города останется сохранён.",
         reply_markup=data_controls_keyboard(catalog.slug),
     )
@@ -297,7 +306,8 @@ async def data_delete_confirm(callback: CallbackQuery) -> None:
         "⚠️ <b>Подтвердите удаление</b>\n\n"
         f"Город: <b>{catalog.name}</b>.\n\n"
         "Будут безвозвратно удалены ваши интересы, избранное, "
-        "посещённые места и сохранённые маршруты этого города.\n\n"
+        "посещённые места, скрытые рекомендации и сохранённые маршруты "
+        "этого города.\n\n"
         "Сам каталог и выбор активного города не удаляются.",
         reply_markup=data_delete_confirm_keyboard(city_slug),
     )
@@ -333,6 +343,7 @@ async def delete_city_user_data(
         f"🎯 Интересы: {result.interests}\n"
         f"❤️ Избранное: {result.favorites}\n"
         f"✅ Посещённые: {result.visited}\n"
+        f"🙈 Не интересно: {result.dismissed}\n"
         f"🧭 Сохранённые маршруты: {result.saved_routes}\n\n"
         f"Всего удалено записей: <b>{result.total}</b>.\n"
         "Активный город остался выбран.",
@@ -470,6 +481,7 @@ async def category_page(callback: CallbackQuery) -> None:
 @router.callback_query(F.data.startswith("place:"))
 async def place_card(
     callback: CallbackQuery,
+    dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     visited_repo: VisitedRepository,
 ) -> None:
@@ -487,6 +499,11 @@ async def place_card(
 
     access = "💸 Бесплатное пространство" if place.is_free else "🎟 Условия посещения уточняются"
     tags = " · ".join(f"#{tag.replace(' ', '_')}" for tag in place.tags)
+    is_dismissed = await dismissed_repo.contains(
+        callback.from_user.id,
+        catalog.slug,
+        place.slug,
+    )
     is_favorite = await favorites_repo.contains(
         callback.from_user.id,
         catalog.slug,
@@ -509,6 +526,7 @@ async def place_card(
         f"Проверено: {place.source.checked_at.strftime('%d.%m.%Y')}",
         reply_markup=place_keyboard(
             place,
+            is_dismissed=is_dismissed,
             is_favorite=is_favorite,
             is_visited=is_visited,
             context=context,
@@ -520,6 +538,7 @@ async def place_card(
 @router.callback_query(F.data.startswith("favorite:"))
 async def favorite_action(
     callback: CallbackQuery,
+    dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     visited_repo: VisitedRepository,
 ) -> None:
@@ -545,6 +564,11 @@ async def favorite_action(
         is_favorite = False
         message = "Удалено из избранного"
 
+    is_dismissed = await dismissed_repo.contains(
+        callback.from_user.id,
+        catalog.slug,
+        place.slug,
+    )
     is_visited = await visited_repo.contains(
         callback.from_user.id,
         catalog.slug,
@@ -553,6 +577,7 @@ async def favorite_action(
     await callback.message.edit_reply_markup(
         reply_markup=place_keyboard(
             place,
+            is_dismissed=is_dismissed,
             is_favorite=is_favorite,
             is_visited=is_visited,
             context=context,
@@ -564,6 +589,7 @@ async def favorite_action(
 @router.callback_query(F.data.startswith("visit:"))
 async def visited_action(
     callback: CallbackQuery,
+    dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     visited_repo: VisitedRepository,
 ) -> None:
@@ -588,6 +614,11 @@ async def visited_action(
         is_visited = False
         message = "Отметка посещения снята"
 
+    is_dismissed = await dismissed_repo.contains(
+        callback.from_user.id,
+        catalog.slug,
+        place.slug,
+    )
     is_favorite = await favorites_repo.contains(
         callback.from_user.id,
         catalog.slug,
@@ -596,6 +627,60 @@ async def visited_action(
     await callback.message.edit_reply_markup(
         reply_markup=place_keyboard(
             place,
+            is_dismissed=is_dismissed,
+            is_favorite=is_favorite,
+            is_visited=is_visited,
+            context=context,
+        )
+    )
+    await callback.answer(message)
+
+
+@router.callback_query(F.data.startswith("dismiss:"))
+async def dismissed_action(
+    callback: CallbackQuery,
+    dismissed_repo: DismissedRepository,
+    favorites_repo: FavoritesRepository,
+    visited_repo: VisitedRepository,
+) -> None:
+    catalog = current_catalog()
+    try:
+        action, slug, context = parse_dismissed_callback(callback.data)
+    except ValueError:
+        await callback.answer(
+            "Не удалось изменить персональные рекомендации.",
+            show_alert=True,
+        )
+        return
+
+    place = catalog.place_by_slug(slug)
+    if place is None:
+        await callback.answer("Место не найдено.", show_alert=True)
+        return
+
+    if action == "add":
+        await dismissed_repo.add(callback.from_user.id, catalog.slug, place.slug)
+        is_dismissed = True
+        message = "Скрыто из «Для меня»"
+    else:
+        await dismissed_repo.remove(callback.from_user.id, catalog.slug, place.slug)
+        is_dismissed = False
+        message = "Возвращено в рекомендации"
+
+    is_favorite = await favorites_repo.contains(
+        callback.from_user.id,
+        catalog.slug,
+        place.slug,
+    )
+    is_visited = await visited_repo.contains(
+        callback.from_user.id,
+        catalog.slug,
+        place.slug,
+    )
+    await callback.message.edit_reply_markup(
+        reply_markup=place_keyboard(
+            place,
+            is_dismissed=is_dismissed,
             is_favorite=is_favorite,
             is_visited=is_visited,
             context=context,
@@ -659,6 +744,7 @@ async def nearby(callback: CallbackQuery) -> None:
 
 async def show_personal_page(
     callback: CallbackQuery,
+    dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
@@ -679,6 +765,10 @@ async def show_personal_page(
         await callback.answer()
         return
 
+    dismissed_slugs = await dismissed_repo.list_place_slugs(
+        callback.from_user.id,
+        catalog.slug,
+    )
     favorite_slugs = await favorites_repo.list_place_slugs(
         callback.from_user.id,
         catalog.slug,
@@ -692,7 +782,7 @@ async def show_personal_page(
         interests,
         limit=len(catalog.places),
         favorite_slugs=favorite_slugs,
-        exclude_slugs=visited_slugs,
+        exclude_slugs=set(visited_slugs) | set(dismissed_slugs),
     )
     page = paginate(recommendations, page_index)
     place_page = Page(
@@ -712,7 +802,8 @@ async def show_personal_page(
         details = (
             "<b>Почему эти места:</b>\n"
             f"{reason_lines}\n\n"
-            "Посещённые места исключены. Избранное даёт небольшой приоритет."
+            "Посещённые и отмеченные «Не интересно» места исключены. "
+            "Избранное даёт небольшой приоритет."
         )
     else:
         details = "Все подходящие места уже отмечены как посещённые."
@@ -731,12 +822,14 @@ async def show_personal_page(
 @router.callback_query(F.data == "menu:personal")
 async def personal_recommendations(
     callback: CallbackQuery,
+    dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
 ) -> None:
     await show_personal_page(
         callback,
+        dismissed_repo,
         favorites_repo,
         interests_repo,
         visited_repo,
@@ -747,6 +840,7 @@ async def personal_recommendations(
 @router.callback_query(F.data.startswith("personalpage:"))
 async def personal_recommendations_page(
     callback: CallbackQuery,
+    dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
@@ -759,6 +853,7 @@ async def personal_recommendations_page(
 
     await show_personal_page(
         callback,
+        dismissed_repo,
         favorites_repo,
         interests_repo,
         visited_repo,
@@ -821,6 +916,7 @@ async def toggle_interest(
 @router.callback_query(F.data == "pref:done")
 async def finish_interests(
     callback: CallbackQuery,
+    dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
@@ -836,6 +932,7 @@ async def finish_interests(
 
     await show_personal_page(
         callback,
+        dismissed_repo,
         favorites_repo,
         interests_repo,
         visited_repo,
