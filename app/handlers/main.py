@@ -46,9 +46,11 @@ from app.navigation import (
     parse_favorite_callback,
     parse_nearby_callback,
     parse_place_callback,
+    parse_similar_callback,
     parse_visited_callback,
     place_callback,
     search_context,
+    similar_child_context,
 )
 from app.pagination import Page, paginate
 from app.personal_route import build_personal_route
@@ -63,6 +65,7 @@ from app.saved_routes import (
     route_interest_label,
 )
 from app.search_ui import search_not_found_text, search_prompt, search_results_text
+from app.similarity import find_similar_places
 from app.storage import (
     DismissedRepository,
     FavoritesRepository,
@@ -576,6 +579,61 @@ async def place_card(
             is_favorite=is_favorite,
             is_visited=is_visited,
             context=context,
+        ),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("similar:"))
+async def similar_places(callback: CallbackQuery) -> None:
+    catalog = current_catalog()
+    try:
+        origin_slug, parent_context = parse_similar_callback(callback.data)
+    except ValueError:
+        await callback.answer(
+            "Не удалось открыть похожие места.",
+            show_alert=True,
+        )
+        return
+
+    origin = catalog.place_by_slug(origin_slug)
+    if origin is None:
+        await callback.answer("Исходное место не найдено.", show_alert=True)
+        return
+
+    results = find_similar_places(catalog, origin.slug, limit=5)
+    back_callback = place_callback(origin.slug, parent_context)
+
+    if not results:
+        await callback.message.edit_text(
+            f"🔗 <b>Похожие на {origin.title}</b>\n\n"
+            "В текущем каталоге пока нет достаточно похожих мест.",
+            reply_markup=places_keyboard(
+                (),
+                back_callback=back_callback,
+                back_text="← К исходному месту",
+            ),
+        )
+        await callback.answer()
+        return
+
+    lines = "\n".join(
+        f"{index}. {item.place.emoji} <b>{item.place.title}</b>\n"
+        f"   ↳ {' · '.join(item.reasons)}"
+        for index, item in enumerate(results, start=1)
+    )
+    places = tuple(item.place for item in results)
+    await callback.message.edit_text(
+        f"🔗 <b>Похожие на {origin.title}</b>\n\n"
+        f"{lines}",
+        reply_markup=places_keyboard(
+            places,
+            back_callback=back_callback,
+            back_text="← К исходному месту",
+            place_context=similar_child_context(
+                origin.slug,
+                parent_context,
+            ),
         ),
     )
     await callback.answer()
