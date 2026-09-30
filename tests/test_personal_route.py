@@ -1,5 +1,6 @@
 from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
+from app.personal_route import build_personal_route
 from app.planner import build_ranked_route
 from app.recommendations import recommend_personalized
 from app.saved_routes import PERSONAL_ROUTE_INTEREST
@@ -57,3 +58,75 @@ def test_personal_route_is_deterministic_for_same_explicit_signals() -> None:
     )
 
     assert first == second
+
+
+
+def test_personal_route_location_origin_prefers_nearby_ranked_candidate() -> None:
+    city = catalog()
+    sevkabel = city.place_by_slug("sevkabel-port")
+    assert sevkabel is not None
+
+    without_location = build_personal_route(
+        city,
+        ("unusual",),
+        budget_minutes=120,
+    )
+    with_location = build_personal_route(
+        city,
+        ("unusual",),
+        budget_minutes=120,
+        start_latitude=sevkabel.latitude,
+        start_longitude=sevkabel.longitude,
+    )
+
+    assert without_location is not None
+    assert with_location is not None
+    assert without_location.places[0].slug == "new-holland"
+    assert with_location.places[0].slug == "sevkabel-port"
+
+
+def test_personal_route_origin_walk_counts_toward_budget_and_distance() -> None:
+    route = build_personal_route(
+        catalog(),
+        ("unusual",),
+        budget_minutes=120,
+        start_latitude=59.9200,
+        start_longitude=30.2300,
+    )
+
+    assert route is not None
+    assert route.places[0].slug == "sevkabel-port"
+    assert route.distance_km > 0
+    assert route.estimated_minutes > route.places[0].visit_minutes
+    assert route.estimated_minutes <= route.budget_minutes
+
+
+def test_personal_route_far_origin_fails_closed() -> None:
+    route = build_personal_route(
+        catalog(),
+        ("classic",),
+        budget_minutes=120,
+        start_latitude=55.7558,
+        start_longitude=37.6176,
+    )
+
+    assert route is None
+
+
+def test_personal_route_location_keeps_explicit_exclusions() -> None:
+    city = catalog()
+    sevkabel = city.place_by_slug("sevkabel-port")
+    assert sevkabel is not None
+
+    route = build_personal_route(
+        city,
+        ("unusual",),
+        budget_minutes=240,
+        favorite_slugs={"sevkabel-port"},
+        dismissed_slugs={"sevkabel-port"},
+        start_latitude=sevkabel.latitude,
+        start_longitude=sevkabel.longitude,
+    )
+
+    assert route is not None
+    assert "sevkabel-port" not in {place.slug for place in route.places}

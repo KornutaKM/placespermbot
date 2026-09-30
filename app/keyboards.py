@@ -531,7 +531,15 @@ def personalized_places_keyboard(
     )
 
 
-def personal_route_duration_keyboard() -> InlineKeyboardMarkup:
+def personal_route_duration_keyboard(
+    *,
+    location_selected: bool = False,
+) -> InlineKeyboardMarkup:
+    location_text = (
+        "✅ Старт: моя геопозиция"
+        if location_selected
+        else "📍 Начать рядом со мной"
+    )
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -547,6 +555,12 @@ def personal_route_duration_keyboard() -> InlineKeyboardMarkup:
                     text="6 часов",
                     callback_data="personalroute:duration:360",
                 ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text=location_text,
+                    callback_data="personalroute:location",
+                )
             ],
             [
                 InlineKeyboardButton(

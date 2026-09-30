@@ -50,7 +50,8 @@ from app.navigation import (
     search_context,
 )
 from app.pagination import Page, paginate
-from app.planner import INTEREST_LABELS, build_ranked_route, build_route
+from app.personal_route import build_personal_route
+from app.planner import INTEREST_LABELS, build_route
 from app.profile import ProfileSummary, build_profile_summary, profile_text
 from app.recommendations import recommend_personalized
 from app.saved_routes import (
@@ -94,9 +95,15 @@ class NearbyFlow(StatesGroup):
     waiting_location = State()
 
 
+class PersonalRouteFlow(StatesGroup):
+    waiting_location = State()
+    waiting_duration = State()
+
+
 LOCATION_REQUEST_STATES = {
     RouteBuilderFlow.waiting_location.state,
     NearbyFlow.waiting_location.state,
+    PersonalRouteFlow.waiting_location.state,
 }
 
 
@@ -409,6 +416,7 @@ async def set_city(
     state: FSMContext,
     catalog_service: CatalogService,
 ) -> None:
+    previous_state = await state.get_state()
     city_slug = callback.data.removeprefix("city:set:").strip()
     try:
         catalog = await catalog_service.set_for_user(
@@ -420,6 +428,11 @@ async def set_city(
         return
 
     await state.clear()
+    if previous_state in LOCATION_REQUEST_STATES:
+        await callback.message.answer(
+            "Запрос геопозиции отменён.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
     await callback.message.edit_text(
         home_text(catalog),
         reply_markup=home_keyboard(),
@@ -829,11 +842,20 @@ async def show_personal_page(
 @router.callback_query(F.data == "menu:personal")
 async def personal_recommendations(
     callback: CallbackQuery,
+    state: FSMContext,
     dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
 ) -> None:
+    previous_state = await state.get_state()
+    await state.clear()
+    if previous_state in LOCATION_REQUEST_STATES:
+        await callback.message.answer(
+            "Запрос геопозиции отменён.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
     await show_personal_page(
         callback,
         dismissed_repo,
@@ -871,8 +893,17 @@ async def personal_recommendations_page(
 @router.callback_query(F.data == "personalroute:start")
 async def personal_route_start(
     callback: CallbackQuery,
+    state: FSMContext,
     interests_repo: InterestsRepository,
 ) -> None:
+    previous_state = await state.get_state()
+    await state.clear()
+    if previous_state in LOCATION_REQUEST_STATES:
+        await callback.message.answer(
+            "Запрос геопозиции отменён.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
     catalog = current_catalog()
     interests = await interests_repo.list_interests(
         callback.from_user.id,
@@ -885,18 +916,91 @@ async def personal_route_start(
         )
         return
 
+    await state.set_state(PersonalRouteFlow.waiting_duration)
+
     await callback.message.edit_text(
         "🪄 <b>Маршрут для меня</b>\n\n"
-        "Сколько времени у вас есть? Маршрут будет собран только из "
-        "ваших актуальных персональных рекомендаций.",
+        "Сколько времени у вас есть? Можно также один раз передать "
+        "геопозицию — тогда пеший бюджет начнётся от текущей точки. "
+        "Координаты не сохраняются.",
         reply_markup=personal_route_duration_keyboard(),
     )
     await callback.answer()
 
 
+@router.callback_query(F.data == "personalroute:location")
+async def personal_route_request_location(
+    callback: CallbackQuery,
+    state: FSMContext,
+) -> None:
+    await state.update_data(
+        start_latitude=None,
+        start_longitude=None,
+    )
+    await state.set_state(PersonalRouteFlow.waiting_location)
+    await callback.message.answer(
+        "📍 <b>Старт персонального маршрута</b>\n\n"
+        "Передайте текущую геопозицию один раз. Она будет использована "
+        "только для расчёта первой точки и пешего времени этого маршрута.",
+        reply_markup=request_location_keyboard(),
+    )
+    await callback.answer()
+
+
+@router.message(PersonalRouteFlow.waiting_location, F.location)
+async def personal_route_location(
+    message: Message,
+    state: FSMContext,
+) -> None:
+    location = message.location
+    if location is None:
+        await message.answer("Не удалось прочитать геопозицию.")
+        return
+
+    await state.update_data(
+        start_latitude=location.latitude,
+        start_longitude=location.longitude,
+    )
+    await state.set_state(PersonalRouteFlow.waiting_duration)
+    await message.answer(
+        "✅ Геопозиция принята и будет использована только для этого маршрута.",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    await message.answer(
+        "Теперь выберите, сколько времени есть:",
+        reply_markup=personal_route_duration_keyboard(location_selected=True),
+    )
+
+
+@router.message(PersonalRouteFlow.waiting_location, F.text == "Отмена")
+async def personal_route_location_cancel(
+    message: Message,
+    state: FSMContext,
+) -> None:
+    await state.clear()
+    await state.set_state(PersonalRouteFlow.waiting_duration)
+    await message.answer(
+        "Геопозиция не используется.",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    await message.answer(
+        "Выберите время для персонального маршрута:",
+        reply_markup=personal_route_duration_keyboard(),
+    )
+
+
+@router.message(PersonalRouteFlow.waiting_location)
+async def personal_route_location_invalid(message: Message) -> None:
+    await message.answer(
+        "Нажмите «📍 Отправить мою геопозицию» или выберите «Отмена».",
+        reply_markup=request_location_keyboard(),
+    )
+
+
 @router.callback_query(F.data.startswith("personalroute:duration:"))
 async def personal_route_duration(
     callback: CallbackQuery,
+    state: FSMContext,
     dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
@@ -915,12 +1019,31 @@ async def personal_route_duration(
         )
         return
 
+    data = await state.get_data()
+    start_latitude = data.get("start_latitude")
+    start_longitude = data.get("start_longitude")
+    if start_latitude is not None and not isinstance(start_latitude, (int, float)):
+        await state.clear()
+        await callback.answer(
+            "Некорректная геопозиция. Соберите маршрут заново.",
+            show_alert=True,
+        )
+        return
+    if start_longitude is not None and not isinstance(start_longitude, (int, float)):
+        await state.clear()
+        await callback.answer(
+            "Некорректная геопозиция. Соберите маршрут заново.",
+            show_alert=True,
+        )
+        return
+
     catalog = current_catalog()
     interests = await interests_repo.list_interests(
         callback.from_user.id,
         catalog.slug,
     )
     if not interests:
+        await state.clear()
         await callback.answer(
             "Сначала выберите хотя бы один интерес.",
             show_alert=True,
@@ -939,24 +1062,32 @@ async def personal_route_duration(
         callback.from_user.id,
         catalog.slug,
     )
-    recommendations = recommend_personalized(
+    route = build_personal_route(
         catalog,
         interests,
-        limit=len(catalog.places),
-        favorite_slugs=favorite_slugs,
-        exclude_slugs=set(visited_slugs) | set(dismissed_slugs),
-    )
-    candidates = tuple(item.place for item in recommendations)
-    route = build_ranked_route(
-        candidates,
         budget_minutes=budget_minutes,
-        route_interest=PERSONAL_ROUTE_INTEREST,
+        favorite_slugs=favorite_slugs,
+        visited_slugs=visited_slugs,
+        dismissed_slugs=dismissed_slugs,
+        start_latitude=(
+            float(start_latitude)
+            if start_latitude is not None
+            else None
+        ),
+        start_longitude=(
+            float(start_longitude)
+            if start_longitude is not None
+            else None
+        ),
     )
+    location_used = start_latitude is not None and start_longitude is not None
+    await state.clear()
 
     if route is None:
         await callback.message.edit_text(
-            "🎯 Подходящих новых мест для такого бюджета времени сейчас нет. "
-            "Можно изменить интересы или вернуть некоторые места в рекомендации.",
+            "🎯 Не удалось собрать персональный маршрут под эти условия. "
+            "Если использовалась геопозиция, текущая точка могла оказаться "
+            "слишком далеко для выбранного бюджета времени.",
             reply_markup=personal_route_duration_keyboard(),
         )
         await callback.answer()
@@ -971,12 +1102,14 @@ async def personal_route_duration(
     await callback.message.edit_text(
         f"🪄 <b>{PERSONAL_ROUTE_LABEL}</b>\n\n"
         f"Бюджет: {route.budget_minutes // 60} ч\n"
-        f"Оценка маршрута: ~{hours} ч {minutes:02d} мин\n"
-        f"Пешком между точками: ~{route.distance_km:g} км\n"
+        + ("Старт: от вашей геопозиции\n" if location_used else "")
+        + f"Оценка маршрута: ~{hours} ч {minutes:02d} мин\n"
+        f"Пешком по расчёту: ~{route.distance_km:g} км\n"
         f"Точек: {len(route.places)}\n\n"
         f"<b>Маршрут:</b>\n{stops}\n\n"
         "Использованы только текущие явные интересы и избранное; "
-        "посещённые и отмеченные «Не интересно» места исключены.",
+        "посещённые и отмеченные «Не интересно» места исключены. "
+        "Геопозиция после расчёта не сохраняется.",
         reply_markup=generated_route_keyboard(
             route.places,
             save_callback=build_save_callback(catalog, route),
@@ -1334,9 +1467,16 @@ async def save_generated_route(
         snapshot.budget_minutes,
         tuple(place.slug for place in snapshot.places),
     )
-    await callback.message.edit_reply_markup(
-        reply_markup=generated_route_keyboard(snapshot.places)
-    )
+    if snapshot.interest == PERSONAL_ROUTE_INTEREST:
+        reply_markup = generated_route_keyboard(
+            snapshot.places,
+            restart_callback="personalroute:start",
+            restart_text="🪄 Собрать заново",
+        )
+    else:
+        reply_markup = generated_route_keyboard(snapshot.places)
+
+    await callback.message.edit_reply_markup(reply_markup=reply_markup)
     await callback.answer(f"Маршрут сохранён · {saved.route_id[:6]}")
 
 

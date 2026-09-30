@@ -388,6 +388,7 @@ def test_personal_route_duration_keyboard_contains_supported_budgets() -> None:
         "personalroute:duration:120",
         "personalroute:duration:240",
         "personalroute:duration:360",
+        "personalroute:location",
         "menu:personal",
     }
 
@@ -414,3 +415,19 @@ def test_personal_generated_route_can_restart_personal_flow() -> None:
     assert save_callback in callbacks
     assert "personalroute:start" in callbacks
     assert "builder:start" not in callbacks
+
+
+
+def test_personal_route_duration_keyboard_marks_selected_location() -> None:
+    markup = personal_route_duration_keyboard(location_selected=True)
+    callbacks = callback_values(markup)
+
+    assert "personalroute:location" in callbacks
+    location_buttons = [
+        button
+        for row in markup.inline_keyboard
+        for button in row
+        if button.callback_data == "personalroute:location"
+    ]
+    assert len(location_buttons) == 1
+    assert location_buttons[0].text == "✅ Старт: моя геопозиция"
