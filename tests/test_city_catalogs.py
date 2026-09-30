@@ -2,9 +2,9 @@ from app.catalog import get_catalog, list_catalogs
 
 
 EXPECTED_CITIES = {
-    "kazan": "Казань",
+    "kaliningrad": "Калининград",\n    "kazan": "Казань",
     "moscow": "Москва",
-    "nizhny-novgorod": "Нижний Новгород",
+    "nizhny-novgorod": "Нижний Новгород",\n    "novosibirsk": "Новосибирск",
     "perm": "Пермь",
     "saint-petersburg": "Санкт-Петербург",
     "yekaterinburg": "Екатеринбург",
@@ -18,7 +18,7 @@ def test_all_supported_cities_are_registered() -> None:
 
 
 def test_new_city_catalogs_have_valid_routes_and_unique_places() -> None:
-    for city_slug in ("kazan", "moscow", "nizhny-novgorod", "yekaterinburg"):
+    for city_slug in EXPECTED_CITIES:
         catalog = get_catalog(city_slug)
         place_slugs = [place.slug for place in catalog.places]
 
@@ -51,7 +51,7 @@ def test_city_search_is_isolated_between_catalogs() -> None:
 
 
 def test_large_new_city_catalogs_have_enough_discovery_depth() -> None:
-    for city_slug in ("moscow", "yekaterinburg"):
+    for city_slug in ("kaliningrad", "moscow", "novosibirsk", "yekaterinburg"):
         catalog = get_catalog(city_slug)
 
         assert len(catalog.places) >= 8
