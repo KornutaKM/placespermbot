@@ -8,7 +8,7 @@ EXPECTED_CITIES = {
     "nizhny-novgorod": "Нижний Новгород",
     "novosibirsk": "Новосибирск",
     "perm": "Пермь",
-    "saint-petersburg": "Санкт-Петербург",
+    "saint-petersburg": "Санкт-Петербург",\n    "sochi": "Сочи",\n    "yaroslavl": "Ярославль",
     "yekaterinburg": "Екатеринбург",
 }
 
@@ -63,7 +63,7 @@ def test_large_new_city_catalogs_have_enough_discovery_depth() -> None:
 
 
 def test_core_city_catalogs_have_richer_discovery_depth() -> None:
-    for city_slug in ("kaliningrad", "kazan", "moscow", "nizhny-novgorod", "novosibirsk", "perm", "yekaterinburg"):
+    for city_slug in ("kaliningrad", "kazan", "moscow", "nizhny-novgorod", "novosibirsk", "perm", "sochi", "yaroslavl", "yekaterinburg"):
         catalog = get_catalog(city_slug)
 
         assert len(catalog.places) >= 12
