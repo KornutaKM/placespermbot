@@ -16,6 +16,7 @@ EXPECTED_TABLES = frozenset(
         "user_city_preferences",
         "visited_places",
         "saved_routes",
+        "dismissed_places",
     }
 )
 
