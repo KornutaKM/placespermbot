@@ -842,11 +842,20 @@ async def show_personal_page(
 @router.callback_query(F.data == "menu:personal")
 async def personal_recommendations(
     callback: CallbackQuery,
+    state: FSMContext,
     dismissed_repo: DismissedRepository,
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
 ) -> None:
+    previous_state = await state.get_state()
+    await state.clear()
+    if previous_state in LOCATION_REQUEST_STATES:
+        await callback.message.answer(
+            "Запрос геопозиции отменён.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
     await show_personal_page(
         callback,
         dismissed_repo,
