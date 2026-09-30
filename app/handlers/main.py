@@ -75,6 +75,7 @@ from app.saved_routes import (
 from app.search_ui import search_not_found_text, search_prompt, search_results_text
 from app.similarity import find_similar_places
 from app.storage import (
+    CompletedRoutesRepository,
     DismissedRepository,
     FavoritesRepository,
     InterestsRepository,
@@ -1735,6 +1736,7 @@ async def complete_saved_route_callback(
     callback: CallbackQuery,
     saved_routes_repo: SavedRoutesRepository,
     visited_repo: VisitedRepository,
+    completed_routes_repo: CompletedRoutesRepository,
 ) -> None:
     route_id = callback.data.removeprefix("savedroute:complete:").strip()
     if not route_id:
@@ -1749,6 +1751,7 @@ async def complete_saved_route_callback(
         saved_routes=saved_routes_repo,
         visited=visited_repo,
         catalog=catalog,
+        completed_routes=completed_routes_repo,
     )
     if result is None:
         await callback.answer(
