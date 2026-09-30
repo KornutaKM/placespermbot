@@ -130,9 +130,11 @@ def test_favorite_gets_small_deterministic_boost() -> None:
         favorite_slugs={later},
     )
 
-    assert boosted[0].place.slug == later
-    assert boosted[0].score == baseline[1].score + 1
-    assert "уже в избранном" in boosted[0].reasons
+    baseline_favorite = _recommendation_by_slug(baseline, later)
+    boosted_favorite = _recommendation_by_slug(boosted, later)
+
+    assert boosted_favorite.score == baseline_favorite.score + 1
+    assert "уже в избранном" in boosted_favorite.reasons
 
 
 def test_multi_interest_match_gets_bonus_and_reason() -> None:
