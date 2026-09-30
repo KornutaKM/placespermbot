@@ -249,6 +249,25 @@ def test_city_selector_marks_current_catalog() -> None:
     assert selected_buttons[0].text.startswith("✅ ")
 
 
+def test_city_selector_supports_first_run_without_preselection() -> None:
+    markup = cities_keyboard(
+        list_catalogs(),
+        None,
+        include_home=False,
+    )
+    callbacks = callback_values(markup)
+
+    assert callbacks == {
+        "city:set:perm",
+        "city:set:saint-petersburg",
+    }
+    assert all(
+        not button.text.startswith("✅ ")
+        for row in markup.inline_keyboard
+        for button in row
+    )
+
+
 def test_live_providers_fail_closed_for_unsupported_city() -> None:
     assert get_excursion_providers(
         Settings(),
