@@ -25,6 +25,7 @@ from app.keyboards import (
     personal_route_duration_keyboard,
     personalized_places_keyboard,
     place_keyboard,
+    place_route_duration_keyboard,
     places_keyboard,
     profile_keyboard,
     request_location_keyboard,
@@ -46,20 +47,26 @@ from app.navigation import (
     parse_favorite_callback,
     parse_nearby_callback,
     parse_place_callback,
+    parse_place_route_callback,
+    parse_place_route_duration_callback,
     parse_similar_callback,
     parse_visited_callback,
     place_callback,
+    place_route_callback,
     search_context,
     similar_child_context,
 )
 from app.pagination import Page, paginate
 from app.personal_route import build_personal_route
+from app.place_route import build_place_route
 from app.planner import INTEREST_LABELS, build_route
 from app.profile import ProfileSummary, build_profile_summary, profile_text
 from app.recommendations import recommend_personalized
 from app.saved_routes import (
     PERSONAL_ROUTE_INTEREST,
     PERSONAL_ROUTE_LABEL,
+    PLACE_ROUTE_INTEREST,
+    PLACE_ROUTE_LABEL,
     build_save_callback,
     parse_save_callback,
     route_interest_label,
@@ -579,6 +586,101 @@ async def place_card(
             is_favorite=is_favorite,
             is_visited=is_visited,
             context=context,
+        ),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("proute:"))
+async def place_route_start(callback: CallbackQuery) -> None:
+    catalog = current_catalog()
+    try:
+        origin_slug, parent_context = parse_place_route_callback(callback.data)
+    except ValueError:
+        await callback.answer(
+            "Не удалось открыть конструктор маршрута.",
+            show_alert=True,
+        )
+        return
+
+    origin = catalog.place_by_slug(origin_slug)
+    if origin is None:
+        await callback.answer("Исходное место не найдено.", show_alert=True)
+        return
+
+    await callback.message.edit_text(
+        "🪄 <b>Маршрут отсюда</b>\n\n"
+        f"Старт: <b>{origin.title}</b>.\n"
+        "Выберите доступное время. Первая точка останется выбранным местом, "
+        "затем маршрут дополнится похожими и ближайшими точками.",
+        reply_markup=place_route_duration_keyboard(
+            origin.slug,
+            parent_context,
+        ),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("prouted:"))
+async def place_route_duration(callback: CallbackQuery) -> None:
+    catalog = current_catalog()
+    try:
+        (
+            budget_minutes,
+            origin_slug,
+            parent_context,
+        ) = parse_place_route_duration_callback(callback.data)
+    except ValueError:
+        await callback.answer(
+            "Не удалось прочитать параметры маршрута.",
+            show_alert=True,
+        )
+        return
+
+    origin = catalog.place_by_slug(origin_slug)
+    if origin is None:
+        await callback.answer("Исходное место не найдено.", show_alert=True)
+        return
+
+    route = build_place_route(
+        catalog,
+        origin.slug,
+        budget_minutes=budget_minutes,
+    )
+    if route is None or not route.places:
+        await callback.message.edit_text(
+            "Не удалось собрать маршрут под этот бюджет времени. "
+            "Попробуйте выбрать больше времени.",
+            reply_markup=place_route_duration_keyboard(
+                origin.slug,
+                parent_context,
+            ),
+        )
+        await callback.answer()
+        return
+
+    stops = "\n".join(
+        f"{index}. {place.emoji} {place.title} — ~{place.visit_minutes} мин"
+        for index, place in enumerate(route.places, start=1)
+    )
+    hours, minutes = divmod(route.estimated_minutes, 60)
+
+    await callback.message.edit_text(
+        f"🪄 <b>{PLACE_ROUTE_LABEL}</b>\n\n"
+        f"Старт: <b>{origin.title}</b>\n"
+        f"Бюджет: {route.budget_minutes // 60} ч\n"
+        f"Оценка маршрута: ~{hours} ч {minutes:02d} мин\n"
+        f"Пешком между точками: ~{route.distance_km:g} км\n"
+        f"Точек: {len(route.places)}\n\n"
+        f"<b>Маршрут:</b>\n{stops}",
+        reply_markup=generated_route_keyboard(
+            route.places,
+            save_callback=build_save_callback(catalog, route),
+            restart_callback=place_route_callback(
+                origin.slug,
+                parent_context,
+            ),
+            restart_text="🪄 Другой бюджет",
         ),
     )
     await callback.answer()
@@ -1556,6 +1658,15 @@ async def save_generated_route(
             snapshot.places,
             restart_callback="personalroute:start",
             restart_text="🪄 Собрать заново",
+        )
+    elif snapshot.interest == PLACE_ROUTE_INTEREST:
+        reply_markup = generated_route_keyboard(
+            snapshot.places,
+            restart_callback=place_route_callback(
+                snapshot.places[0].slug,
+                "d",
+            ),
+            restart_text="🪄 Другой бюджет",
         )
     else:
         reply_markup = generated_route_keyboard(snapshot.places)
