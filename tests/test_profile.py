@@ -104,8 +104,34 @@ def test_profile_summary_handles_empty_state(tmp_path) -> None:
         text = profile_text(summary)
         assert "Интересы: не выбраны" in text
         assert "Избранное: 0" in text
-        assert "Посещённые: 0" in text
+        assert "Посещено: 0/" in text\n        assert "0%" in text\n        assert "Достижения" in text\n        assert "пока нет" in text
         assert "Не интересно: 0" in text
         assert "Сохранённые маршруты: 0" in text
+
+    asyncio.run(scenario())
+
+
+def test_profile_progress_ignores_stale_visited_places(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "places.db")
+        await migrate_database(database_path)
+        catalog = get_catalog(CITY_SLUG)
+        visited = VisitedRepository(database_path)
+        await visited.add(7, CITY_SLUG, catalog.places[0].slug)
+        await visited.add(7, CITY_SLUG, "removed-place")
+
+        summary = await build_profile_summary(
+            7,
+            catalog,
+            dismissed_repo=DismissedRepository(database_path),
+            favorites_repo=FavoritesRepository(database_path),
+            interests_repo=InterestsRepository(database_path),
+            visited_repo=visited,
+            saved_routes_repo=SavedRoutesRepository(database_path),
+        )
+
+        assert summary.visited_count == 1
+        assert summary.progress_percent == round(100 / len(catalog.places))
+        assert summary.achievement_labels == ("🏅 Первое открытие",)
 
     asyncio.run(scenario())
