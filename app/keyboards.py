@@ -92,6 +92,12 @@ def profile_keyboard() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
+                    text="🙈 Скрытые рекомендации",
+                    callback_data="menu:dismissed",
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text="🧭 Сохранённые маршруты",
                     callback_data="menu:savedroutes",
                 ),
