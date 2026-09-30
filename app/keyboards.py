@@ -428,6 +428,14 @@ def saved_route_details_keyboard(
     rows.append(
         [
             InlineKeyboardButton(
+                text="✅ Маршрут пройден",
+                callback_data=f"savedroute:complete:{route.route_id}",
+            )
+        ]
+    )
+    rows.append(
+        [
+            InlineKeyboardButton(
                 text="🗑 Удалить маршрут",
                 callback_data=f"savedroute:delete:{route.route_id}",
             )
