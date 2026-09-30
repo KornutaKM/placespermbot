@@ -60,3 +60,12 @@ def test_large_new_city_catalogs_have_enough_discovery_depth() -> None:
         assert len(catalog.routes) >= 3
         assert len({place.category for place in catalog.places}) >= 3
         assert sum(place.is_free for place in catalog.places) >= 5
+
+
+def test_core_city_catalogs_have_richer_discovery_depth() -> None:
+    for city_slug in ("kazan", "moscow", "nizhny-novgorod", "yekaterinburg"):
+        catalog = get_catalog(city_slug)
+
+        assert len(catalog.places) >= 12
+        assert len(catalog.routes) >= 4
+        assert len({place.category for place in catalog.places}) >= 3
