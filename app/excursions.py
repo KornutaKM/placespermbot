@@ -6,10 +6,12 @@ from urllib.parse import urlparse
 
 from app.config import Settings
 
-SOURCE_CHECKED_AT = date(2026, 9, 29)
+SOURCE_CHECKED_AT = date(2026, 9, 30)
 
 SPUTNIK8_CATALOG_URL = "https://www.sputnik8.com/ru/st-petersburg"
 TRIPSTER_CATALOG_URL = "https://experience.tripster.ru/experience/Saint_Petersburg/"
+PERM_SPUTNIK8_CATALOG_URL = "https://www.sputnik8.com/ru/perm"
+PERM_TRIPSTER_CATALOG_URL = "https://experience.tripster.ru/experience/Perm/"
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,12 +25,37 @@ class ExcursionProvider:
     note: str
 
 
+@dataclass(frozen=True, slots=True)
+class ExcursionCityConfig:
+    sputnik8_url: str
+    tripster_url: str
+    sputnik8_override_attr: str
+    tripster_override_attr: str
+
+
+_CITY_CONFIGS: dict[str, ExcursionCityConfig] = {
+    "saint-petersburg": ExcursionCityConfig(
+        sputnik8_url=SPUTNIK8_CATALOG_URL,
+        tripster_url=TRIPSTER_CATALOG_URL,
+        sputnik8_override_attr="sputnik8_affiliate_url",
+        tripster_override_attr="tripster_affiliate_url",
+    ),
+    "perm": ExcursionCityConfig(
+        sputnik8_url=PERM_SPUTNIK8_CATALOG_URL,
+        tripster_url=PERM_TRIPSTER_CATALOG_URL,
+        sputnik8_override_attr="sputnik8_perm_affiliate_url",
+        tripster_override_attr="tripster_perm_affiliate_url",
+    ),
+}
+
+
 def get_excursion_providers(
     settings: Settings,
     *,
     city_slug: str = "saint-petersburg",
 ) -> tuple[ExcursionProvider, ...]:
-    if city_slug != "saint-petersburg":
+    config = _CITY_CONFIGS.get(city_slug)
+    if config is None:
         return ()
 
     return (
@@ -36,11 +63,11 @@ def get_excursion_providers(
             provider_id="sputnik8",
             name="Sputnik8",
             catalog_url=_safe_provider_url(
-                settings.sputnik8_affiliate_url,
-                fallback=SPUTNIK8_CATALOG_URL,
+                str(getattr(settings, config.sputnik8_override_attr)),
+                fallback=config.sputnik8_url,
                 allowed_hosts={"sputnik8.com", "www.sputnik8.com"},
             ),
-            source_url=SPUTNIK8_CATALOG_URL,
+            source_url=config.sputnik8_url,
             checked_at=SOURCE_CHECKED_AT,
             integration_mode="catalog-link",
             note=(
@@ -52,11 +79,15 @@ def get_excursion_providers(
             provider_id="tripster",
             name="Tripster",
             catalog_url=_safe_provider_url(
-                settings.tripster_affiliate_url,
-                fallback=TRIPSTER_CATALOG_URL,
-                allowed_hosts={"tripster.ru", "www.tripster.ru", "experience.tripster.ru"},
+                str(getattr(settings, config.tripster_override_attr)),
+                fallback=config.tripster_url,
+                allowed_hosts={
+                    "tripster.ru",
+                    "www.tripster.ru",
+                    "experience.tripster.ru",
+                },
             ),
-            source_url=TRIPSTER_CATALOG_URL,
+            source_url=config.tripster_url,
             checked_at=SOURCE_CHECKED_AT,
             integration_mode="catalog-link",
             note=(
