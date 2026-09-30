@@ -19,6 +19,7 @@ from app.navigation import (
     favorite_callback,
     nearby_callback,
     personal_context,
+    similar_callback,
     place_callback,
     route_context,
     saved_route_context,
@@ -643,6 +644,12 @@ def place_keyboard(
                     text="✨ Что рядом",
                     callback_data=nearby_callback(place.slug, context),
                 ),
+                InlineKeyboardButton(
+                    text="🔗 Похожие места",
+                    callback_data=similar_callback(place.slug, context),
+                ),
+            ],
+            [
                 InlineKeyboardButton(
                     text=favorite_text,
                     callback_data=favorite_callback(
