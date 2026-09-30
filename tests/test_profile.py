@@ -6,6 +6,7 @@ from app.database import migrate_database
 from app.planner import INTEREST_LABELS
 from app.profile import build_profile_summary, profile_text
 from app.storage import (
+    CompletedRoutesRepository,
     DismissedRepository,
     FavoritesRepository,
     InterestsRepository,
@@ -24,6 +25,7 @@ def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
         interests = InterestsRepository(database_path)
         visited = VisitedRepository(database_path)
         saved_routes = SavedRoutesRepository(database_path)
+        completed_routes = CompletedRoutesRepository(database_path)
 
         await dismissed.add(1, CITY_SLUG, "new-holland")
         await dismissed.add(1, "another-city", "other-place")
@@ -49,6 +51,10 @@ def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
             240,
             ("hermitage", "russian-museum"),
         )
+        await completed_routes.add(1, CITY_SLUG, "completed-route")
+        await completed_routes.add(1, "another-city", "other-completed")
+        await completed_routes.add(2, CITY_SLUG, "foreign-completed")
+
         await saved_routes.save(
             1,
             "another-city",
@@ -65,6 +71,7 @@ def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
             interests_repo=interests,
             visited_repo=visited,
             saved_routes_repo=saved_routes,
+            completed_routes_repo=completed_routes,
         )
 
         assert summary.city_name == "Санкт-Петербург"
@@ -72,6 +79,7 @@ def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
         assert summary.favorites_count == 1
         assert summary.visited_count == 1
         assert summary.saved_routes_count == 1
+        assert summary.completed_routes_count == 1
         assert summary.interest_labels == (
             INTEREST_LABELS["museums"],
             INTEREST_LABELS["walks"],
