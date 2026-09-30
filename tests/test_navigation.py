@@ -14,10 +14,14 @@ from app.navigation import (
     parse_dismissed_callback,
     parse_favorite_callback,
     parse_place_callback,
+    parse_place_route_callback,
+    parse_place_route_duration_callback,
     parse_similar_callback,
     parse_visited_callback,
     personal_context,
     place_callback,
+    place_route_callback,
+    place_route_duration_callback,
     saved_route_context,
     similar_callback,
     similar_child_context,
@@ -108,6 +112,27 @@ def test_favorite_action_preserves_context() -> None:
     )
 
 
+def test_place_route_callbacks_preserve_origin_budget_and_context() -> None:
+    context = category_context("museums", 2)
+
+    start = place_route_callback("hermitage", context)
+    assert parse_place_route_callback(start) == (
+        "hermitage",
+        "c.museums.2",
+    )
+
+    duration = place_route_duration_callback(
+        240,
+        "hermitage",
+        context,
+    )
+    assert parse_place_route_duration_callback(duration) == (
+        240,
+        "hermitage",
+        "c.museums.2",
+    )
+
+
 def test_similar_callback_preserves_parent_context() -> None:
     callback = similar_callback(
         "hermitage",
@@ -176,6 +201,19 @@ def test_current_catalog_callbacks_fit_telegram_limit() -> None:
 
         similar = similar_callback(place.slug, category_context("museums", 99))
         assert len(similar.encode("utf-8")) <= TELEGRAM_CALLBACK_MAX_BYTES
+
+        place_route = place_route_callback(
+            place.slug,
+            category_context("museums", 99),
+        )
+        assert len(place_route.encode("utf-8")) <= TELEGRAM_CALLBACK_MAX_BYTES
+
+        duration = place_route_duration_callback(
+            360,
+            place.slug,
+            category_context("museums", 99),
+        )
+        assert len(duration.encode("utf-8")) <= TELEGRAM_CALLBACK_MAX_BYTES
 
 
 def test_oversized_callback_fails_closed() -> None:
