@@ -120,7 +120,11 @@ def home_text(catalog: CityCatalog) -> str:
 
 
 @router.message(CommandStart())
-async def start(message: Message, state: FSMContext) -> None:
+async def start(
+    message: Message,
+    state: FSMContext,
+    catalog_service: CatalogService,
+) -> None:
     previous_state = await state.get_state()
     await state.clear()
     if previous_state in LOCATION_REQUEST_STATES:
@@ -128,11 +132,25 @@ async def start(message: Message, state: FSMContext) -> None:
             "Запрос геопозиции отменён.",
             reply_markup=ReplyKeyboardRemove(),
         )
-    catalog = current_catalog()
+
+    selected = await catalog_service.selected_for_user(message.from_user.id)
+    if selected is None:
+        await message.answer(
+            "👋 <b>Добро пожаловать!</b>\n\n"
+            "Я — городской гид в Telegram. Сначала выберите город — "
+            "я сохраню этот выбор, и его всегда можно будет изменить через /city.",
+            reply_markup=cities_keyboard(
+                catalog_service.available_catalogs(),
+                None,
+                include_home=False,
+            ),
+        )
+        return
+
     await message.answer(
         "👋 <b>Добро пожаловать!</b>\n\n"
-        f"Я — городской гид в Telegram. Сейчас открыт город: {catalog.name}.\n\n"
-        + home_text(catalog),
+        f"Ваш город: <b>{selected.name}</b>.\n\n"
+        + home_text(selected),
         reply_markup=home_keyboard(),
     )
 
