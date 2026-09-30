@@ -6,10 +6,13 @@ import pytest
 from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
 from app.database import migrate_database
-from app.planner import build_route
+from app.planner import build_ranked_route, build_route
 from app.saved_routes import (
+    PERSONAL_ROUTE_INTEREST,
+    PERSONAL_ROUTE_LABEL,
     build_save_callback,
     parse_save_callback,
+    route_interest_label,
 )
 from app.storage import SavedRoutesRepository
 
@@ -136,3 +139,24 @@ def test_saved_route_remove_is_scoped(tmp_path) -> None:
         assert await repository.get(1, CITY_SLUG, route.route_id) is None
 
     asyncio.run(scenario())
+
+
+
+def test_personal_route_snapshot_round_trip() -> None:
+    catalog = get_catalog(CITY_SLUG)
+    route = build_ranked_route(
+        catalog.places[:6],
+        budget_minutes=240,
+        route_interest=PERSONAL_ROUTE_INTEREST,
+    )
+
+    assert route is not None
+    callback = build_save_callback(catalog, route)
+    snapshot = parse_save_callback(callback, catalog)
+
+    assert snapshot.interest == PERSONAL_ROUTE_INTEREST
+    assert snapshot.budget_minutes == 240
+    assert tuple(place.slug for place in snapshot.places) == tuple(
+        place.slug for place in route.places
+    )
+    assert route_interest_label(PERSONAL_ROUTE_INTEREST) == PERSONAL_ROUTE_LABEL
