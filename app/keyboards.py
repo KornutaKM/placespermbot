@@ -20,6 +20,8 @@ from app.navigation import (
     nearby_callback,
     personal_context,
     place_callback,
+    place_route_callback,
+    place_route_duration_callback,
     route_context,
     saved_route_context,
     similar_callback,
@@ -589,6 +591,48 @@ def personal_route_duration_keyboard(
     )
 
 
+def place_route_duration_keyboard(
+    place_slug: str,
+    context: str,
+) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="2 часа",
+                    callback_data=place_route_duration_callback(
+                        120,
+                        place_slug,
+                        context,
+                    ),
+                ),
+                InlineKeyboardButton(
+                    text="4 часа",
+                    callback_data=place_route_duration_callback(
+                        240,
+                        place_slug,
+                        context,
+                    ),
+                ),
+                InlineKeyboardButton(
+                    text="6 часов",
+                    callback_data=place_route_duration_callback(
+                        360,
+                        place_slug,
+                        context,
+                    ),
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="← К месту",
+                    callback_data=place_callback(place_slug, context),
+                )
+            ],
+        ]
+    )
+
+
 def visited_places_keyboard(page: Page[Place]) -> InlineKeyboardMarkup:
     return paginated_places_keyboard(
         page,
@@ -648,6 +692,12 @@ def place_keyboard(
                     text="🔗 Похожие места",
                     callback_data=similar_callback(place.slug, context),
                 ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🪄 Маршрут отсюда",
+                    callback_data=place_route_callback(place.slug, context),
+                )
             ],
             [
                 InlineKeyboardButton(

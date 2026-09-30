@@ -6,10 +6,13 @@ import pytest
 from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
 from app.database import migrate_database
+from app.place_route import build_place_route
 from app.planner import build_ranked_route, build_route
 from app.saved_routes import (
     PERSONAL_ROUTE_INTEREST,
     PERSONAL_ROUTE_LABEL,
+    PLACE_ROUTE_INTEREST,
+    PLACE_ROUTE_LABEL,
     build_save_callback,
     parse_save_callback,
     route_interest_label,
@@ -160,3 +163,25 @@ def test_personal_route_snapshot_round_trip() -> None:
         place.slug for place in route.places
     )
     assert route_interest_label(PERSONAL_ROUTE_INTEREST) == PERSONAL_ROUTE_LABEL
+
+
+
+def test_place_route_snapshot_round_trip() -> None:
+    catalog = get_catalog(CITY_SLUG)
+    route = build_place_route(
+        catalog,
+        "hermitage",
+        budget_minutes=240,
+    )
+
+    assert route is not None
+    callback = build_save_callback(catalog, route)
+    snapshot = parse_save_callback(callback, catalog)
+
+    assert snapshot.interest == PLACE_ROUTE_INTEREST
+    assert snapshot.budget_minutes == 240
+    assert snapshot.places[0].slug == "hermitage"
+    assert tuple(place.slug for place in snapshot.places) == tuple(
+        place.slug for place in route.places
+    )
+    assert route_interest_label(PLACE_ROUTE_INTEREST) == PLACE_ROUTE_LABEL
