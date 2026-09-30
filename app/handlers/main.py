@@ -75,6 +75,7 @@ from app.saved_routes import (
 from app.search_ui import search_not_found_text, search_prompt, search_results_text
 from app.similarity import find_similar_places
 from app.storage import (
+    CompletedRoutesRepository,
     DismissedRepository,
     FavoritesRepository,
     InterestsRepository,
@@ -189,6 +190,7 @@ async def build_current_profile(
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
     saved_routes_repo: SavedRoutesRepository,
+    completed_routes_repo: CompletedRoutesRepository,
 ) -> ProfileSummary:
     return await build_profile_summary(
         user_id,
@@ -198,6 +200,7 @@ async def build_current_profile(
         interests_repo=interests_repo,
         visited_repo=visited_repo,
         saved_routes_repo=saved_routes_repo,
+        completed_routes_repo=completed_routes_repo,
     )
 
 
@@ -209,6 +212,7 @@ async def profile_command(
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
     saved_routes_repo: SavedRoutesRepository,
+    completed_routes_repo: CompletedRoutesRepository,
 ) -> None:
     summary = await build_current_profile(
         message.from_user.id,
@@ -217,6 +221,7 @@ async def profile_command(
         interests_repo,
         visited_repo,
         saved_routes_repo,
+        completed_routes_repo,
     )
     await message.answer(
         profile_text(summary),
@@ -232,6 +237,7 @@ async def menu_profile(
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
     saved_routes_repo: SavedRoutesRepository,
+    completed_routes_repo: CompletedRoutesRepository,
 ) -> None:
     summary = await build_current_profile(
         callback.from_user.id,
@@ -240,6 +246,7 @@ async def menu_profile(
         interests_repo,
         visited_repo,
         saved_routes_repo,
+        completed_routes_repo,
     )
     await callback.message.edit_text(
         profile_text(summary),
@@ -1735,6 +1742,7 @@ async def complete_saved_route_callback(
     callback: CallbackQuery,
     saved_routes_repo: SavedRoutesRepository,
     visited_repo: VisitedRepository,
+    completed_routes_repo: CompletedRoutesRepository,
 ) -> None:
     route_id = callback.data.removeprefix("savedroute:complete:").strip()
     if not route_id:
@@ -1749,6 +1757,7 @@ async def complete_saved_route_callback(
         saved_routes=saved_routes_repo,
         visited=visited_repo,
         catalog=catalog,
+        completed_routes=completed_routes_repo,
     )
     if result is None:
         await callback.answer(

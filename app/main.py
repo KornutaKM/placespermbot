@@ -13,6 +13,7 @@ from app.config import get_settings
 from app.database import migrate_database
 from app.handlers.main import router
 from app.storage import (
+    CompletedRoutesRepository,
     DismissedRepository,
     FavoritesRepository,
     InterestsRepository,
@@ -28,6 +29,7 @@ async def main() -> None:
     settings = get_settings()
 
     await migrate_database(settings.database_path)
+    completed_routes_repo = CompletedRoutesRepository(settings.database_path)
     dismissed_repo = DismissedRepository(settings.database_path)
     favorites_repo = FavoritesRepository(settings.database_path)
     interests_repo = InterestsRepository(settings.database_path)
@@ -45,6 +47,7 @@ async def main() -> None:
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     dispatcher = Dispatcher(storage=MemoryStorage())
+    dispatcher["completed_routes_repo"] = completed_routes_repo
     dispatcher["dismissed_repo"] = dismissed_repo
     dispatcher["favorites_repo"] = favorites_repo
     dispatcher["interests_repo"] = interests_repo

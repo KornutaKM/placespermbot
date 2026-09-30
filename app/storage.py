@@ -368,6 +368,58 @@ def _saved_route_from_row(row: tuple[object, ...]) -> SavedRoute:
 
 
 
+class CompletedRoutesRepository:
+    def __init__(self, database_path: str) -> None:
+        self.database_path = Path(database_path)
+
+    async def initialize(self) -> None:
+        await migrate_database(self.database_path)
+
+    async def add(self, user_id: int, city_slug: str, route_id: str) -> None:
+        async with aiosqlite.connect(self.database_path) as database:
+            await database.execute(
+                """
+                INSERT OR IGNORE INTO completed_routes (
+                    user_id,
+                    city_slug,
+                    route_id
+                )
+                VALUES (?, ?, ?)
+                """,
+                (user_id, city_slug, route_id),
+            )
+            await database.commit()
+
+    async def contains(self, user_id: int, city_slug: str, route_id: str) -> bool:
+        async with aiosqlite.connect(self.database_path) as database:
+            cursor = await database.execute(
+                """
+                SELECT 1
+                FROM completed_routes
+                WHERE user_id = ? AND city_slug = ? AND route_id = ?
+                LIMIT 1
+                """,
+                (user_id, city_slug, route_id),
+            )
+            row = await cursor.fetchone()
+            await cursor.close()
+            return row is not None
+
+    async def count(self, user_id: int, city_slug: str) -> int:
+        async with aiosqlite.connect(self.database_path) as database:
+            cursor = await database.execute(
+                """
+                SELECT COUNT(*)
+                FROM completed_routes
+                WHERE user_id = ? AND city_slug = ?
+                """,
+                (user_id, city_slug),
+            )
+            row = await cursor.fetchone()
+            await cursor.close()
+            return int(row[0]) if row is not None else 0
+
+
 class DismissedRepository:
     def __init__(self, database_path: str) -> None:
         self.database_path = Path(database_path)

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from app.catalog import CityCatalog
 from app.planner import INTEREST_LABELS
 from app.storage import (
+    CompletedRoutesRepository,
     DismissedRepository,
     FavoritesRepository,
     InterestsRepository,
@@ -22,6 +23,7 @@ class ProfileSummary:
     favorites_count: int
     visited_count: int
     saved_routes_count: int
+    completed_routes_count: int
     catalog_places_count: int
     progress_percent: int
     achievement_labels: tuple[str, ...]
@@ -48,6 +50,7 @@ async def build_profile_summary(
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
     saved_routes_repo: SavedRoutesRepository,
+    completed_routes_repo: CompletedRoutesRepository | None = None,
 ) -> ProfileSummary:
     (
         interests,
@@ -73,6 +76,11 @@ async def build_profile_summary(
         else 0
     )
 
+    completed_routes_count = (
+        await completed_routes_repo.count(user_id, catalog.slug)
+        if completed_routes_repo is not None
+        else 0
+    )
     labels = tuple(INTEREST_LABELS.get(interest, interest) for interest in interests)
     achievements: list[str] = []
     if visited_count >= 1:
@@ -91,6 +99,7 @@ async def build_profile_summary(
         favorites_count=len(favorite_slugs),
         visited_count=visited_count,
         saved_routes_count=len(saved_routes),
+        completed_routes_count=completed_routes_count,
         catalog_places_count=catalog_places_count,
         progress_percent=progress_percent,
         achievement_labels=tuple(achievements),
@@ -112,7 +121,8 @@ def profile_text(summary: ProfileSummary) -> str:
         f"✅ Посещено: {summary.visited_count}/{summary.catalog_places_count}\n"
         f"❤️ Избранное: {summary.favorites_count}\n"
         f"🙈 Не интересно: {summary.dismissed_count}\n"
-        f"🧭 Сохранённые маршруты: {summary.saved_routes_count}\n\n"
+        f"🧭 Сохранённые маршруты: {summary.saved_routes_count}\n"
+        f"🏁 Пройденные маршруты: {summary.completed_routes_count}\n\n"
         f"<b>Достижения</b>\n{summary.achievements_text}\n\n"
         "Все данные относятся к активному городу и основаны только "
         "на ваших явных действиях в боте."
