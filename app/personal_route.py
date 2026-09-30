@@ -26,6 +26,7 @@ def build_personal_route(
         interests,
         limit=len(catalog.places),
         favorite_slugs=favorite_slugs,
+        visited_slugs=visited_slugs,
         exclude_slugs=excluded,
     )
     candidates = tuple(item.place for item in recommendations)

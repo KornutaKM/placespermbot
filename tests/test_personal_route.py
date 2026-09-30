@@ -130,3 +130,30 @@ def test_personal_route_location_keeps_explicit_exclusions() -> None:
 
     assert route is not None
     assert "sevkabel-port" not in {place.slug for place in route.places}
+
+
+def test_personal_route_uses_visited_history_for_unseen_affinity() -> None:
+    city = catalog()
+    baseline = build_personal_route(
+        city,
+        ("museums",),
+        budget_minutes=120,
+        visited_slugs={"hermitage"},
+    )
+    ranked = recommend_personalized(
+        city,
+        ("museums",),
+        limit=len(city.places),
+        visited_slugs={"hermitage"},
+        exclude_slugs={"hermitage"},
+    )
+
+    assert baseline is not None
+    assert ranked
+    assert baseline.places[0].slug == ranked[0].place.slug
+    assert "hermitage" not in {place.slug for place in baseline.places}
+    assert any(
+        reason.startswith("похоже на посещённое:")
+        for item in ranked
+        for reason in item.reasons
+    )
