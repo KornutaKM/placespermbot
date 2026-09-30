@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import asin, cos, radians, sin, sqrt
 
-from app.data import perm, spb
+from app.data import kazan, nizhny_novgorod, perm, spb
 from app.domain import Place, RoutePlan
 
 
@@ -138,6 +138,20 @@ def distance_km(first: Place, second: Place) -> float:
 
 
 _CATALOGS: dict[str, CityCatalog] = {
+    kazan.CITY_SLUG: CityCatalog(
+        slug=kazan.CITY_SLUG,
+        name=kazan.CITY_NAME,
+        category_labels=kazan.CATEGORY_LABELS,
+        places=kazan.PLACES,
+        routes=kazan.ROUTES,
+    ),
+    nizhny_novgorod.CITY_SLUG: CityCatalog(
+        slug=nizhny_novgorod.CITY_SLUG,
+        name=nizhny_novgorod.CITY_NAME,
+        category_labels=nizhny_novgorod.CATEGORY_LABELS,
+        places=nizhny_novgorod.PLACES,
+        routes=nizhny_novgorod.ROUTES,
+    ),
     perm.CITY_SLUG: CityCatalog(
         slug=perm.CITY_SLUG,
         name=perm.CITY_NAME,
