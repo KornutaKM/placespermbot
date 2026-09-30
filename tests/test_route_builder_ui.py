@@ -32,6 +32,7 @@ from app.navigation import (
     place_callback,
     route_context,
     saved_route_context,
+    similar_child_context,
     visited_context,
 )
 from app.pagination import paginate
@@ -222,6 +223,7 @@ def test_place_keyboard_preserves_category_context_for_actions_and_back() -> Non
     callbacks = callback_values(markup)
 
     assert f"nearby:{place.slug}|c.sights.2" in callbacks
+    assert f"similar:{place.slug}|c.sights.2" in callbacks
     assert f"favorite:add:{place.slug}|c.sights.2" in callbacks
     assert f"dismiss:add:{place.slug}|c.sights.2" in callbacks
     assert "catpage:sights:2" in callbacks
@@ -488,3 +490,24 @@ def test_dismissed_list_preserves_page_context_and_restore_action() -> None:
         in card_callbacks
     )
     assert f"dismissedpage:{page.index}" in card_callbacks
+
+
+
+def test_similar_child_place_returns_to_origin() -> None:
+    catalog = get_catalog(CITY_SLUG)
+    origin = catalog.place_by_slug("hermitage")
+    child = catalog.place_by_slug("russian-museum")
+    assert origin is not None
+    assert child is not None
+
+    context = similar_child_context(
+        origin.slug,
+        category_context("museums", 2),
+    )
+    markup = place_keyboard(
+        child,
+        context=context,
+    )
+    callbacks = callback_values(markup)
+
+    assert "place:hermitage|c.museums.2" in callbacks
