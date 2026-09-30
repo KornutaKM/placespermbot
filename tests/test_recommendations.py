@@ -2,7 +2,7 @@ import pytest
 
 from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
-from app.recommendations import recommend_places
+from app.recommendations import recommend_personalized, recommend_places
 
 
 def catalog():
@@ -96,3 +96,105 @@ def test_exclusions_are_applied_before_limit() -> None:
 
     assert len(filtered) == 3
     assert baseline[0].slug not in {place.slug for place in filtered}
+
+
+
+def test_personalized_recommendations_explain_single_interest() -> None:
+    recommendations = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=20,
+    )
+
+    assert recommendations
+    assert all(item.score > 0 for item in recommendations)
+    assert all(
+        item.reasons == ("интерес: 🖼 Музеи",)
+        for item in recommendations
+    )
+
+
+def test_favorite_gets_small_deterministic_boost() -> None:
+    baseline = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=20,
+    )
+    assert len(baseline) >= 2
+
+    later = baseline[1].place.slug
+    boosted = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=20,
+        favorite_slugs={later},
+    )
+
+    assert boosted[0].place.slug == later
+    assert boosted[0].score == baseline[1].score + 1
+    assert "уже в избранном" in boosted[0].reasons
+
+
+def test_multi_interest_match_gets_bonus_and_reason() -> None:
+    recommendations = recommend_personalized(
+        catalog(),
+        ("walks", "family", "free"),
+        limit=20,
+    )
+
+    assert recommendations
+    first = recommendations[0]
+    assert len(first.reasons) >= 1
+    assert first.reasons[0].startswith("несколько интересов:")
+    assert first.place.slug in {"summer-garden", "new-holland"}
+
+
+def test_personalized_exclusions_are_applied_before_limit() -> None:
+    baseline = recommend_personalized(
+        catalog(),
+        ("classic", "architecture", "free"),
+        limit=3,
+    )
+    assert len(baseline) == 3
+
+    filtered = recommend_personalized(
+        catalog(),
+        ("classic", "architecture", "free"),
+        limit=3,
+        exclude_slugs={baseline[0].place.slug},
+    )
+
+    assert len(filtered) == 3
+    assert baseline[0].place.slug not in {
+        item.place.slug
+        for item in filtered
+    }
+
+
+def test_personalized_recommendations_are_deterministic() -> None:
+    kwargs = {
+        "favorite_slugs": {"summer-garden", "new-holland"},
+        "exclude_slugs": {"palace-square"},
+    }
+    first = recommend_personalized(
+        catalog(),
+        ("walks", "family", "free"),
+        limit=20,
+        **kwargs,
+    )
+    second = recommend_personalized(
+        catalog(),
+        ("walks", "family", "free"),
+        limit=20,
+        **kwargs,
+    )
+
+    assert first == second
+
+
+def test_personalized_unknown_interest_fails_closed() -> None:
+    with pytest.raises(ValueError, match="Unsupported interests"):
+        recommend_personalized(
+            catalog(),
+            ("nightlife",),
+        )
