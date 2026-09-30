@@ -222,3 +222,110 @@ def test_excluded_favorite_cannot_return_to_personalized_results() -> None:
         item.place.slug
         for item in filtered
     }
+
+
+
+def _recommendation_by_slug(recommendations, slug: str):
+    return next(
+        item
+        for item in recommendations
+        if item.place.slug == slug
+    )
+
+
+def test_favorite_affinity_boosts_similar_place_with_concrete_tags() -> None:
+    baseline = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+    )
+    with_favorite = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+        favorite_slugs={"hermitage"},
+    )
+
+    baseline_russian = _recommendation_by_slug(baseline, "russian-museum")
+    affinity_russian = _recommendation_by_slug(with_favorite, "russian-museum")
+
+    assert affinity_russian.score == baseline_russian.score + 2
+    assert "похоже на избранное: искусство, музей" in affinity_russian.reasons
+
+
+def test_exact_favorite_does_not_gain_self_similarity() -> None:
+    baseline = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+    )
+    with_favorite = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+        favorite_slugs={"hermitage"},
+    )
+
+    baseline_hermitage = _recommendation_by_slug(baseline, "hermitage")
+    favorite_hermitage = _recommendation_by_slug(with_favorite, "hermitage")
+
+    assert favorite_hermitage.score == baseline_hermitage.score + 1
+    assert "уже в избранном" in favorite_hermitage.reasons
+    assert not any(
+        reason.startswith("похоже на избранное:")
+        for reason in favorite_hermitage.reasons
+    )
+
+
+def test_unrelated_or_foreign_favorite_slug_has_no_affinity_effect() -> None:
+    baseline = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+    )
+    with_foreign_slug = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+        favorite_slugs={"perm-bear"},
+    )
+
+    assert with_foreign_slug == baseline
+
+
+def test_service_tags_do_not_create_false_favorite_affinity() -> None:
+    baseline = recommend_personalized(
+        catalog(),
+        ("free",),
+        limit=50,
+    )
+    with_favorite = recommend_personalized(
+        catalog(),
+        ("free",),
+        limit=50,
+        favorite_slugs={"palace-square"},
+    )
+
+    baseline_field = _recommendation_by_slug(baseline, "field-of-mars")
+    favorite_field = _recommendation_by_slug(with_favorite, "field-of-mars")
+
+    assert favorite_field.score == baseline_field.score
+    assert not any(
+        reason.startswith("похоже на избранное:")
+        for reason in favorite_field.reasons
+    )
+
+
+def test_exclusion_overrides_favorite_affinity() -> None:
+    filtered = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+        favorite_slugs={"hermitage"},
+        exclude_slugs={"russian-museum"},
+    )
+
+    assert "russian-museum" not in {
+        item.place.slug
+        for item in filtered
+    }
