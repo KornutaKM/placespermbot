@@ -19,10 +19,10 @@ from app.navigation import (
     favorite_callback,
     nearby_callback,
     personal_context,
-    similar_callback,
     place_callback,
     route_context,
     saved_route_context,
+    similar_callback,
     visited_callback,
     visited_context,
 )
