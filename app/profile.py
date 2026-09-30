@@ -22,12 +22,21 @@ class ProfileSummary:
     favorites_count: int
     visited_count: int
     saved_routes_count: int
+    catalog_places_count: int
+    progress_percent: int
+    achievement_labels: tuple[str, ...]
 
     @property
     def interests_text(self) -> str:
         if not self.interest_labels:
             return "не выбраны"
         return " · ".join(self.interest_labels)
+
+    @property
+    def achievements_text(self) -> str:
+        if not self.achievement_labels:
+            return "пока нет"
+        return " · ".join(self.achievement_labels)
 
 
 async def build_profile_summary(
@@ -54,29 +63,57 @@ async def build_profile_summary(
         saved_routes_repo.list_routes(user_id, catalog.slug),
     )
 
-    labels = tuple(
-        INTEREST_LABELS.get(interest, interest)
-        for interest in interests
+    available_slugs = {place.slug for place in catalog.places}
+    available_visited = available_slugs.intersection(visited_slugs)
+    visited_count = len(available_visited)
+    catalog_places_count = len(catalog.places)
+    progress_percent = (
+        round(visited_count * 100 / catalog_places_count)
+        if catalog_places_count
+        else 0
     )
+
+    labels = tuple(INTEREST_LABELS.get(interest, interest) for interest in interests)
+    achievements: list[str] = []
+    if visited_count >= 1:
+        achievements.append("🏅 Первое открытие")
+    if progress_percent >= 25:
+        achievements.append("🧭 Исследователь города")
+    if len(favorite_slugs) >= 5:
+        achievements.append("❤️ Коллекционер")
+    if len(saved_routes) >= 3:
+        achievements.append("🗺 Планировщик")
+
     return ProfileSummary(
         city_name=catalog.name,
         interest_labels=labels,
         dismissed_count=len(dismissed_slugs),
         favorites_count=len(favorite_slugs),
-        visited_count=len(visited_slugs),
+        visited_count=visited_count,
         saved_routes_count=len(saved_routes),
+        catalog_places_count=catalog_places_count,
+        progress_percent=progress_percent,
+        achievement_labels=tuple(achievements),
     )
+
+
+def _progress_bar(percent: int) -> str:
+    filled = min(10, max(0, percent) // 10)
+    return "█" * filled + "░" * (10 - filled)
 
 
 def profile_text(summary: ProfileSummary) -> str:
     return (
         "👤 <b>Мой гид</b>\n\n"
         f"🌆 Город: <b>{summary.city_name}</b>\n"
-        f"🎯 Интересы: {summary.interests_text}\n"
+        f"🎯 Интересы: {summary.interests_text}\n\n"
+        "<b>Прогресс</b>\n"
+        f"{_progress_bar(summary.progress_percent)} {summary.progress_percent}%\n"
+        f"✅ Посещено: {summary.visited_count}/{summary.catalog_places_count}\n"
         f"❤️ Избранное: {summary.favorites_count}\n"
-        f"✅ Посещённые: {summary.visited_count}\n"
         f"🙈 Не интересно: {summary.dismissed_count}\n"
         f"🧭 Сохранённые маршруты: {summary.saved_routes_count}\n\n"
+        f"<b>Достижения</b>\n{summary.achievements_text}\n\n"
         "Все данные относятся к активному городу и основаны только "
         "на ваших явных действиях в боте."
     )
