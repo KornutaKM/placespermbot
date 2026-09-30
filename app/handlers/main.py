@@ -54,6 +54,7 @@ from app.personal_route import build_personal_route
 from app.planner import INTEREST_LABELS, build_route
 from app.profile import ProfileSummary, build_profile_summary, profile_text
 from app.recommendations import recommend_personalized
+from app.search_ui import search_not_found_text, search_prompt, search_results_text
 from app.saved_routes import (
     PERSONAL_ROUTE_INTEREST,
     PERSONAL_ROUTE_LABEL,
@@ -1854,11 +1855,10 @@ async def noop(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "menu:search")
 async def search(callback: CallbackQuery, state: FSMContext) -> None:
+    catalog = current_catalog()
     await state.set_state(SearchFlow.waiting_query)
     await callback.message.edit_text(
-        "🔍 <b>Поиск по местам</b>\n\n"
-        "Напишите название, тип места, район или интерес.\n\n"
-        "Например: <i>Эрмитаж</i>, <i>музей</i>, <i>остров</i>, <i>архитектура</i>.",
+        search_prompt(catalog),
         reply_markup=back_home_keyboard(),
     )
     await callback.answer()
@@ -1873,15 +1873,13 @@ async def search_query(message: Message, state: FSMContext) -> None:
 
     if not results:
         await message.answer(
-            f"🔍 По запросу <b>{query}</b> ничего не нашлось.\n\n"
-            "Попробуйте название места, «музей», «парк», «архитектура» или район.",
+            search_not_found_text(query),
             reply_markup=back_home_keyboard(),
         )
         return
 
     await message.answer(
-        f"🔍 <b>Результаты поиска: {query}</b>\n\n"
-        f"Найдено: {len(results)}. Выберите место:",
+        search_results_text(query, len(results)),
         reply_markup=places_keyboard(
             results,
             back_callback="menu:home",
