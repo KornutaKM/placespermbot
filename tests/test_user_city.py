@@ -130,3 +130,58 @@ def test_catalog_service_switches_between_real_city_catalogs(tmp_path) -> None:
         assert (await service.for_user(42)).slug == "saint-petersburg"
 
     asyncio.run(scenario())
+
+
+
+def test_selected_for_user_is_none_without_explicit_preference(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "places.db")
+        await migrate_database(database_path)
+        repository = UserCityRepository(database_path)
+        service = CatalogService(
+            default_city_slug="saint-petersburg",
+            user_city_repo=repository,
+        )
+
+        assert await service.selected_for_user(42) is None
+        assert (await service.for_user(42)).slug == "saint-petersburg"
+        assert await repository.get_city_slug(42) is None
+
+    asyncio.run(scenario())
+
+
+def test_selected_for_user_returns_valid_saved_catalog(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "places.db")
+        await migrate_database(database_path)
+        repository = UserCityRepository(database_path)
+        service = CatalogService(
+            default_city_slug="saint-petersburg",
+            user_city_repo=repository,
+        )
+        await repository.set_city_slug(42, "perm")
+
+        selected = await service.selected_for_user(42)
+
+        assert selected is not None
+        assert selected.slug == "perm"
+
+    asyncio.run(scenario())
+
+
+def test_selected_for_user_rejects_stale_preference_without_rewriting_it(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "places.db")
+        await migrate_database(database_path)
+        repository = UserCityRepository(database_path)
+        service = CatalogService(
+            default_city_slug="saint-petersburg",
+            user_city_repo=repository,
+        )
+        await repository.set_city_slug(42, "removed-city")
+
+        assert await service.selected_for_user(42) is None
+        assert (await service.for_user(42)).slug == "saint-petersburg"
+        assert await repository.get_city_slug(42) == "removed-city"
+
+    asyncio.run(scenario())
