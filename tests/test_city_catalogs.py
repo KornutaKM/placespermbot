@@ -2,9 +2,11 @@ from app.catalog import get_catalog, list_catalogs
 
 
 EXPECTED_CITIES = {
-    "kaliningrad": "Калининград",\n    "kazan": "Казань",
+    "kaliningrad": "Калининград",
+    "kazan": "Казань",
     "moscow": "Москва",
-    "nizhny-novgorod": "Нижний Новгород",\n    "novosibirsk": "Новосибирск",
+    "nizhny-novgorod": "Нижний Новгород",
+    "novosibirsk": "Новосибирск",
     "perm": "Пермь",
     "saint-petersburg": "Санкт-Петербург",
     "yekaterinburg": "Екатеринбург",
