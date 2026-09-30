@@ -6,10 +6,11 @@ from urllib.parse import urlparse
 
 from app.config import Settings
 
-SOURCE_CHECKED_AT = date(2026, 9, 29)
+SOURCE_CHECKED_AT = date(2026, 9, 30)
 
 YANDEX_AFISHA_URL = "https://afisha.yandex.ru/saint-petersburg/events"
 KUDAGO_EVENTS_URL = "https://kudago.com/spb/events/"
+PERM_YANDEX_AFISHA_URL = "https://afisha.yandex.ru/perm"
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,41 +29,56 @@ def get_event_providers(
     *,
     city_slug: str = "saint-petersburg",
 ) -> tuple[EventProvider, ...]:
-    if city_slug != "saint-petersburg":
-        return ()
-
-    return (
-        EventProvider(
-            provider_id="yandex-afisha",
-            name="Яндекс Афиша",
-            catalog_url=_safe_provider_url(
+    if city_slug == "saint-petersburg":
+        return (
+            _yandex_provider(
                 settings.yandex_afisha_url,
                 fallback=YANDEX_AFISHA_URL,
-                allowed_hosts={"afisha.yandex.ru"},
             ),
-            source_url=YANDEX_AFISHA_URL,
-            checked_at=SOURCE_CHECKED_AT,
-            integration_mode="catalog-link",
-            note=(
-                "Актуальные даты, билеты и цены проверяются "
-                "на стороне Яндекс Афиши."
+            EventProvider(
+                provider_id="kudago",
+                name="KudaGo",
+                catalog_url=_safe_provider_url(
+                    settings.kudago_events_url,
+                    fallback=KUDAGO_EVENTS_URL,
+                    allowed_hosts={"kudago.com", "www.kudago.com"},
+                ),
+                source_url=KUDAGO_EVENTS_URL,
+                checked_at=SOURCE_CHECKED_AT,
+                integration_mode="catalog-link",
+                note=(
+                    "Актуальные даты, билеты и цены проверяются "
+                    "на стороне KudaGo."
+                ),
             ),
+        )
+
+    if city_slug == "perm":
+        return (
+            _yandex_provider(
+                settings.yandex_afisha_perm_url,
+                fallback=PERM_YANDEX_AFISHA_URL,
+            ),
+        )
+
+    return ()
+
+
+def _yandex_provider(candidate: str, *, fallback: str) -> EventProvider:
+    return EventProvider(
+        provider_id="yandex-afisha",
+        name="Яндекс Афиша",
+        catalog_url=_safe_provider_url(
+            candidate,
+            fallback=fallback,
+            allowed_hosts={"afisha.yandex.ru"},
         ),
-        EventProvider(
-            provider_id="kudago",
-            name="KudaGo",
-            catalog_url=_safe_provider_url(
-                settings.kudago_events_url,
-                fallback=KUDAGO_EVENTS_URL,
-                allowed_hosts={"kudago.com", "www.kudago.com"},
-            ),
-            source_url=KUDAGO_EVENTS_URL,
-            checked_at=SOURCE_CHECKED_AT,
-            integration_mode="catalog-link",
-            note=(
-                "Актуальные даты, билеты и цены проверяются "
-                "на стороне KudaGo."
-            ),
+        source_url=fallback,
+        checked_at=SOURCE_CHECKED_AT,
+        integration_mode="catalog-link",
+        note=(
+            "Актуальные даты, билеты и цены проверяются "
+            "на стороне Яндекс Афиши."
         ),
     )
 
