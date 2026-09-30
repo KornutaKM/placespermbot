@@ -10,6 +10,7 @@ _DATA_TABLES = (
     ("user_interests", "interests"),
     ("visited_places", "visited"),
     ("saved_routes", "saved_routes"),
+    ("dismissed_places", "dismissed"),
 )
 
 
@@ -19,6 +20,7 @@ class DeletionResult:
     interests: int
     visited: int
     saved_routes: int
+    dismissed: int
 
     @property
     def total(self) -> int:
@@ -27,6 +29,7 @@ class DeletionResult:
             + self.interests
             + self.visited
             + self.saved_routes
+            + self.dismissed
         )
 
 
@@ -64,6 +67,7 @@ class UserDataControlsRepository:
             interests=counts["interests"],
             visited=counts["visited"],
             saved_routes=counts["saved_routes"],
+            dismissed=counts["dismissed"],
         )
 
 
