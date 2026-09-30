@@ -108,3 +108,25 @@ def test_stale_preference_falls_back_to_default(tmp_path) -> None:
         assert catalog.slug == "saint-petersburg"
 
     asyncio.run(scenario())
+
+
+
+def test_catalog_service_switches_between_real_city_catalogs(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "places.db")
+        await migrate_database(database_path)
+        repository = UserCityRepository(database_path)
+        service = CatalogService(
+            default_city_slug="saint-petersburg",
+            user_city_repo=repository,
+        )
+
+        perm = await service.set_for_user(42, "perm")
+        assert perm.name == "Пермь"
+        assert (await service.for_user(42)).slug == "perm"
+
+        spb = await service.set_for_user(42, "saint-petersburg")
+        assert spb.name == "Санкт-Петербург"
+        assert (await service.for_user(42)).slug == "saint-petersburg"
+
+    asyncio.run(scenario())
