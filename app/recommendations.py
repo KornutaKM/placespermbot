@@ -9,6 +9,7 @@ FAVORITE_BONUS = 1
 FAVORITE_AFFINITY_BONUS_CAP = 2
 MULTI_INTEREST_BONUS = 2
 VISITED_AFFINITY_BONUS_CAP = 3
+COMPLETED_ROUTE_AFFINITY_BONUS_CAP = 2
 
 _AFFINITY_IGNORED_TAGS = frozenset(
     {
@@ -34,6 +35,7 @@ def recommend_personalized(
     limit: int = 8,
     favorite_slugs: Collection[str] = (),
     visited_slugs: Collection[str] = (),
+    completed_route_place_slugs: Collection[str] = (),
     exclude_slugs: Collection[str] = (),
 ) -> tuple[PersonalRecommendation, ...]:
     if limit <= 0 or not interests:
@@ -52,6 +54,12 @@ def recommend_personalized(
         place
         for place in catalog.places
         if place.slug in visited
+    )
+    completed_route_places_set = set(completed_route_place_slugs)
+    completed_route_places = tuple(
+        place
+        for place in catalog.places
+        if place.slug in completed_route_places_set
     )
     excluded = set(exclude_slugs)
     ranked: list[tuple[int, int, PersonalRecommendation]] = []
@@ -102,6 +110,20 @@ def recommend_personalized(
             )
             reasons.append(
                 "похоже на посещённое: " + ", ".join(visited_affinity_tags)
+            )
+
+        completed_route_affinity_tags = _place_affinity_tags(
+            place,
+            reference_places=completed_route_places,
+        )
+        if completed_route_affinity_tags:
+            score += min(
+                len(completed_route_affinity_tags),
+                COMPLETED_ROUTE_AFFINITY_BONUS_CAP,
+            )
+            reasons.append(
+                "похоже на пройденный маршрут: "
+                + ", ".join(completed_route_affinity_tags)
             )
 
         recommendation = PersonalRecommendation(
