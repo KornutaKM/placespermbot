@@ -21,6 +21,7 @@ from app.storage import (
     UserCityRepository,
     VisitedRepository,
 )
+from app.telegram_resilience import retry_transient_telegram
 from app.user_data_controls import UserDataControlsRepository
 
 
@@ -58,13 +59,15 @@ async def main() -> None:
     dispatcher.update.outer_middleware(CatalogMiddleware(catalog_service))
     dispatcher.include_router(router)
 
-    await bot.set_my_commands(
-        [
-            BotCommand(command="start", description="Открыть городской гид"),
-            BotCommand(command="city", description="Выбрать город"),
-            BotCommand(command="profile", description="Открыть «Мой гид»"),
-            BotCommand(command="export", description="Экспортировать мои данные"),
-        ]
+    commands = [
+        BotCommand(command="start", description="Открыть городской гид"),
+        BotCommand(command="city", description="Выбрать город"),
+        BotCommand(command="profile", description="Открыть «Мой гид»"),
+        BotCommand(command="export", description="Экспортировать мои данные"),
+    ]
+    await retry_transient_telegram(
+        lambda: bot.set_my_commands(commands),
+        operation_name="set bot commands",
     )
     await dispatcher.start_polling(bot)
 
