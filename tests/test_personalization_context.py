@@ -2,6 +2,7 @@ import asyncio
 
 from app.data.spb import CITY_SLUG
 from app.personalization_context import load_personalization_context
+from app.saved_routes import route_id_for
 from app.saved_routes import SavedRoute
 from app.storage import (
     CompletedRoutesRepository,
@@ -28,7 +29,7 @@ def test_personalization_context_is_city_and_user_scoped(tmp_path) -> None:
         await visited.add(1, CITY_SLUG, "hermitage")
         await dismissed.add(1, CITY_SLUG, "faberge-museum")
         route = SavedRoute(
-                route_id="route-1",
+                route_id=route_id_for(\n                    CITY_SLUG,\n                    "museums",\n                    240,\n                    ("erarta", "removed-place"),\n                ),
                 city_slug=CITY_SLUG,
                 interest="museums",
                 budget_minutes=240,
