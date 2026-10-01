@@ -446,3 +446,59 @@ def test_foreign_completed_route_place_has_no_affinity_effect() -> None:
     )
 
     assert with_foreign_history == baseline
+
+
+def test_completed_stop_is_not_double_counted_as_visited_affinity() -> None:
+    route_only = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+        completed_route_place_slugs={"hermitage"},
+        exclude_slugs={"hermitage"},
+    )
+    duplicated_history = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+        visited_slugs={"hermitage"},
+        completed_route_place_slugs={"hermitage"},
+        exclude_slugs={"hermitage"},
+    )
+
+    route_russian = _recommendation_by_slug(route_only, "russian-museum")
+    duplicated_russian = _recommendation_by_slug(
+        duplicated_history,
+        "russian-museum",
+    )
+
+    assert duplicated_russian.score == route_russian.score
+    assert duplicated_russian.reasons == route_russian.reasons
+    assert any(
+        reason.startswith("похоже на пройденный маршрут:")
+        for reason in duplicated_russian.reasons
+    )
+    assert not any(
+        reason.startswith("похоже на посещённое:")
+        for reason in duplicated_russian.reasons
+    )
+
+
+def test_independent_visited_history_remains_separate_from_completed_route() -> None:
+    recommendations = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+        visited_slugs={"faberge-museum", "hermitage"},
+        completed_route_place_slugs={"hermitage"},
+        exclude_slugs={"faberge-museum", "hermitage"},
+    )
+
+    russian = _recommendation_by_slug(recommendations, "russian-museum")
+    assert any(
+        reason.startswith("похоже на посещённое:")
+        for reason in russian.reasons
+    )
+    assert any(
+        reason.startswith("похоже на пройденный маршрут:")
+        for reason in russian.reasons
+    )
