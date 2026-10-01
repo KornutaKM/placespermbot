@@ -3,18 +3,15 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TypeVar
-
 from aiogram.exceptions import TelegramNetworkError, TelegramServerError
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T")
 STARTUP_RETRY_DELAYS_SECONDS = (0.5, 1.0, 2.0)
 _TRANSIENT_TELEGRAM_ERRORS = (TelegramNetworkError, TelegramServerError)
 
 
-async def retry_transient_telegram(
+async def retry_transient_telegram[T](
     operation: Callable[[], Awaitable[T]],
     *,
     operation_name: str,
