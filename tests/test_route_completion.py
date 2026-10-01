@@ -266,3 +266,53 @@ def test_completed_snapshot_rejects_route_id_tampering(tmp_path) -> None:
             await completed.list_snapshots(707, CITY_SLUG)
 
     asyncio.run(scenario())
+
+
+def test_repeated_completion_repairs_missing_snapshot_and_preserves_timestamp(
+    tmp_path,
+) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "bot.sqlite3")
+        saved_routes = SavedRoutesRepository(database_path)
+        visited = VisitedRepository(database_path)
+        completed = CompletedRoutesRepository(database_path)
+        await saved_routes.initialize()
+        catalog = get_catalog(CITY_SLUG)
+        slugs = tuple(place.slug for place in catalog.places[:2])
+        saved = await saved_routes.save(808, CITY_SLUG, "classic", 120, slugs)
+
+        with sqlite3.connect(database_path) as database:
+            database.execute(
+                """
+                INSERT INTO completed_routes (
+                    user_id, city_slug, route_id, completed_at
+                )
+                VALUES (?, ?, ?, ?)
+                """,
+                (808, CITY_SLUG, saved.route_id, "2026-01-02 03:04:05"),
+            )
+            database.commit()
+
+        result = await complete_saved_route(
+            user_id=808,
+            city_slug=CITY_SLUG,
+            route_id=saved.route_id,
+            saved_routes=saved_routes,
+            visited=visited,
+            catalog=catalog,
+            completed_routes=completed,
+        )
+
+        assert result == RouteCompletionResult(
+            added=0,
+            already_visited=0,
+            unavailable=0,
+            already_completed=True,
+        )
+        snapshot = await completed.get_snapshot(808, CITY_SLUG, saved.route_id)
+        assert snapshot is not None
+        assert snapshot.place_slugs == slugs
+        assert snapshot.completed_at == "2026-01-02 03:04:05"
+        assert await visited.list_place_slugs(808, CITY_SLUG) == ()
+
+    asyncio.run(scenario())
