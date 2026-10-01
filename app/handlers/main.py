@@ -372,8 +372,8 @@ async def data_delete_confirm(callback: CallbackQuery) -> None:
         "⚠️ <b>Подтвердите удаление</b>\n\n"
         f"Город: <b>{catalog.name}</b>.\n\n"
         "Будут безвозвратно удалены ваши интересы, избранное, "
-        "посещённые места, скрытые рекомендации и сохранённые маршруты "
-        "этого города.\n\n"
+        "посещённые места, скрытые рекомендации, сохранённые "
+        "и пройденные маршруты этого города.\n\n"
         "Сам каталог и выбор активного города не удаляются.",
         reply_markup=data_delete_confirm_keyboard(city_slug),
     )
@@ -410,7 +410,9 @@ async def delete_city_user_data(
         f"❤️ Избранное: {result.favorites}\n"
         f"✅ Посещённые: {result.visited}\n"
         f"🙈 Не интересно: {result.dismissed}\n"
-        f"🧭 Сохранённые маршруты: {result.saved_routes}\n\n"
+        f"🧭 Сохранённые маршруты: {result.saved_routes}\n"
+        f"🏁 Пройденные маршруты: {result.completed_routes}\n"
+        f"📸 Snapshots маршрутов: {result.completed_route_snapshots}\n\n"
         f"Всего удалено записей: <b>{result.total}</b>.\n"
         "Активный город остался выбран.",
         reply_markup=profile_keyboard(),
