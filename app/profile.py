@@ -91,6 +91,10 @@ async def build_profile_summary(
         achievements.append("❤️ Коллекционер")
     if len(saved_routes) >= 3:
         achievements.append("🗺 Планировщик")
+    if completed_routes_count >= 1:
+        achievements.append("🏁 Первый маршрут")
+    if completed_routes_count >= 3:
+        achievements.append("🥾 Маршрутный исследователь")
 
     return ProfileSummary(
         city_name=catalog.name,

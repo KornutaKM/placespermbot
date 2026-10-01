@@ -372,12 +372,17 @@ def generated_route_keyboard(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def saved_routes_keyboard(page: Page[SavedRoute]) -> InlineKeyboardMarkup:
+def saved_routes_keyboard(
+    page: Page[SavedRoute],
+    *,
+    completed_route_ids: frozenset[str] = frozenset(),
+) -> InlineKeyboardMarkup:
     rows = [
         [
             InlineKeyboardButton(
                 text=(
-                    f"{route_interest_label(route.interest)}"
+                    ("🏁 " if route.route_id in completed_route_ids else "")
+                    + f"{route_interest_label(route.interest)}"
                     f" · {route.budget_minutes // 60} ч"
                 ),
                 callback_data=f"savedroute:{route.route_id}",
@@ -419,6 +424,8 @@ def saved_routes_keyboard(page: Page[SavedRoute]) -> InlineKeyboardMarkup:
 def saved_route_details_keyboard(
     route: SavedRoute,
     places: tuple[Place, ...],
+    *,
+    is_completed: bool = False,
 ) -> InlineKeyboardMarkup:
     context = saved_route_context(route.route_id)
     rows = [
@@ -431,14 +438,24 @@ def saved_route_details_keyboard(
         for index, place in enumerate(places, start=1)
     ]
     rows.extend(_google_maps_rows(places))
-    rows.append(
-        [
-            InlineKeyboardButton(
-                text="✅ Маршрут пройден",
-                callback_data=f"savedroute:complete:{route.route_id}",
-            )
-        ]
-    )
+    if is_completed:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text="🏁 Уже пройден",
+                    callback_data=f"completedroute:{route.route_id}",
+                )
+            ]
+        )
+    else:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text="✅ Маршрут пройден",
+                    callback_data=f"savedroute:complete:{route.route_id}",
+                )
+            ]
+        )
     rows.append(
         [
             InlineKeyboardButton(
