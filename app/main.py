@@ -12,6 +12,7 @@ from app.catalog_service import CatalogService
 from app.config import get_settings
 from app.database import migrate_database
 from app.handlers.main import router
+from app.telegram_resilience import retry_transient_telegram
 from app.storage import (
     CompletedRoutesRepository,
     DismissedRepository,
@@ -58,13 +59,15 @@ async def main() -> None:
     dispatcher.update.outer_middleware(CatalogMiddleware(catalog_service))
     dispatcher.include_router(router)
 
-    await bot.set_my_commands(
-        [
-            BotCommand(command="start", description="Открыть городской гид"),
-            BotCommand(command="city", description="Выбрать город"),
-            BotCommand(command="profile", description="Открыть «Мой гид»"),
-            BotCommand(command="export", description="Экспортировать мои данные"),
-        ]
+    commands = [
+        BotCommand(command="start", description="Открыть городской гид"),
+        BotCommand(command="city", description="Выбрать город"),
+        BotCommand(command="profile", description="Открыть «Мой гид»"),
+        BotCommand(command="export", description="Экспортировать мои данные"),
+    ]
+    await retry_transient_telegram(
+        lambda: bot.set_my_commands(commands),
+        operation_name="set bot commands",
     )
     await dispatcher.start_polling(bot)
 
