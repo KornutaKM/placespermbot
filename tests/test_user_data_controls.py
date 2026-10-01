@@ -48,13 +48,14 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
             240,
             ("palace-square", "hermitage"),
         )
-        await completed_routes.add(1, CITY_SLUG, own_route.route_id)
+        await completed_routes.complete_route(
+            1, own_route, {"palace-square", "hermitage"}
+        )
 
         await dismissed.add(1, "another-city", "other-place")
         await favorites.add(1, "another-city", "other-place")
         await interests.add(1, "another-city", "free")
         await visited.add(1, "another-city", "other-place")
-        await completed_routes.add(1, "another-city", "other-completed")
         other_city_route = await saved_routes.save(
             1,
             "another-city",
@@ -62,18 +63,21 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
             120,
             ("other-place",),
         )
+        await completed_routes.complete_route(1, other_city_route, {"other-place"})
 
         await dismissed.add(2, CITY_SLUG, "summer-garden")
         await favorites.add(2, CITY_SLUG, "palace-square")
         await interests.add(2, CITY_SLUG, "walks")
         await visited.add(2, CITY_SLUG, "hermitage")
-        await completed_routes.add(2, CITY_SLUG, "foreign-completed")
         other_user_route = await saved_routes.save(
             2,
             CITY_SLUG,
             "museums",
             120,
             ("russian-museum",),
+        )
+        await completed_routes.complete_route(
+            2, other_user_route, {"russian-museum"}
         )
 
         result = await controls.delete_city_data(1, CITY_SLUG)
