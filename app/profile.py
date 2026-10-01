@@ -58,12 +58,18 @@ async def build_profile_summary(
         favorite_slugs,
         visited_slugs,
         saved_routes,
+        completed_routes,
     ) = await asyncio.gather(
         interests_repo.list_interests(user_id, catalog.slug),
         dismissed_repo.list_place_slugs(user_id, catalog.slug),
         favorites_repo.list_place_slugs(user_id, catalog.slug),
         visited_repo.list_place_slugs(user_id, catalog.slug),
         saved_routes_repo.list_routes(user_id, catalog.slug),
+        (
+            completed_routes_repo.list_snapshots(user_id, catalog.slug)
+            if completed_routes_repo is not None
+            else _empty_completed_routes()
+        ),
     )
 
     available_slugs = {place.slug for place in catalog.places}
@@ -76,11 +82,7 @@ async def build_profile_summary(
         else 0
     )
 
-    completed_routes_count = (
-        await completed_routes_repo.count(user_id, catalog.slug)
-        if completed_routes_repo is not None
-        else 0
-    )
+    completed_routes_count = len(completed_routes)
     labels = tuple(INTEREST_LABELS.get(interest, interest) for interest in interests)
     achievements: list[str] = []
     if visited_count >= 1:
@@ -131,3 +133,7 @@ def profile_text(summary: ProfileSummary) -> str:
         "Все данные относятся к активному городу и основаны только "
         "на ваших явных действиях в боте."
     )
+
+
+async def _empty_completed_routes() -> tuple[object, ...]:
+    return ()
