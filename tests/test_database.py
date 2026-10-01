@@ -265,7 +265,8 @@ def test_concurrent_writers_wait_instead_of_failing_locked(tmp_path) -> None:
         database_path = tmp_path / "places.db"
         await migrate_database(database_path)
 
-        first = await connect_database(database_path).__aenter__()
+        first_context = connect_database(database_path)
+        first = await first_context.__aenter__()
         try:
             await first.execute("BEGIN IMMEDIATE")
             await first.execute(
@@ -291,7 +292,7 @@ def test_concurrent_writers_wait_instead_of_failing_locked(tmp_path) -> None:
 
             await asyncio.gather(delayed_release(), waiting_writer())
         finally:
-            await first.close()
+            await first_context.__aexit__(None, None, None)
 
         with sqlite3.connect(database_path) as database:
             count = database.execute(
