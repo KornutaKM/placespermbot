@@ -31,6 +31,7 @@ from app.navigation import (
 from app.pagination import Page
 from app.planner import INTEREST_LABELS
 from app.saved_routes import SavedRoute, route_interest_label
+from app.storage import CompletedRouteSnapshot
 
 
 def home_keyboard() -> InlineKeyboardMarkup:
@@ -104,6 +105,12 @@ def profile_keyboard() -> InlineKeyboardMarkup:
                     text="🧭 Сохранённые маршруты",
                     callback_data="menu:savedroutes",
                 ),
+                InlineKeyboardButton(
+                    text="🏁 Пройденные",
+                    callback_data="menu:completedroutes",
+                ),
+            ],
+            [
                 InlineKeyboardButton(
                     text="📦 Экспорт данных",
                     callback_data="profile:export",
@@ -740,3 +747,34 @@ def place_keyboard(
             ],
         ]
     )
+
+
+def completed_routes_keyboard(page: Page[CompletedRouteSnapshot]) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"🏁 {route_interest_label(route.interest)} · {route.budget_minutes // 60} ч",
+                callback_data=f"completedroute:{route.route_id}",
+            )
+        ]
+        for route in page.items
+    ]
+    navigation: list[InlineKeyboardButton] = []
+    if page.index > 0:
+        navigation.append(InlineKeyboardButton(text="←", callback_data=f"completedroutes:{page.index - 1}"))
+    navigation.append(InlineKeyboardButton(text=f"{page.number}/{page.total_pages}", callback_data="noop"))
+    if page.index + 1 < page.total_pages:
+        navigation.append(InlineKeyboardButton(text="→", callback_data=f"completedroutes:{page.index + 1}"))
+    if page.total_pages > 1:
+        rows.append(navigation)
+    rows.append([InlineKeyboardButton(text="← Мой гид", callback_data="menu:profile")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def completed_route_details_keyboard(
+    route: CompletedRouteSnapshot,
+    places: tuple[Place, ...],
+) -> InlineKeyboardMarkup:
+    rows = _google_maps_rows(places)
+    rows.append([InlineKeyboardButton(text="← Пройденные", callback_data="menu:completedroutes")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
