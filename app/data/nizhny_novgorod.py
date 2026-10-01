@@ -38,7 +38,7 @@ PLACES = (
 
 ROUTES = (
     RoutePlan("nizhny-historic-center", "Исторический центр", "Прогулка от Большой Покровской через Кремль к волжским видам.", 240, 2.7, ("bolshaya-pokrovskaya", "nizhny-kremlin", "chkalov-stairs")),
-    RoutePlan("nizhny-strelka", "Стрелка и ярмарка", "Знакомство с историческим торговым районом и собором Александра Невского.", 180, 1.8, ("nizhny-fair", "alexander-nevsky-cathedral-nn")),,
+    RoutePlan("nizhny-strelka", "Стрелка и ярмарка", "Знакомство с историческим торговым районом и собором Александра Невского.", 180, 1.8, ("nizhny-fair", "alexander-nevsky-cathedral-nn")),
     RoutePlan("nizhny-river-view", "Волжские панорамы", "Чкаловская лестница, набережная и высокий берег Волги.", 240, 4.5, ("chkalov-stairs", "lower-volga-embankment", "pechersky-monastery")),
     RoutePlan("nizhny-art-history", "Искусство и история", "Кремль, современное искусство и купеческая Рождественская улица.", 300, 3.0, ("nizhny-kremlin", "arsenal-nn", "rozhdestvenskaya-street"))
 )
