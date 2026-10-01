@@ -61,7 +61,7 @@ def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
             place_slugs=("hermitage",),
             created_at="2026-10-01 00:00:00",
         )
-        await completed_routes.complete_route(1, completed_route, {"hermitage"})
+        await completed_routes.complete_route(1, completed_route, set())
 
         await saved_routes.save(
             1,
@@ -171,7 +171,7 @@ def test_profile_awards_route_explorer_after_three_completed_routes(tmp_path) ->
                 place_slugs=("palace-square",),
                 created_at="2026-10-01 00:00:00",
             )
-            await completed.complete_route(77, route, {"palace-square"})
+            await completed.complete_route(77, route, set())
 
         summary = await build_profile_summary(
             77,
