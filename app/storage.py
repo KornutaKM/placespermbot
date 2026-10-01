@@ -431,6 +431,95 @@ class CompletedRoutesRepository:
             )
             await database.commit()
 
+    async def complete_route(
+        self,
+        user_id: int,
+        route: SavedRoute,
+        available_place_slugs: set[str],
+    ) -> tuple[int, int, int]:
+        available = tuple(
+            slug for slug in route.place_slugs if slug in available_place_slugs
+        )
+        unavailable = len(route.place_slugs) - len(available)
+        payload = json.dumps(
+            list(route.place_slugs),
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+
+        async with aiosqlite.connect(self.database_path) as database:
+            try:
+                await database.execute("BEGIN IMMEDIATE")
+                already_visited = 0
+                if available:
+                    placeholders = ",".join("?" for _ in available)
+                    cursor = await database.execute(
+                        f"""
+                        SELECT COUNT(*)
+                        FROM visited_places
+                        WHERE user_id = ? AND city_slug = ?
+                          AND place_slug IN ({placeholders})
+                        """,
+                        (user_id, route.city_slug, *available),
+                    )
+                    row = await cursor.fetchone()
+                    await cursor.close()
+                    already_visited = int(row[0]) if row is not None else 0
+
+                    await database.executemany(
+                        """
+                        INSERT OR IGNORE INTO visited_places (
+                            user_id,
+                            city_slug,
+                            place_slug
+                        )
+                        VALUES (?, ?, ?)
+                        """,
+                        (
+                            (user_id, route.city_slug, slug)
+                            for slug in available
+                        ),
+                    )
+
+                await database.execute(
+                    """
+                    INSERT OR IGNORE INTO completed_routes (
+                        user_id,
+                        city_slug,
+                        route_id
+                    )
+                    VALUES (?, ?, ?)
+                    """,
+                    (user_id, route.city_slug, route.route_id),
+                )
+                await database.execute(
+                    """
+                    INSERT OR IGNORE INTO completed_route_snapshots (
+                        user_id,
+                        city_slug,
+                        route_id,
+                        interest,
+                        budget_minutes,
+                        place_slugs_json
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        user_id,
+                        route.city_slug,
+                        route.route_id,
+                        route.interest,
+                        route.budget_minutes,
+                        payload,
+                    ),
+                )
+                await database.commit()
+            except aiosqlite.Error:
+                await database.rollback()
+                raise
+
+        return len(available) - already_visited, already_visited, unavailable
+
     async def list_snapshots(
         self,
         user_id: int,

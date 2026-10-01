@@ -1,4 +1,8 @@
 import asyncio
+import sqlite3
+
+import aiosqlite
+import pytest
 
 from app.catalog import get_catalog
 from app.route_completion import RouteCompletionResult, complete_saved_route
@@ -139,5 +143,54 @@ def test_complete_saved_route_rejects_other_user_and_city(tmp_path) -> None:
         assert other_city is None
         assert not await visited.contains(303, CITY_SLUG, slug)
         assert not await visited.contains(404, CITY_SLUG, slug)
+
+    asyncio.run(scenario())
+
+
+def test_atomic_completion_rolls_back_visited_and_marker_on_snapshot_failure(
+    tmp_path,
+) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "bot.sqlite3")
+        saved_routes = SavedRoutesRepository(database_path)
+        visited = VisitedRepository(database_path)
+        completed = CompletedRoutesRepository(database_path)
+        await saved_routes.initialize()
+        catalog = get_catalog(CITY_SLUG)
+        slugs = tuple(place.slug for place in catalog.places[:2])
+        saved = await saved_routes.save(
+            505,
+            CITY_SLUG,
+            "classic",
+            120,
+            slugs,
+        )
+
+        with sqlite3.connect(database_path) as database:
+            database.execute(
+                """
+                CREATE TRIGGER fail_completed_snapshot
+                BEFORE INSERT ON completed_route_snapshots
+                BEGIN
+                    SELECT RAISE(ABORT, 'snapshot failure');
+                END
+                """
+            )
+            database.commit()
+
+        with pytest.raises(aiosqlite.IntegrityError, match="snapshot failure"):
+            await complete_saved_route(
+                user_id=505,
+                city_slug=CITY_SLUG,
+                route_id=saved.route_id,
+                saved_routes=saved_routes,
+                visited=visited,
+                catalog=catalog,
+                completed_routes=completed,
+            )
+
+        assert await visited.list_place_slugs(505, CITY_SLUG) == ()
+        assert not await completed.contains(505, CITY_SLUG, saved.route_id)
+        assert await completed.get_snapshot(505, CITY_SLUG, saved.route_id) is None
 
     asyncio.run(scenario())
