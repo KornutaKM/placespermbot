@@ -4,7 +4,6 @@ from app.catalog import CityCatalog
 from app.catalog_validation import validate_catalog
 from app.domain import Place, PlaceSource, RoutePlan
 
-
 SOURCE = PlaceSource("Source", "https://example.com/place", date(2026, 10, 1))
 
 

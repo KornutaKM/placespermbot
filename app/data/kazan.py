@@ -53,7 +53,7 @@ PLACES = (
 
 ROUTES = (
     RoutePlan("kazan-first-walk", "Первое знакомство с Казанью", "Кремль, Кул Шариф и главная пешеходная улица города.", 240, 2.2, ("kazan-kremlin", "kul-sharif", "suyumbike-tower", "bauman-street")),
-    RoutePlan("kazan-kremlin-and-river", "Кремль и Казанка", "Исторический ансамбль Кремля с продолжением прогулки по набережной.", 210, 2.0, ("kazan-kremlin", "kul-sharif", "kremlin-embankment-kazan")),,
+    RoutePlan("kazan-kremlin-and-river", "Кремль и Казанка", "Исторический ансамбль Кремля с продолжением прогулки по набережной.", 210, 2.0, ("kazan-kremlin", "kul-sharif", "kremlin-embankment-kazan")),
     RoutePlan("kazan-tatar-quarter", "Татарская Казань", "Старо-Татарская слобода, озеро Кабан и центральные городские пространства.", 240, 3.2, ("old-tatar-quarter", "kaban-embankment", "bauman-street")),
     RoutePlan("kazan-museum-center", "История в центре", "Кремль, Национальный музей и архитектурные достопримечательности рядом.", 300, 2.0, ("kazan-kremlin", "national-museum-tatarstan", "peter-paul-cathedral-kazan", "black-lake-kazan"))
 )

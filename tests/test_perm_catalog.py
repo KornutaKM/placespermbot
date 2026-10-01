@@ -29,7 +29,7 @@ def test_perm_is_registered_as_second_city() -> None:
 
 def test_perm_catalog_has_verified_seed_and_unique_ids() -> None:
     city = catalog()
-    assert len(city.places) == 8
+    assert len(city.places) >= 12
 
     slugs = [place.slug for place in city.places]
     assert len(slugs) == len(set(slugs))

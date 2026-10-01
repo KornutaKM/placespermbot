@@ -112,7 +112,10 @@ def test_profile_summary_handles_empty_state(tmp_path) -> None:
         text = profile_text(summary)
         assert "Интересы: не выбраны" in text
         assert "Избранное: 0" in text
-        assert "Посещено: 0/" in text\n        assert "0%" in text\n        assert "Достижения" in text\n        assert "пока нет" in text
+        assert "Посещено: 0/" in text
+        assert "0%" in text
+        assert "Достижения" in text
+        assert "пока нет" in text
         assert "Не интересно: 0" in text
         assert "Сохранённые маршруты: 0" in text
 
