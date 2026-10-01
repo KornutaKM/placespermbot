@@ -10,6 +10,7 @@ from pathlib import Path
 
 from app.database import validate_migration_ledger
 from app.runtime_checks import EXPECTED_COLUMNS, EXPECTED_TABLES
+from app.storage import validate_persisted_route_row
 
 
 def _validate_backup(path: Path) -> None:
@@ -60,6 +61,20 @@ def _validate_backup(path: Path) -> None:
                         "Backup table "
                         f"{table_name} is incomplete; missing columns: {missing}"
                     )
+
+            for table_name, kind in (
+                ("saved_routes", "saved route"),
+                ("completed_route_snapshots", "completed route"),
+            ):
+                route_rows = database.execute(
+                    f"""
+                    SELECT route_id, city_slug, interest, budget_minutes,
+                           place_slugs_json, NULL
+                    FROM {table_name}
+                    """
+                ).fetchall()
+                for route_row in route_rows:
+                    validate_persisted_route_row(tuple(route_row), kind=kind)
     except sqlite3.DatabaseError as error:
         raise RuntimeError("Backup is not a valid SQLite database") from error
 

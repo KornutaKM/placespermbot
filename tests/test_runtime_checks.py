@@ -6,6 +6,7 @@ import pytest
 from app.config import Settings
 from app.database import migrate_database
 from app.runtime_checks import validate_health, validate_static_runtime
+from app.storage import SavedRoutesRepository
 
 
 def settings(tmp_path, **overrides) -> Settings:
@@ -143,6 +144,36 @@ def test_health_rejects_tampered_migration_name(tmp_path) -> None:
             database.commit()
 
         with pytest.raises(RuntimeError, match="migration metadata is inconsistent"):
+            await validate_health(config)
+
+    asyncio.run(scenario())
+
+
+def test_health_rejects_tampered_saved_route_snapshot(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+        saved_routes = SavedRoutesRepository(config.database_path)
+        route = await saved_routes.save(
+            21,
+            "saint-petersburg",
+            "classic",
+            120,
+            ("hermitage", "russian-museum"),
+        )
+
+        with sqlite3.connect(config.database_path) as database:
+            database.execute(
+                """
+                UPDATE saved_routes
+                SET place_slugs_json = ?
+                WHERE route_id = ?
+                """,
+                ('["hermitage","summer-garden"]', route.route_id),
+            )
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="id does not match"):
             await validate_health(config)
 
     asyncio.run(scenario())
