@@ -34,25 +34,30 @@ async def complete_saved_route(
         return None
 
     available = {place.slug for place in catalog.places}
+    if completed_routes is not None:
+        added, already_visited, unavailable = await completed_routes.complete_route(
+            user_id,
+            route,
+            available,
+        )
+        return RouteCompletionResult(
+            added=added,
+            already_visited=already_visited,
+            unavailable=unavailable,
+        )
+
     added = 0
     already_visited = 0
     unavailable = 0
-
     for place_slug in route.place_slugs:
         if place_slug not in available:
             unavailable += 1
             continue
-
         if await visited.contains(user_id, city_slug, place_slug):
             already_visited += 1
             continue
-
         await visited.add(user_id, city_slug, place_slug)
         added += 1
-
-    if completed_routes is not None:
-        await completed_routes.add(user_id, city_slug, route_id)
-        await completed_routes.add_snapshot(user_id, route)
 
     return RouteCompletionResult(
         added=added,
