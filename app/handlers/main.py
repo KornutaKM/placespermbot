@@ -60,6 +60,7 @@ from app.navigation import (
 )
 from app.pagination import Page, paginate
 from app.personal_route import build_explained_personal_route
+from app.personal_route_ui import personal_route_result_text
 from app.personalization_context import load_personalization_context
 from app.place_route import build_place_route
 from app.planner import INTEREST_LABELS, build_route
@@ -68,7 +69,6 @@ from app.recommendations import recommend_personalized, recommendation_reason_te
 from app.route_completion import complete_saved_route
 from app.saved_routes import (
     PERSONAL_ROUTE_INTEREST,
-    PERSONAL_ROUTE_LABEL,
     PLACE_ROUTE_INTEREST,
     PLACE_ROUTE_LABEL,
     build_save_callback,
@@ -1300,28 +1300,8 @@ async def personal_route_duration(
         return
 
     route = result.route
-    stops = "\n".join(
-        (
-            f"{index}. {place.emoji} {place.title} — ~{place.visit_minutes} мин\n"
-            f"   ↳ {recommendation_reason_text(recommendation)}"
-        )
-        for index, place in enumerate(route.places, start=1)
-        if (recommendation := result.recommendation_for(place.slug)) is not None
-    )
-    hours, minutes = divmod(route.estimated_minutes, 60)
-
     await callback.message.edit_text(
-        f"🪄 <b>{PERSONAL_ROUTE_LABEL}</b>\n\n"
-        f"Бюджет: {route.budget_minutes // 60} ч\n"
-        + ("Старт: от вашей геопозиции\n" if location_used else "")
-        + f"Оценка маршрута: ~{hours} ч {minutes:02d} мин\n"
-        f"Пешком по расчёту: ~{route.distance_km:g} км\n"
-        f"Точек: {len(route.places)}\n\n"
-        f"<b>Маршрут:</b>\n{stops}\n\n"
-        "Использованы текущие интересы, избранное, история посещений "
-        "и пройденных маршрутов; уже посещённые, пройденные и отмеченные "
-        "«Не интересно» места исключены. "
-        "Геопозиция после расчёта не сохраняется.",
+        personal_route_result_text(result, location_used=location_used),
         reply_markup=generated_route_keyboard(
             route.places,
             save_callback=build_save_callback(catalog, route),
