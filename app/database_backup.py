@@ -7,12 +7,14 @@ from pathlib import Path
 
 
 def _backup_database(source: Path, destination: Path) -> None:
-    with sqlite3.connect(source) as source_database:
-        with sqlite3.connect(destination) as destination_database:
-            source_database.backup(destination_database)
-            row = destination_database.execute("PRAGMA integrity_check").fetchone()
-            if row != ("ok",):
-                raise RuntimeError("SQLite backup failed integrity check")
+    with (
+        sqlite3.connect(source) as source_database,
+        sqlite3.connect(destination) as destination_database,
+    ):
+        source_database.backup(destination_database)
+        row = destination_database.execute("PRAGMA integrity_check").fetchone()
+        if row != ("ok",):
+            raise RuntimeError("SQLite backup failed integrity check")
 
 
 async def create_database_backup(
