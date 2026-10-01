@@ -13,7 +13,6 @@ from app.recommendations import (
 from app.saved_routes import PERSONAL_ROUTE_INTEREST
 
 
-
 @dataclass(frozen=True, slots=True)
 class PersonalRouteResult:
     route: GeneratedRoute
