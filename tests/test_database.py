@@ -357,3 +357,64 @@ def test_migration_rejects_known_version_with_wrong_name_before_applying_more(tm
         ]
 
     asyncio.run(scenario())
+
+def test_completion_triggers_prevent_relational_corruption(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = tmp_path / "places.db"
+        await migrate_database(database_path)
+
+        with sqlite3.connect(database_path) as database:
+            with pytest.raises(sqlite3.IntegrityError, match="requires marker"):
+                database.execute(
+                    """
+                    INSERT INTO completed_route_snapshots (
+                        user_id, city_slug, route_id, interest,
+                        budget_minutes, place_slugs_json, completed_at
+                    )
+                    VALUES (1, 'perm', 'route', 'classic', 120, '["a"]',
+                            '2026-01-01 10:00:00')
+                    """
+                )
+
+            database.execute(
+                """
+                INSERT INTO completed_routes (
+                    user_id, city_slug, route_id, completed_at
+                )
+                VALUES (1, 'perm', 'route', '2026-01-01 10:00:00')
+                """
+            )
+
+            with pytest.raises(sqlite3.IntegrityError, match="timestamp mismatch"):
+                database.execute(
+                    """
+                    INSERT INTO completed_route_snapshots (
+                        user_id, city_slug, route_id, interest,
+                        budget_minutes, place_slugs_json, completed_at
+                    )
+                    VALUES (1, 'perm', 'route', 'classic', 120, '["a"]',
+                            '2026-01-01 10:00:01')
+                    """
+                )
+
+            database.execute(
+                """
+                INSERT INTO completed_route_snapshots (
+                    user_id, city_slug, route_id, interest,
+                    budget_minutes, place_slugs_json, completed_at
+                )
+                VALUES (1, 'perm', 'route', 'classic', 120, '["a"]',
+                        '2026-01-01 10:00:00')
+                """
+            )
+
+            with pytest.raises(sqlite3.IntegrityError, match="marker has snapshot"):
+                database.execute(
+                    """
+                    DELETE FROM completed_routes
+                    WHERE user_id = 1 AND city_slug = 'perm' AND route_id = 'route'
+                    """
+                )
+
+    asyncio.run(scenario())
+
