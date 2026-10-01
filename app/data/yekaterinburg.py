@@ -7,8 +7,8 @@ CITY_NAME = "Екатеринбург"
 SOURCE_CHECKED_AT = date(2026, 10, 1)
 
 CITY_CENTER_SOURCE = PlaceSource(
-    name="Маршрут по историческому центру Екатеринбурга",
-    url="https://achotut.ru/pervouralsk/marshruty/tsentr-yekaterinburga-ot-plotinki-do-khrama-na-krovi",
+    name="Информационно-туристическая служба Екатеринбурга",
+    url="https://visitekat.ru/",
     checked_at=SOURCE_CHECKED_AT,
 )
 CHURCH_SOURCE = PlaceSource(
