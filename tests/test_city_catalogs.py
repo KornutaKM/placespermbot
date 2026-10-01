@@ -85,3 +85,13 @@ def test_deepened_city_catalogs_have_broader_discovery_depth() -> None:
         assert len(catalog.routes) >= 5
         assert len({place.district for place in catalog.places}) >= 2
         assert sum("с детьми" in place.tags for place in catalog.places) >= 3
+
+
+def test_perm_and_kaliningrad_have_deeper_district_discovery() -> None:
+    for city_slug in ("perm", "kaliningrad"):
+        catalog = get_catalog(city_slug)
+
+        assert len(catalog.places) >= 14
+        assert len(catalog.routes) >= 5
+        assert len({place.district for place in catalog.places}) >= 3
+        assert sum(place.category == "museums" for place in catalog.places) >= 4
