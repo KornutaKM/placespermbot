@@ -419,6 +419,21 @@ class CompletedRoutesRepository:
             await cursor.close()
             return int(row[0]) if row is not None else 0
 
+    async def list_route_ids(self, user_id: int, city_slug: str) -> tuple[str, ...]:
+        async with aiosqlite.connect(self.database_path) as database:
+            cursor = await database.execute(
+                """
+                SELECT route_id
+                FROM completed_routes
+                WHERE user_id = ? AND city_slug = ?
+                ORDER BY completed_at DESC, route_id ASC
+                """,
+                (user_id, city_slug),
+            )
+            rows = await cursor.fetchall()
+            await cursor.close()
+            return tuple(str(row[0]) for row in rows)
+
 
 class DismissedRepository:
     def __init__(self, database_path: str) -> None:
