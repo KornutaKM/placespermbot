@@ -157,6 +157,7 @@ def test_perm_live_dynamic_providers_are_city_scoped() -> None:
 def test_classic_interest_label_is_city_neutral() -> None:
     assert INTEREST_LABELS["classic"] == "🏛 Главные места"
 
+
 def test_perm_new_family_and_culture_places_use_current_sources() -> None:
     city = catalog()
     expected_hosts = {
@@ -172,4 +173,28 @@ def test_perm_new_family_and_culture_places_use_current_sources() -> None:
         assert place is not None
         assert urlparse(place.source.url).hostname == expected_host
         assert place.source.checked_at == date(2026, 10, 1)
+
+def test_perm_core_landmarks_use_specific_current_provenance() -> None:
+    city = catalog()
+    expected_sources = {
+        "perm-art-gallery": ("tickets.permartmuseum.ru", "/place/2"),
+        "perm-esplanade": (
+            "www.gorodperm.ru",
+            "/actions/ecology/citynature/greenfund/",
+        ),
+        "kama-embankment-perm": ("book.gorodperm.ru", "/kama"),
+        "razgulyai-perm": ("book.gorodperm.ru", "/history"),
+    }
+
+    for slug, (expected_host, expected_path) in expected_sources.items():
+        place = city.place_by_slug(slug)
+        assert place is not None
+        source_url = urlparse(place.source.url)
+        assert source_url.hostname == expected_host
+        assert source_url.path == expected_path
+        assert place.source.checked_at == date(2026, 10, 1)
+
+    gallery = city.place_by_slug("perm-art-gallery")
+    assert gallery is not None
+    assert (gallery.latitude, gallery.longitude) == (58.02123, 56.25845)
 
