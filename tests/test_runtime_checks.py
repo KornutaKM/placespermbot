@@ -105,3 +105,28 @@ def test_health_rejects_missing_completed_route_snapshot_table(tmp_path) -> None
             await validate_health(config)
 
     asyncio.run(scenario())
+
+
+def test_health_rejects_table_with_missing_required_columns(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+
+        with sqlite3.connect(config.database_path) as database:
+            database.execute("DROP TABLE saved_routes")
+            database.execute(
+                """
+                CREATE TABLE saved_routes (
+                    user_id INTEGER NOT NULL,
+                    city_slug TEXT NOT NULL,
+                    route_id TEXT NOT NULL,
+                    PRIMARY KEY (user_id, city_slug, route_id)
+                )
+                """
+            )
+            database.commit()
+
+        with pytest.raises(RuntimeError, match=r"saved_routes.*budget_minutes"):
+            await validate_health(config)
+
+    asyncio.run(scenario())
