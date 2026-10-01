@@ -11,6 +11,16 @@ WELCOME_NSK = PlaceSource(
     url="https://welcome-novosibirsk.ru/place-to-visit/sights/",
     checked_at=SOURCE_CHECKED_AT,
 )
+WELCOME_NSK_MUSEUMS = PlaceSource(
+    name="Официальный туристический портал Новосибирска — музеи и галереи",
+    url="https://welcome-novosibirsk.ru/place-to-visit/museums/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+WELCOME_NSK_SIGHTS = PlaceSource(
+    name="Официальный туристический портал Новосибирска — достопримечательности",
+    url="https://welcome-novosibirsk.ru/place-to-visit/sights/",
+    checked_at=SOURCE_CHECKED_AT,
+)
 CITY_NSK = PlaceSource(
     name="Официальный сайт Новосибирска — достопримечательности",
     url="https://www.novo-sibirsk.ru/about/for-visitors/attractions/",
@@ -38,6 +48,8 @@ PLACES = (
     Place("central-park-nsk", "Центральный парк", "parks", "Один из старейших городских парков Новосибирска рядом с центральными кварталами.", "🌳", "Центральный район", 75, True, 55.0371, 82.9285, WELCOME_NSK, ("парк", "прогулка", "с детьми", "бесплатно")),
     Place("railway-museum-nsk", "Музей железнодорожной техники", "museums", "Открытая коллекция локомотивов, вагонов и железнодорожной техники Западной Сибири.", "🚂", "Советский район", 120, False, 54.9389, 83.0018, WELCOME_NSK, ("музей", "техника", "железная дорога", "с детьми")),
     Place("glory-monument-nsk", "Монумент Славы", "sights", "Мемориальный ансамбль в левобережной части Новосибирска.", "🕯", "Ленинский район", 45, True, 54.9816, 82.8945, CITY_NSK, ("история", "мемориал", "бесплатно")),
+    Place("art-museum-nsk", "Новосибирский художественный музей", "museums", "Художественный музей в историческом центре с коллекциями русского и зарубежного искусства.", "🖼", "Центральный район", 120, False, 55.0188, 82.9224, WELCOME_NSK_MUSEUMS, ("музей", "искусство", "культура")),
+    Place("museum-embankment-nsk", "Музей на Набережной", "museums", "Филиал Музея Новосибирска рядом с Обью, посвящённый истории города и прибрежных районов.", "🏙", "Октябрьский район", 75, False, 55.0082, 82.9365, WELCOME_NSK_MUSEUMS, ("музей", "история города", "набережная", "с детьми")),
     Place("akademgorodok-nsk", "Академгородок", "unusual", "Научный район Новосибирска с институтами, сосновыми кварталами и особой городской средой.", "🔬", "Советский район", 150, True, 54.8430, 83.0930, WELCOME_NSK, ("наука", "прогулка", "архитектура", "бесплатно"))
 )
 
@@ -46,5 +58,6 @@ ROUTES = (
     RoutePlan("nsk-river", "Город и Обь", "Центральная прогулка с выходом к Михайловской набережной.", 180, 3.5, ("lenin-square-nsk", "alexander-nevsky-nsk", "mikhailovskaya-embankment")),
     RoutePlan("nsk-family", "Семейный Новосибирск", "Большой семейный день в зоопарке с коротким знакомством с железнодорожной архитектурой города.", 330, 5.0, ("novosibirsk-main-station", "novosibirsk-zoo")),
     RoutePlan("nsk-science", "Научный Новосибирск", "Академгородок и техническая история железной дороги.", 360, 8.0, ("akademgorodok-nsk", "railway-museum-nsk")),
-    RoutePlan("nsk-parks-center", "Зелёный центр", "Площадь Ленина, НОВАТ и спокойная прогулка по Центральному парку.", 180, 2.0, ("lenin-square-nsk", "novat", "central-park-nsk"))
+    RoutePlan("nsk-parks-center", "Зелёный центр", "Площадь Ленина, НОВАТ и спокойная прогулка по Центральному парку.", 180, 2.0, ("lenin-square-nsk", "novat", "central-park-nsk")),
+    RoutePlan("nsk-art-river", "Искусство и Обь", "Художественная коллекция центра, история города у реки и прогулка по Михайловской набережной.", 300, 3.5, ("art-museum-nsk", "museum-embankment-nsk", "mikhailovskaya-embankment")),
 )
