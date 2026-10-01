@@ -8,9 +8,7 @@ import sqlite3
 import tempfile
 from pathlib import Path
 
-from app.database import validate_migration_ledger
-from app.runtime_checks import EXPECTED_COLUMNS, EXPECTED_TABLES
-from app.storage import validate_persisted_route_row
+from app.database_contract import validate_database_contract
 
 
 def _validate_backup(path: Path) -> None:
@@ -19,70 +17,13 @@ def _validate_backup(path: Path) -> None:
 
     try:
         with sqlite3.connect(f"file:{path}?mode=ro", uri=True) as database:
-            integrity = database.execute("PRAGMA integrity_check").fetchone()
-            if integrity != ("ok",):
-                raise RuntimeError("Backup database failed integrity check")
-
-            table = database.execute(
-                """
-                SELECT 1 FROM sqlite_master
-                WHERE type = 'table' AND name = 'schema_migrations'
-                """
-            ).fetchone()
-            if table is None:
-                raise RuntimeError("Backup database has no migration metadata")
-
-            rows = database.execute(
-                "SELECT version, name FROM schema_migrations ORDER BY version"
-            ).fetchall()
-
-            existing_tables = {
-                str(row[0])
-                for row in database.execute(
-                    "SELECT name FROM sqlite_master WHERE type = 'table'"
-                ).fetchall()
-            }
-            missing_tables = EXPECTED_TABLES - existing_tables
-            if missing_tables:
-                missing = ", ".join(sorted(missing_tables))
-                raise RuntimeError(f"Backup schema is incomplete: {missing}")
-
-            for table_name, expected_columns in EXPECTED_COLUMNS.items():
-                existing_columns = {
-                    str(row[1])
-                    for row in database.execute(
-                        f"PRAGMA table_info({table_name})"
-                    ).fetchall()
-                }
-                missing_columns = expected_columns - existing_columns
-                if missing_columns:
-                    missing = ", ".join(sorted(missing_columns))
-                    raise RuntimeError(
-                        "Backup table "
-                        f"{table_name} is incomplete; missing columns: {missing}"
-                    )
-
-            for table_name, kind in (
-                ("saved_routes", "saved route"),
-                ("completed_route_snapshots", "completed route"),
-            ):
-                route_rows = database.execute(
-                    f"""
-                    SELECT route_id, city_slug, interest, budget_minutes,
-                           place_slugs_json, NULL
-                    FROM {table_name}
-                    """
-                ).fetchall()
-                for route_row in route_rows:
-                    validate_persisted_route_row(tuple(route_row), kind=kind)
+            validate_database_contract(
+                database,
+                subject="Backup",
+                check_integrity=True,
+            )
     except sqlite3.DatabaseError as error:
         raise RuntimeError("Backup is not a valid SQLite database") from error
-
-    validate_migration_ledger(
-        [(int(row[0]), str(row[1])) for row in rows],
-        subject="Backup",
-        require_complete=True,
-    )
 
 
 def _restore_database(backup: Path, destination: Path) -> None:
