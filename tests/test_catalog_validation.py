@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from app.catalog import CityCatalog
 from app.catalog_validation import validate_catalog
@@ -44,7 +44,7 @@ def test_validator_reports_broken_catalog_invariants() -> None:
 
 
 def test_validator_rejects_future_stale_and_known_irrelevant_sources() -> None:
-    today = date.today()
+    today = datetime.now(UTC).date()
     sources = (
         PlaceSource("Future", "https://example.com/future", today + timedelta(days=1)),
         PlaceSource("Stale", "https://example.com/stale", today - timedelta(days=367)),
