@@ -169,8 +169,7 @@ def test_serialized_export_is_utf8_deterministic_and_has_no_location_data(tmp_pa
         second = serialize_user_export(data)
 
         assert first == second
-        assert first.endswith(b"
-")
+        assert first.endswith(b"\n")
         decoded = first.decode("utf-8")
         parsed = json.loads(decoded)
         assert parsed == data
