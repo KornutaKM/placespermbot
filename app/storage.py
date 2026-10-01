@@ -236,8 +236,12 @@ class SavedRoutesRepository:
         budget_minutes: int,
         place_slugs: tuple[str, ...],
     ) -> SavedRoute:
-        if not place_slugs:
-            raise ValueError("saved route must contain at least one place")
+        _validate_route_values(
+            city_slug=city_slug,
+            interest=interest,
+            budget_minutes=budget_minutes,
+            place_slugs=place_slugs,
+        )
 
         route_id = route_id_for(
             city_slug,
@@ -350,20 +354,63 @@ class SavedRoutesRepository:
             await database.commit()
 
 
-def _saved_route_from_row(row: tuple[object, ...]) -> SavedRoute:
-    raw_slugs = json.loads(str(row[4]))
-    if not isinstance(raw_slugs, list) or not all(
-        isinstance(value, str) and value
-        for value in raw_slugs
+def _decode_route_place_slugs(raw_payload: object, *, kind: str) -> tuple[str, ...]:
+    try:
+        raw_slugs = json.loads(str(raw_payload))
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"{kind} contains invalid place payload") from exc
+    if (
+        not isinstance(raw_slugs, list)
+        or not raw_slugs
+        or not all(isinstance(value, str) and value for value in raw_slugs)
+        or len(set(raw_slugs)) != len(raw_slugs)
     ):
-        raise RuntimeError("saved route contains invalid place payload")
+        raise RuntimeError(f"{kind} contains invalid place payload")
+    return tuple(raw_slugs)
+
+
+def _validate_route_values(
+    *,
+    city_slug: str,
+    interest: str,
+    budget_minutes: int,
+    place_slugs: tuple[str, ...],
+) -> None:
+    if not city_slug:
+        raise ValueError("route city must not be empty")
+    if not interest:
+        raise ValueError("route interest must not be empty")
+    if budget_minutes <= 0:
+        raise ValueError("route budget must be positive")
+    if not place_slugs:
+        raise ValueError("saved route must contain at least one place")
+    if any(not slug for slug in place_slugs):
+        raise ValueError("route place slug must not be empty")
+    if len(set(place_slugs)) != len(place_slugs):
+        raise ValueError("route places must be unique")
+
+
+def _saved_route_from_row(row: tuple[object, ...]) -> SavedRoute:
+    city_slug = str(row[1])
+    interest = str(row[2])
+    budget_minutes = int(row[3])
+    place_slugs = _decode_route_place_slugs(row[4], kind="saved route")
+    try:
+        _validate_route_values(
+            city_slug=city_slug,
+            interest=interest,
+            budget_minutes=budget_minutes,
+            place_slugs=place_slugs,
+        )
+    except ValueError as exc:
+        raise RuntimeError("saved route contains invalid metadata") from exc
 
     return SavedRoute(
         route_id=str(row[0]),
-        city_slug=str(row[1]),
-        interest=str(row[2]),
-        budget_minutes=int(row[3]),
-        place_slugs=tuple(raw_slugs),
+        city_slug=city_slug,
+        interest=interest,
+        budget_minutes=budget_minutes,
+        place_slugs=place_slugs,
         created_at=str(row[5]),
     )
 
@@ -402,6 +449,12 @@ class CompletedRoutesRepository:
             await database.commit()
 
     async def add_snapshot(self, user_id: int, route: SavedRoute) -> None:
+        _validate_route_values(
+            city_slug=route.city_slug,
+            interest=route.interest,
+            budget_minutes=route.budget_minutes,
+            place_slugs=route.place_slugs,
+        )
         payload = json.dumps(
             list(route.place_slugs),
             ensure_ascii=False,
@@ -437,6 +490,12 @@ class CompletedRoutesRepository:
         route: SavedRoute,
         available_place_slugs: set[str],
     ) -> tuple[int, int, int]:
+        _validate_route_values(
+            city_slug=route.city_slug,
+            interest=route.interest,
+            budget_minutes=route.budget_minutes,
+            place_slugs=route.place_slugs,
+        )
         available = tuple(
             slug for slug in route.place_slugs if slug in available_place_slugs
         )
@@ -546,18 +605,31 @@ class CompletedRoutesRepository:
 
         snapshots: list[CompletedRouteSnapshot] = []
         for row in rows:
-            raw_slugs = json.loads(str(row[4]))
-            if not isinstance(raw_slugs, list) or not all(
-                isinstance(value, str) and value for value in raw_slugs
-            ):
-                raise RuntimeError("completed route contains invalid place payload")
+            city_slug = str(row[1])
+            interest = str(row[2])
+            budget_minutes = int(row[3])
+            place_slugs = _decode_route_place_slugs(
+                row[4],
+                kind="completed route",
+            )
+            try:
+                _validate_route_values(
+                    city_slug=city_slug,
+                    interest=interest,
+                    budget_minutes=budget_minutes,
+                    place_slugs=place_slugs,
+                )
+            except ValueError as exc:
+                raise RuntimeError(
+                    "completed route contains invalid metadata"
+                ) from exc
             snapshots.append(
                 CompletedRouteSnapshot(
                     route_id=str(row[0]),
-                    city_slug=str(row[1]),
-                    interest=str(row[2]),
-                    budget_minutes=int(row[3]),
-                    place_slugs=tuple(raw_slugs),
+                    city_slug=city_slug,
+                    interest=interest,
+                    budget_minutes=budget_minutes,
+                    place_slugs=place_slugs,
                     completed_at=str(row[5]),
                 )
             )
