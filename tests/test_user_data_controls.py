@@ -5,6 +5,7 @@ import pytest
 from app.data.spb import CITY_SLUG
 from app.database import migrate_database
 from app.storage import (
+    CompletedRoutesRepository,
     DismissedRepository,
     FavoritesRepository,
     InterestsRepository,
@@ -32,6 +33,7 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
         saved_routes = SavedRoutesRepository(database_path)
         city_preferences = UserCityRepository(database_path)
         controls = UserDataControlsRepository(database_path)
+        completed_routes = CompletedRoutesRepository(database_path)
 
         await city_preferences.set_city_slug(1, CITY_SLUG)
 
@@ -46,11 +48,13 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
             240,
             ("palace-square", "hermitage"),
         )
+        await completed_routes.add(1, CITY_SLUG, own_route.route_id)
 
         await dismissed.add(1, "another-city", "other-place")
         await favorites.add(1, "another-city", "other-place")
         await interests.add(1, "another-city", "free")
         await visited.add(1, "another-city", "other-place")
+        await completed_routes.add(1, "another-city", "other-completed")
         other_city_route = await saved_routes.save(
             1,
             "another-city",
@@ -63,6 +67,7 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
         await favorites.add(2, CITY_SLUG, "palace-square")
         await interests.add(2, CITY_SLUG, "walks")
         await visited.add(2, CITY_SLUG, "hermitage")
+        await completed_routes.add(2, CITY_SLUG, "foreign-completed")
         other_user_route = await saved_routes.save(
             2,
             CITY_SLUG,
@@ -78,15 +83,19 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
         assert result.interests == 1
         assert result.visited == 1
         assert result.saved_routes == 1
-        assert result.total == 5
+        assert result.completed_routes == 1
+        assert result.total == 6
 
         assert await dismissed.list_place_slugs(1, CITY_SLUG) == ()
         assert await favorites.list_place_slugs(1, CITY_SLUG) == ()
         assert await interests.list_interests(1, CITY_SLUG) == ()
         assert await visited.list_place_slugs(1, CITY_SLUG) == ()
         assert await saved_routes.get(1, CITY_SLUG, own_route.route_id) is None
+        assert await completed_routes.count(1, CITY_SLUG) == 0
 
         assert await city_preferences.get_city_slug(1) == CITY_SLUG
+        assert await completed_routes.count(1, "another-city") == 1
+        assert await completed_routes.count(2, CITY_SLUG) == 1
 
         assert await dismissed.list_place_slugs(1, "another-city") == (
             "other-place",
