@@ -176,6 +176,15 @@ def validate_database_contract(
         missing = ", ".join(sorted(missing_tables))
         raise RuntimeError(f"{subject} schema is incomplete: {missing}")
 
+    unexpected_tables = {
+        table_name
+        for table_name in existing_tables - EXPECTED_TABLES
+        if not table_name.startswith("sqlite_")
+    }
+    if unexpected_tables:
+        unexpected = ", ".join(sorted(unexpected_tables))
+        raise RuntimeError(f"{subject} schema has unexpected tables: {unexpected}")
+
     for table_name, expected_columns in EXPECTED_COLUMNS.items():
         table_info = database.execute(
             f"PRAGMA table_info({table_name})"
@@ -186,6 +195,13 @@ def validate_database_contract(
             missing = ", ".join(sorted(missing_columns))
             raise RuntimeError(
                 f"{subject} table {table_name} is incomplete; missing columns: {missing}"
+            )
+
+        unexpected_columns = existing_columns - expected_columns
+        if unexpected_columns:
+            unexpected = ", ".join(sorted(unexpected_columns))
+            raise RuntimeError(
+                f"{subject} table {table_name} has unexpected columns: {unexpected}"
             )
 
         column_rows = {str(row[1]): row for row in table_info}
