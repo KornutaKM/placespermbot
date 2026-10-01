@@ -383,8 +383,15 @@ def test_saved_route_details_preserve_route_context() -> None:
             place.slug,
             saved_route_context(route.route_id),
         ) in callbacks
+    assert "savedroute:complete:abc123" in callbacks
     assert "savedroute:delete:abc123" in callbacks
     assert "menu:savedroutes" in callbacks
+
+    completed_callbacks = callback_values(
+        saved_route_details_keyboard(route, places, is_completed=True)
+    )
+    assert "savedroute:complete:abc123" not in completed_callbacks
+    assert "completedroute:abc123" in completed_callbacks
 
 
 def test_data_controls_keyboard_binds_active_city() -> None:
@@ -530,3 +537,25 @@ def test_place_route_duration_keyboard_preserves_origin_and_context() -> None:
         "prouted:6:hermitage|c.museums.2",
         "place:hermitage|c.museums.2",
     }
+
+
+def test_saved_routes_keyboard_marks_completed_routes() -> None:
+    route = SavedRoute(
+        route_id="done123",
+        city_slug=CITY_SLUG,
+        interest="museums",
+        budget_minutes=240,
+        place_slugs=("hermitage",),
+        created_at="2026-09-29 12:00:00",
+    )
+    markup = saved_routes_keyboard(
+        paginate((route,), 0),
+        completed_route_ids=frozenset({"done123"}),
+    )
+    route_button = next(
+        button
+        for row in markup.inline_keyboard
+        for button in row
+        if button.callback_data == "savedroute:done123"
+    )
+    assert route_button.text.startswith("🏁 ")
