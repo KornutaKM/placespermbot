@@ -12,7 +12,6 @@ from app.catalog_service import CatalogService
 from app.config import get_settings
 from app.database import migrate_database
 from app.handlers.main import router
-from app.telegram_resilience import retry_transient_telegram
 from app.storage import (
     CompletedRoutesRepository,
     DismissedRepository,
@@ -22,6 +21,7 @@ from app.storage import (
     UserCityRepository,
     VisitedRepository,
 )
+from app.telegram_resilience import retry_transient_telegram
 from app.user_data_controls import UserDataControlsRepository
 
 
