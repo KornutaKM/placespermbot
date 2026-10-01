@@ -1,5 +1,5 @@
-from app.catalog import get_catalog, list_catalogs
 from app.catalog_validation import validate_catalogs
+from app.catalog import get_catalog, list_catalogs
 
 
 EXPECTED_CITIES = {
