@@ -433,57 +433,6 @@ class CompletedRoutesRepository:
     async def initialize(self) -> None:
         await migrate_database(self.database_path)
 
-    async def add(self, user_id: int, city_slug: str, route_id: str) -> None:
-        async with connect_database(self.database_path) as database:
-            await database.execute(
-                """
-                INSERT OR IGNORE INTO completed_routes (
-                    user_id,
-                    city_slug,
-                    route_id
-                )
-                VALUES (?, ?, ?)
-                """,
-                (user_id, city_slug, route_id),
-            )
-            await database.commit()
-
-    async def add_snapshot(self, user_id: int, route: SavedRoute) -> None:
-        _validate_route_values(
-            city_slug=route.city_slug,
-            interest=route.interest,
-            budget_minutes=route.budget_minutes,
-            place_slugs=route.place_slugs,
-        )
-        payload = json.dumps(
-            list(route.place_slugs),
-            ensure_ascii=False,
-            separators=(",", ":"),
-        )
-        async with connect_database(self.database_path) as database:
-            await database.execute(
-                """
-                INSERT OR IGNORE INTO completed_route_snapshots (
-                    user_id,
-                    city_slug,
-                    route_id,
-                    interest,
-                    budget_minutes,
-                    place_slugs_json
-                )
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    user_id,
-                    route.city_slug,
-                    route.route_id,
-                    route.interest,
-                    route.budget_minutes,
-                    payload,
-                ),
-            )
-            await database.commit()
-
     async def complete_route(
         self,
         user_id: int,

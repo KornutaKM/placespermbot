@@ -72,10 +72,11 @@ def test_export_is_user_and_city_scoped_and_preserves_route_order(tmp_path) -> N
             ("russian-museum",),
         )
 
-        await completed_routes.add(1, CITY_SLUG, route.route_id)
-        await completed_routes.add_snapshot(1, route)
-        await completed_routes.add(1, "another-city", "other-completed")
-        await completed_routes.add(2, CITY_SLUG, "foreign-completed")
+        await completed_routes.complete_route(
+            1,
+            route,
+            set(),
+        )
 
         data = await build_user_export(
             1,
