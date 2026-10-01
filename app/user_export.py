@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import json
 from typing import Any
 
@@ -12,6 +11,7 @@ from app.storage import (
     FavoritesRepository,
     InterestsRepository,
     SavedRoutesRepository,
+    UserDataSnapshotRepository,
     VisitedRepository,
 )
 
@@ -29,21 +29,28 @@ async def build_user_export(
     saved_routes_repo: SavedRoutesRepository,
     completed_routes_repo: CompletedRoutesRepository,
 ) -> dict[str, Any]:
-    (
-        interests,
-        dismissed_slugs,
-        favorite_slugs,
-        visited_slugs,
-        saved_routes,
-        completed_routes,
-    ) = await asyncio.gather(
-        interests_repo.list_interests(user_id, catalog.slug),
-        dismissed_repo.list_place_slugs(user_id, catalog.slug),
-        favorites_repo.list_place_slugs(user_id, catalog.slug),
-        visited_repo.list_place_slugs(user_id, catalog.slug),
-        saved_routes_repo.list_routes(user_id, catalog.slug),
-        completed_routes_repo.list_snapshots(user_id, catalog.slug),
+    repositories = (
+        dismissed_repo,
+        favorites_repo,
+        interests_repo,
+        visited_repo,
+        saved_routes_repo,
+        completed_routes_repo,
     )
+    database_paths = {repo.database_path.resolve() for repo in repositories}
+    if len(database_paths) != 1:
+        raise ValueError("User export repositories must use the same database")
+
+    snapshot = await UserDataSnapshotRepository(database_paths.pop()).load(
+        user_id,
+        catalog.slug,
+    )
+    interests = snapshot.interests
+    dismissed_slugs = snapshot.dismissed_slugs
+    favorite_slugs = snapshot.favorite_slugs
+    visited_slugs = snapshot.visited_slugs
+    saved_routes = snapshot.saved_routes
+    completed_routes = snapshot.completed_routes
 
     return {
         "schema_version": EXPORT_SCHEMA_VERSION,
