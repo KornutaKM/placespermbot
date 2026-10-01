@@ -5,6 +5,7 @@ from app.domain import Place, PlaceSource, RoutePlan
 CITY_SLUG = "perm"
 CITY_NAME = "Пермь"
 SOURCE_CHECKED_AT = date(2026, 9, 30)
+NEW_SOURCE_CHECKED_AT = date(2026, 10, 1)
 
 SALTY_EARS_SOURCE = PlaceSource(
     name="Пермь монументальная — Пермяк — солёные уши",
@@ -50,6 +51,31 @@ THEATRE_SOURCE = PlaceSource(
     name="Пермский академический Театр-Театр",
     url="https://teatr-teatr.com/about/teatr-segodnya/",
     checked_at=SOURCE_CHECKED_AT,
+)
+ZOO_SOURCE = PlaceSource(
+    name="Пермский зоопарк — информация посетителям",
+    url="https://zoo.perm.ru/for-visitors/information",
+    checked_at=NEW_SOURCE_CHECKED_AT,
+)
+PLANETARIUM_SOURCE = PlaceSource(
+    name="Пермский планетарий",
+    url="https://planetarium.perm.ru/o-nas/dostupnaja-sreda/",
+    checked_at=NEW_SOURCE_CHECKED_AT,
+)
+CHILDREN_MUSEUM_SOURCE = PlaceSource(
+    name="Пермский краеведческий музей — Детский музейный центр",
+    url="https://museumperm.ru/branch/kids",
+    checked_at=NEW_SOURCE_CHECKED_AT,
+)
+PERMM_SOURCE = PlaceSource(
+    name="Музей современного искусства PERMM",
+    url="https://permm.ru/~/afisha",
+    checked_at=NEW_SOURCE_CHECKED_AT,
+)
+OPERA_SOURCE = PlaceSource(
+    name="Пермский театр оперы и балета — контакты",
+    url="https://permopera.ru/about/contacts/",
+    checked_at=NEW_SOURCE_CHECKED_AT,
 )
 
 CATEGORY_LABELS: dict[str, str] = {
@@ -272,7 +298,10 @@ PLACES: tuple[Place, ...] = (
         slug="razgulyai-perm",
         title="Разгуляй",
         category="sights",
-        summary="Историческая часть Перми с сохранившейся городской застройкой и тихими улицами.",
+        summary=(
+            "Историческая часть Перми с сохранившейся городской "
+            "застройкой и тихими улицами."
+        ),
         emoji="🏘",
         district="Ленинский район",
         visit_minutes=75,
@@ -281,7 +310,92 @@ PLACES: tuple[Place, ...] = (
         longitude=56.2530,
         source=PERM_MUSEUM_SOURCE,
         tags=("история", "архитектура", "прогулка", "бесплатно"),
-    )
+    ),
+    Place(
+        slug="perm-zoo",
+        title="Пермский зоопарк",
+        category="family",
+        summary=(
+            "Новый природно-ландшафтный комплекс на Свиязева с крупными "
+            "экспозиционными зонами и программами для семейной аудитории."
+        ),
+        emoji="🦒",
+        district="Индустриальный район",
+        visit_minutes=180,
+        is_free=False,
+        latitude=57.9610,
+        longitude=56.1786,
+        source=ZOO_SOURCE,
+        tags=("с детьми", "животные", "зоопарк", "природа"),
+    ),
+    Place(
+        slug="perm-planetarium",
+        title="Пермский планетарий",
+        category="family",
+        summary=(
+            "Городской планетарий с программами об астрономии и "
+            "космонавтике, включая наблюдения в телескоп."
+        ),
+        emoji="🪐",
+        district="Мотовилихинский район",
+        visit_minutes=90,
+        is_free=False,
+        latitude=58.019255,
+        longitude=56.271350,
+        source=PLANETARIUM_SOURCE,
+        tags=("с детьми", "астрономия", "космос", "наука"),
+    ),
+    Place(
+        slug="perm-childrens-museum-center",
+        title="Детский музейный центр",
+        category="family",
+        summary=(
+            "Интерактивное выставочно-игровое пространство Пермского "
+            "краеведческого музея на территории Завода Шпагина."
+        ),
+        emoji="🧩",
+        district="Ленинский район",
+        visit_minutes=90,
+        is_free=False,
+        latitude=58.018712,
+        longitude=56.252701,
+        source=CHILDREN_MUSEUM_SOURCE,
+        tags=("с детьми", "музей", "интерактив", "творчество"),
+    ),
+    Place(
+        slug="permm",
+        title="Музей современного искусства PERMM",
+        category="museums",
+        summary=(
+            "Музей современного искусства с постоянной коллекцией, "
+            "временными выставками и образовательными программами."
+        ),
+        emoji="🎨",
+        district="Дзержинский район",
+        visit_minutes=120,
+        is_free=False,
+        latitude=58.0122,
+        longitude=56.2103,
+        source=PERMM_SOURCE,
+        tags=("музей", "современное искусство", "выставки", "культура"),
+    ),
+    Place(
+        slug="perm-opera",
+        title="Пермский театр оперы и балета",
+        category="sights",
+        summary=(
+            "Историческая театральная сцена имени П. И. Чайковского и "
+            "один из ключевых культурных символов города."
+        ),
+        emoji="🎼",
+        district="Ленинский район",
+        visit_minutes=45,
+        is_free=False,
+        latitude=58.01583,
+        longitude=56.24611,
+        source=OPERA_SOURCE,
+        tags=("театр", "опера", "балет", "архитектура", "культура"),
+    ),
 )
 
 ROUTES: tuple[RoutePlan, ...] = (
@@ -335,9 +449,47 @@ ROUTES: tuple[RoutePlan, ...] = (
     RoutePlan(
         slug="perm-art-city",
         title="Искусство и город",
-        summary="Художественная галерея, городские арт-объекты и центральная эспланада.",
+        summary=(
+            "Художественная галерея, городские арт-объекты и "
+            "центральная эспланада."
+        ),
         duration_minutes=300,
         distance_km=4.0,
-        place_slugs=("perm-art-gallery", "permyak-salty-ears", "front-and-rear-monument", "perm-esplanade"),
-    )
+        place_slugs=(
+            "perm-art-gallery",
+            "permyak-salty-ears",
+            "front-and-rear-monument",
+            "perm-esplanade",
+        ),
+    ),
+    RoutePlan(
+        slug="perm-family-science",
+        title="Пермь с детьми: наука и открытия",
+        summary=(
+            "Интерактивный музей, пермская палеонтология и планетарий "
+            "в одном семейном маршруте."
+        ),
+        duration_minutes=330,
+        distance_km=2.8,
+        place_slugs=(
+            "perm-childrens-museum-center",
+            "perm-antiquities-museum",
+            "perm-planetarium",
+        ),
+    ),
+    RoutePlan(
+        slug="perm-stage-and-contemporary-art",
+        title="Сцена и современное искусство",
+        summary=(
+            "Театральная и современная культурная Пермь: от эспланады "
+            "и PERMM к исторической оперной сцене."
+        ),
+        duration_minutes=270,
+        distance_km=3.2,
+        place_slugs=(
+            "theatre-theatre",
+            "permm",
+            "perm-opera",
+        ),
+    ),
 )

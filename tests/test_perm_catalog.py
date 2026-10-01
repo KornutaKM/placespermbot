@@ -1,3 +1,4 @@
+from datetime import date
 from urllib.parse import urlparse
 
 import pytest
@@ -41,7 +42,7 @@ def test_perm_catalog_has_verified_seed_and_unique_ids() -> None:
         assert place.district.strip()
         assert 57.9 <= place.latitude <= 58.1
         assert 56.1 <= place.longitude <= 56.35
-        assert place.source.checked_at.isoformat() == "2026-09-30"
+        assert place.source.checked_at >= date(2026, 9, 30)
 
         source_url = urlparse(place.source.url)
         assert source_url.scheme == "https"
@@ -50,7 +51,7 @@ def test_perm_catalog_has_verified_seed_and_unique_ids() -> None:
 
 def test_perm_routes_reference_existing_places() -> None:
     city = catalog()
-    assert len(city.routes) >= 2
+    assert len(city.routes) >= 7
 
     for route in city.routes:
         assert route.place_slugs
@@ -67,8 +68,13 @@ def test_perm_search_and_categories_use_generic_catalog_logic() -> None:
     assert city.search_places("ПАЛЕОНТОЛОГИЯ")[0].slug == "perm-antiquities-museum"
 
     family = {place.slug for place in city.places_for_category("family")}
-    assert "perm-antiquities-museum" in family
-    assert "gorky-park-perm" in family
+    assert {
+        "perm-antiquities-museum",
+        "gorky-park-perm",
+        "perm-zoo",
+        "perm-planetarium",
+        "perm-childrens-museum-center",
+    } <= family
 
     free = city.places_for_category("free")
     assert free
@@ -150,3 +156,20 @@ def test_perm_live_dynamic_providers_are_city_scoped() -> None:
 
 def test_classic_interest_label_is_city_neutral() -> None:
     assert INTEREST_LABELS["classic"] == "🏛 Главные места"
+
+def test_perm_new_family_and_culture_places_use_current_sources() -> None:
+    city = catalog()
+    expected_hosts = {
+        "perm-zoo": "zoo.perm.ru",
+        "perm-planetarium": "planetarium.perm.ru",
+        "perm-childrens-museum-center": "museumperm.ru",
+        "permm": "permm.ru",
+        "perm-opera": "permopera.ru",
+    }
+
+    for slug, expected_host in expected_hosts.items():
+        place = city.place_by_slug(slug)
+        assert place is not None
+        assert urlparse(place.source.url).hostname == expected_host
+        assert place.source.checked_at == date(2026, 10, 1)
+
