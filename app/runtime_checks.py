@@ -4,12 +4,11 @@ from pathlib import Path
 
 from app.catalog import get_catalog
 from app.config import Settings
-from app.storage import validate_persisted_route_row
-
 from app.database import (
     connect_database,
     validate_migration_ledger,
 )
+from app.storage import validate_persisted_route_row
 
 EXPECTED_TABLES = frozenset(
     {
