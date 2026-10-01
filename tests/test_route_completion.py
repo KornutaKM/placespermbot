@@ -2,7 +2,11 @@ import asyncio
 
 from app.catalog import get_catalog
 from app.route_completion import RouteCompletionResult, complete_saved_route
-from app.storage import CompletedRoutesRepository, SavedRoutesRepository, VisitedRepository
+from app.storage import (
+    CompletedRoutesRepository,
+    SavedRoutesRepository,
+    VisitedRepository,
+)
 
 
 CITY_SLUG = "saint-petersburg"
