@@ -24,6 +24,18 @@ def table_names(database_path) -> set[str]:
     return {str(row[0]) for row in rows}
 
 
+def trigger_names(database_path) -> set[str]:
+    with sqlite3.connect(database_path) as database:
+        rows = database.execute(
+            """
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'trigger'
+            """
+        ).fetchall()
+    return {str(row[0]) for row in rows}
+
+
 def test_fresh_database_reaches_latest_schema(tmp_path) -> None:
     async def scenario() -> None:
         database_path = tmp_path / "places.db"
@@ -31,7 +43,9 @@ def test_fresh_database_reaches_latest_schema(tmp_path) -> None:
         version = await migrate_database(database_path)
 
         assert version == LATEST_SCHEMA_VERSION
-        assert await get_applied_migration_versions(database_path) == (1, 2, 3, 4, 5, 6, 7, 8, 9)
+        assert await get_applied_migration_versions(database_path) == tuple(
+            range(1, LATEST_SCHEMA_VERSION + 1)
+        )
         assert {
             "schema_migrations",
             "favorites",
@@ -43,6 +57,15 @@ def test_fresh_database_reaches_latest_schema(tmp_path) -> None:
             "completed_routes",
             "completed_route_snapshots",
         } <= table_names(database_path)
+        assert trigger_names(database_path) == {
+            "completed_snapshot_requires_marker_insert",
+            "completed_snapshot_requires_marker_update",
+            "completed_snapshot_timestamp_insert",
+            "completed_snapshot_timestamp_update",
+            "completed_marker_identity_update_guard",
+            "completed_marker_timestamp_update_guard",
+            "completed_marker_delete_guard",
+        }
 
     asyncio.run(scenario())
 
@@ -312,7 +335,10 @@ def test_migration_rejects_known_version_with_wrong_name_before_applying_more(tm
             database.execute(
                 "UPDATE schema_migrations SET name = 'tampered' WHERE version = 5"
             )
-            database.execute("DELETE FROM schema_migrations WHERE version = 9")
+            database.execute(
+                "DELETE FROM schema_migrations WHERE version = ?",
+                (LATEST_SCHEMA_VERSION,),
+            )
             database.commit()
 
         with pytest.raises(RuntimeError, match="migration metadata is inconsistent"):
@@ -322,6 +348,8 @@ def test_migration_rejects_known_version_with_wrong_name_before_applying_more(tm
             versions = database.execute(
                 "SELECT version FROM schema_migrations ORDER BY version"
             ).fetchall()
-        assert versions == [(1,), (2,), (3,), (4,), (5,), (6,), (7,), (8,)]
+        assert versions == [
+            (version,) for version in range(1, LATEST_SCHEMA_VERSION)
+        ]
 
     asyncio.run(scenario())
