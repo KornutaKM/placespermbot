@@ -4,9 +4,9 @@ from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
 from app.recommendations import (
     PersonalRecommendation,
-    recommendation_reason_text,
     recommend_personalized,
     recommend_places,
+    recommendation_reason_text,
 )
 
 
