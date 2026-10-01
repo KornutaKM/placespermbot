@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from dataclasses import dataclass
-from datetime import date
 from urllib.parse import urlparse
 
 from app.catalog import CityCatalog
@@ -51,9 +51,10 @@ def validate_catalog(catalog: CityCatalog) -> tuple[CatalogIssue, ...]:
             issues.append(CatalogIssue("place.source.invalid", f"{place.slug}: source must be an HTTPS URL"))
         if not place.source.name.strip():
             issues.append(CatalogIssue("place.source.name.empty", f"{place.slug}: source name must not be empty"))
-        if place.source.checked_at > date.today():
+        today = datetime.now(UTC).date()
+        if place.source.checked_at > today:
             issues.append(CatalogIssue("place.source.checked_at.future", f"{place.slug}: source check date is in the future"))
-        elif (date.today() - place.source.checked_at).days > MAX_SOURCE_AGE_DAYS:
+        elif (today - place.source.checked_at).days > MAX_SOURCE_AGE_DAYS:
             issues.append(CatalogIssue("place.source.checked_at.stale", f"{place.slug}: source verification is stale"))
         if any(path in parsed.path for path in KNOWN_IRRELEVANT_SOURCE_PATHS):
             issues.append(CatalogIssue("place.source.irrelevant", f"{place.slug}: source URL is known to be unrelated"))
