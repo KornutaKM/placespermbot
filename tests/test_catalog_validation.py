@@ -12,7 +12,22 @@ def test_validator_accepts_valid_catalog() -> None:
         slug="city",
         name="City",
         category_labels={"sights": "Sights"},
-        places=(Place("one", "One", "sights", "Summary", "🏛", "Center", 30, True, 50.0, 30.0, SOURCE),),
+        places=(
+            Place(
+                "one",
+                "One",
+                "sights",
+                "Summary",
+                "🏛",
+                "Center",
+                30,
+                True,
+                50.0,
+                30.0,
+                SOURCE,
+                tags=("history",),
+            ),
+        ),
         routes=(RoutePlan("walk", "Walk", "Summary", 60, 1.0, ("one",)),),
     )
 
