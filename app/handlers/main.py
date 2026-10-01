@@ -13,6 +13,8 @@ from app.excursions import get_excursion_providers
 from app.keyboards import (
     back_home_keyboard,
     categories_keyboard,
+    completed_route_details_keyboard,
+    completed_routes_keyboard,
     cities_keyboard,
     data_controls_keyboard,
     data_delete_confirm_keyboard,
@@ -1850,6 +1852,86 @@ async def saved_route_card(
     await callback.message.edit_text(
         body,
         reply_markup=saved_route_details_keyboard(route, places),
+    )
+    await callback.answer()
+
+
+async def show_completed_routes_page(
+    callback: CallbackQuery,
+    completed_routes_repo: CompletedRoutesRepository,
+    page_index: int,
+) -> None:
+    catalog = current_catalog()
+    routes = await completed_routes_repo.list_snapshots(callback.from_user.id, catalog.slug)
+    if not routes:
+        await callback.message.edit_text(
+            "🏁 <b>Пройденные маршруты</b>\n\nИстория пока пуста.",
+            reply_markup=profile_keyboard(),
+        )
+        await callback.answer()
+        return
+    page = paginate(routes, page_index)
+    await callback.message.edit_text(
+        "🏁 <b>Пройденные маршруты</b>\n\n"
+        f"Пройдено: {page.total_items} · страница {page.number}/{page.total_pages}.",
+        reply_markup=completed_routes_keyboard(page),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "menu:completedroutes")
+async def completed_routes(
+    callback: CallbackQuery,
+    completed_routes_repo: CompletedRoutesRepository,
+) -> None:
+    await show_completed_routes_page(callback, completed_routes_repo, 0)
+
+
+@router.callback_query(F.data.startswith("completedroutes:"))
+async def completed_routes_page(
+    callback: CallbackQuery,
+    completed_routes_repo: CompletedRoutesRepository,
+) -> None:
+    try:
+        page_index = int(callback.data.rsplit(":", 1)[1])
+    except (ValueError, AttributeError):
+        await callback.answer("Некорректная страница.", show_alert=True)
+        return
+    await show_completed_routes_page(callback, completed_routes_repo, page_index)
+
+
+@router.callback_query(F.data.startswith("completedroute:"))
+async def completed_route_card(
+    callback: CallbackQuery,
+    completed_routes_repo: CompletedRoutesRepository,
+) -> None:
+    route_id = callback.data.removeprefix("completedroute:").strip()
+    catalog = current_catalog()
+    route = await completed_routes_repo.get_snapshot(callback.from_user.id, catalog.slug, route_id)
+    if route is None:
+        await callback.answer("Пройденный маршрут не найден.", show_alert=True)
+        return
+    places = tuple(
+        place for slug in route.place_slugs
+        if (place := catalog.place_by_slug(slug)) is not None
+    )
+    stops = "\n".join(
+        f"{index}. {place.emoji} {place.title}"
+        for index, place in enumerate(places, start=1)
+    )
+    unavailable = len(route.place_slugs) - len(places)
+    body = (
+        f"🏁 <b>{route_interest_label(route.interest)}</b>\n\n"
+        f"Пройден: {route.completed_at}\n"
+        f"Бюджет: {route.budget_minutes // 60} ч\n"
+        f"Точек доступно: {len(places)}/{len(route.place_slugs)}\n\n"
+        + (f"<b>Маршрут:</b>\n{stops}" if places else "Все точки snapshot сейчас отсутствуют в каталоге.")
+    )
+    if unavailable:
+        body += "\n\nЧасть точек была удалена или переименована в текущем каталоге."
+    await callback.message.edit_text(
+        body,
+        reply_markup=completed_route_details_keyboard(route, places),
     )
     await callback.answer()
 
