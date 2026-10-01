@@ -77,6 +77,26 @@ OPERA_SOURCE = PlaceSource(
     url="https://permopera.ru/about/contacts/",
     checked_at=NEW_SOURCE_CHECKED_AT,
 )
+ART_GALLERY_SOURCE = PlaceSource(
+    name="Пермская государственная художественная галерея — билеты",
+    url="https://tickets.permartmuseum.ru/place/2",
+    checked_at=NEW_SOURCE_CHECKED_AT,
+)
+ESPLANADE_SOURCE = PlaceSource(
+    name="Администрация Перми — зелёный фонд",
+    url="https://www.gorodperm.ru/actions/ecology/citynature/greenfund/",
+    checked_at=NEW_SOURCE_CHECKED_AT,
+)
+KAMA_EMBANKMENT_SOURCE = PlaceSource(
+    name="Пермь. Три столетия — река Кама",
+    url="https://book.gorodperm.ru/kama",
+    checked_at=NEW_SOURCE_CHECKED_AT,
+)
+RAZGULYAI_SOURCE = PlaceSource(
+    name="Пермь. Три столетия — история города",
+    url="https://book.gorodperm.ru/history",
+    checked_at=NEW_SOURCE_CHECKED_AT,
+)
 
 CATEGORY_LABELS: dict[str, str] = {
     "sights": "🏛 Достопримечательности",
@@ -228,42 +248,51 @@ PLACES: tuple[Place, ...] = (
         slug="perm-esplanade",
         title="Пермская эспланада",
         category="parks",
-        summary="Главное открытое общественное пространство центра Перми между Театром-Театром и городской администрацией.",
+        summary=(
+            "Главное открытое общественное пространство центра Перми "
+            "между Театром-Театром и городской администрацией."
+        ),
         emoji="🌆",
         district="Ленинский район",
         visit_minutes=60,
         is_free=True,
         latitude=58.0100,
         longitude=56.2290,
-        source=THEATRE_SOURCE,
+        source=ESPLANADE_SOURCE,
         tags=("прогулка", "центр", "городская среда", "бесплатно"),
     ),
     Place(
         slug="kama-embankment-perm",
         title="Набережная Камы",
         category="parks",
-        summary="Прогулочная набережная вдоль Камы у исторического центра Перми.",
+        summary=(
+            "Обновлённый городской променад вдоль Камы с амфитеатром, "
+            "зонами отдыха и панорамой реки."
+        ),
         emoji="🌊",
         district="Ленинский район",
         visit_minutes=90,
         is_free=True,
         latitude=58.0210,
         longitude=56.2430,
-        source=PERM_MUSEUM_SOURCE,
+        source=KAMA_EMBANKMENT_SOURCE,
         tags=("набережная", "прогулка", "виды", "бесплатно"),
     ),
     Place(
         slug="perm-art-gallery",
         title="Пермская художественная галерея",
         category="museums",
-        summary="Крупное художественное собрание региона, известное в том числе коллекцией пермской деревянной скульптуры.",
+        summary=(
+            "Главное художественное собрание региона в новом музейном "
+            "корпусе на территории Завода Шпагина."
+        ),
         emoji="🖼",
         district="Ленинский район",
         visit_minutes=120,
         is_free=False,
-        latitude=58.0165,
-        longitude=56.2435,
-        source=PERM_MUSEUM_SOURCE,
+        latitude=58.02123,
+        longitude=56.25845,
+        source=ART_GALLERY_SOURCE,
         tags=("музей", "искусство", "деревянная скульптура"),
     ),
     Place(
@@ -308,7 +337,7 @@ PLACES: tuple[Place, ...] = (
         is_free=True,
         latitude=58.0250,
         longitude=56.2530,
-        source=PERM_MUSEUM_SOURCE,
+        source=RAZGULYAI_SOURCE,
         tags=("история", "архитектура", "прогулка", "бесплатно"),
     ),
     Place(
