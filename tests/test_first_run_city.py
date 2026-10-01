@@ -66,8 +66,8 @@ def test_first_start_requires_explicit_city_without_persisting_default(tmp_path)
         text, markup = message.answers[0]
         assert "Сначала выберите город" in text
         assert callback_values(markup) == {
-            "city:set:perm",
-            "city:set:saint-petersburg",
+            f"city:set:{catalog.slug}"
+            for catalog in service.available_catalogs()
         }
         assert "menu:home" not in callback_values(markup)
         assert all(not text.startswith("✅ ") for text in button_texts(markup))
