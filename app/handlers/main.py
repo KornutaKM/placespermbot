@@ -69,7 +69,6 @@ from app.recommendations import recommend_personalized, recommendation_reason_te
 from app.route_completion import complete_saved_route
 from app.saved_routes import (
     PERSONAL_ROUTE_INTEREST,
-    PERSONAL_ROUTE_LABEL,
     PLACE_ROUTE_INTEREST,
     PLACE_ROUTE_LABEL,
     build_save_callback,
