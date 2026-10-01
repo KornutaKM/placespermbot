@@ -5,6 +5,7 @@ from pathlib import Path
 
 import aiosqlite
 
+from app.database import connect_database
 _DATA_TABLES = (
     ("favorites", "favorites"),
     ("user_interests", "interests"),
@@ -50,7 +51,7 @@ class UserDataControlsRepository:
     ) -> DeletionResult:
         counts: dict[str, int] = {}
 
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             try:
                 await database.execute("BEGIN IMMEDIATE")
                 for table_name, result_key in _DATA_TABLES:
