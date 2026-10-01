@@ -528,3 +528,11 @@ python -m app.diagnostics
 environment, активным catalog slug, размером SQLite-файла, journal mode, quick integrity check
 и применёнными версиями migrations. Bot token, абсолютный путь к БД и пользовательские данные
 в диагностический output не включаются.
+
+
+### Устойчивость Telegram startup
+
+Перед polling бот регистрирует команды через Telegram Bot API. Кратковременные network/server
+ошибки на этом шаге повторяются с ограниченным backoff 0.5 / 1 / 2 секунды. После исчерпания
+retry ошибка остаётся явной, чтобы Docker restart policy мог перезапустить процесс. Ошибки
+локальной конфигурации и программные ошибки не ретраятся и не маскируются.
