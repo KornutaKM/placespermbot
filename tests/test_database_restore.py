@@ -1,5 +1,6 @@
 import asyncio
 import sqlite3
+from unittest.mock import patch
 
 import pytest
 
@@ -199,5 +200,19 @@ def test_restore_rejects_tampered_route_snapshot_without_touching_live_database(
             await restore_database_backup(backup, destination)
 
         assert await favorites.list_place_slugs(31, "moscow") == ("red-square",)
+
+    asyncio.run(scenario())
+
+
+def test_restore_fsyncs_parent_directory_after_atomic_replace(tmp_path) -> None:
+    async def scenario() -> None:
+        backup = tmp_path / "backup.db"
+        destination = tmp_path / "data" / "live.db"
+        await migrate_database(backup)
+
+        with patch("app.database_restore.fsync_directory") as sync_directory:
+            await restore_database_backup(backup, destination)
+
+        sync_directory.assert_called_once_with(destination.parent.resolve())
 
     asyncio.run(scenario())
