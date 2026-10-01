@@ -98,3 +98,26 @@ def test_restore_rejects_incomplete_migration_history(tmp_path) -> None:
         assert not (tmp_path / "live.db").exists()
 
     asyncio.run(scenario())
+
+
+def test_restore_rejects_tampered_migration_name(tmp_path) -> None:
+    async def scenario() -> None:
+        backup = tmp_path / "tampered.db"
+        await migrate_database(backup)
+        with sqlite3.connect(backup) as database:
+            database.execute(
+                "UPDATE schema_migrations SET name = 'tampered' WHERE version = 6"
+            )
+            database.commit()
+
+        destination = tmp_path / "live.db"
+        await migrate_database(destination)
+        favorites = FavoritesRepository(str(destination))
+        await favorites.add(11, "perm", "esplanade")
+
+        with pytest.raises(RuntimeError, match="migration metadata is inconsistent"):
+            await restore_database_backup(backup, destination)
+
+        assert await favorites.list_place_slugs(11, "perm") == ("esplanade",)
+
+    asyncio.run(scenario())
