@@ -50,12 +50,13 @@ def recommend_personalized(
         if place.slug in favorites
     )
     visited = set(visited_slugs)
+    completed_route_places_set = set(completed_route_place_slugs)
+    independent_visited = visited - completed_route_places_set
     visited_places = tuple(
         place
         for place in catalog.places
-        if place.slug in visited
+        if place.slug in independent_visited
     )
-    completed_route_places_set = set(completed_route_place_slugs)
     completed_route_places = tuple(
         place
         for place in catalog.places
