@@ -46,7 +46,10 @@ def _restore_database(backup: Path, destination: Path) -> None:
             os.fsync(temporary.fileno())
 
         _validate_backup(temporary_path)
-        os.replace(temporary_path, destination)\n        fsync_directory(destination.parent)\n        temporary_path = None\n
+        os.replace(temporary_path, destination)
+        fsync_directory(destination.parent)
+        temporary_path = None
+
         for suffix in ("-wal", "-shm"):
             Path(f"{destination}{suffix}").unlink(missing_ok=True)
     finally:
