@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 
 from app.database_contract import validate_database_contract
+from app.filesystem_durability import fsync_directory
 
 
 def _backup_database(source: Path, destination: Path) -> None:
@@ -35,9 +36,7 @@ def _backup_database(source: Path, destination: Path) -> None:
         with temporary_path.open("rb") as backup_file:
             os.fsync(backup_file.fileno())
 
-        os.replace(temporary_path, destination)
-        temporary_path = None
-    finally:
+        os.replace(temporary_path, destination)\n        fsync_directory(destination.parent)\n        temporary_path = None\n    finally:
         if temporary_path is not None:
             temporary_path.unlink(missing_ok=True)
 
