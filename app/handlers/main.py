@@ -60,6 +60,7 @@ from app.navigation import (
 )
 from app.pagination import Page, paginate
 from app.personal_route import build_personal_route
+from app.personalization_context import load_personalization_context
 from app.place_route import build_place_route
 from app.planner import INTEREST_LABELS, build_route
 from app.profile import ProfileSummary, build_profile_summary, profile_text
@@ -976,10 +977,16 @@ async def show_personal_page(
     page_index: int,
 ) -> None:
     catalog = current_catalog()
-    interests = await interests_repo.list_interests(
+    context = await load_personalization_context(
         callback.from_user.id,
         catalog.slug,
+        dismissed_repo=dismissed_repo,
+        favorites_repo=favorites_repo,
+        interests_repo=interests_repo,
+        visited_repo=visited_repo,
+        completed_routes_repo=completed_routes_repo,
     )
+    interests = context.interests
 
     if not interests:
         await callback.message.edit_text(
@@ -990,39 +997,14 @@ async def show_personal_page(
         await callback.answer()
         return
 
-    dismissed_slugs = await dismissed_repo.list_place_slugs(
-        callback.from_user.id,
-        catalog.slug,
-    )
-    favorite_slugs = await favorites_repo.list_place_slugs(
-        callback.from_user.id,
-        catalog.slug,
-    )
-    visited_slugs = await visited_repo.list_place_slugs(
-        callback.from_user.id,
-        catalog.slug,
-    )
-    completed_snapshots = await completed_routes_repo.list_snapshots(
-        callback.from_user.id,
-        catalog.slug,
-    )
-    completed_route_place_slugs = {
-        slug
-        for snapshot in completed_snapshots
-        for slug in snapshot.place_slugs
-    }
     recommendations = recommend_personalized(
         catalog,
         interests,
         limit=len(catalog.places),
-        favorite_slugs=favorite_slugs,
-        visited_slugs=visited_slugs,
-        completed_route_place_slugs=completed_route_place_slugs,
-        exclude_slugs=(
-            set(visited_slugs)
-            | set(dismissed_slugs)
-            | completed_route_place_slugs
-        ),
+        favorite_slugs=context.favorite_slugs,
+        visited_slugs=context.visited_slugs,
+        completed_route_place_slugs=context.completed_route_place_slugs,
+        exclude_slugs=context.excluded_slugs,
     )
     page = paginate(recommendations, page_index)
     place_page = Page(
@@ -1267,10 +1249,16 @@ async def personal_route_duration(
         return
 
     catalog = current_catalog()
-    interests = await interests_repo.list_interests(
+    context = await load_personalization_context(
         callback.from_user.id,
         catalog.slug,
+        dismissed_repo=dismissed_repo,
+        favorites_repo=favorites_repo,
+        interests_repo=interests_repo,
+        visited_repo=visited_repo,
+        completed_routes_repo=completed_routes_repo,
     )
+    interests = context.interests
     if not interests:
         await state.clear()
         await callback.answer(
@@ -1279,35 +1267,14 @@ async def personal_route_duration(
         )
         return
 
-    dismissed_slugs = await dismissed_repo.list_place_slugs(
-        callback.from_user.id,
-        catalog.slug,
-    )
-    favorite_slugs = await favorites_repo.list_place_slugs(
-        callback.from_user.id,
-        catalog.slug,
-    )
-    visited_slugs = await visited_repo.list_place_slugs(
-        callback.from_user.id,
-        catalog.slug,
-    )
-    completed_snapshots = await completed_routes_repo.list_snapshots(
-        callback.from_user.id,
-        catalog.slug,
-    )
-    completed_route_place_slugs = {
-        slug
-        for snapshot in completed_snapshots
-        for slug in snapshot.place_slugs
-    }
     route = build_personal_route(
         catalog,
         interests,
         budget_minutes=budget_minutes,
-        favorite_slugs=favorite_slugs,
-        visited_slugs=visited_slugs,
-        completed_route_place_slugs=completed_route_place_slugs,
-        dismissed_slugs=dismissed_slugs,
+        favorite_slugs=context.favorite_slugs,
+        visited_slugs=context.visited_slugs,
+        completed_route_place_slugs=context.completed_route_place_slugs,
+        dismissed_slugs=context.dismissed_slugs,
         start_latitude=(
             float(start_latitude)
             if start_latitude is not None
