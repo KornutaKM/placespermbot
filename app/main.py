@@ -12,6 +12,7 @@ from app.catalog_service import CatalogService
 from app.config import get_settings
 from app.database import migrate_database
 from app.handlers.main import router
+from app.runtime_checks import validate_health
 from app.storage import (
     CompletedRoutesRepository,
     DismissedRepository,
@@ -30,6 +31,8 @@ async def main() -> None:
     settings = get_settings()
 
     await migrate_database(settings.database_path)
+    await validate_health(settings)
+
     completed_routes_repo = CompletedRoutesRepository(settings.database_path)
     dismissed_repo = DismissedRepository(settings.database_path)
     favorites_repo = FavoritesRepository(settings.database_path)
