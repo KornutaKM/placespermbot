@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from typing import AsyncIterator
 from pathlib import Path
 
 import aiosqlite
+
+SQLITE_BUSY_TIMEOUT_MS = 5_000
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,11 +178,28 @@ KNOWN_SCHEMA_VERSIONS = frozenset(migration.version for migration in MIGRATIONS)
 LATEST_SCHEMA_VERSION = max(KNOWN_SCHEMA_VERSIONS)
 
 
+@asynccontextmanager
+async def connect_database(
+    database_path: str | Path,
+) -> AsyncIterator[aiosqlite.Connection]:
+    database = await aiosqlite.connect(
+        database_path,
+        timeout=SQLITE_BUSY_TIMEOUT_MS / 1_000,
+    )
+    try:
+        await database.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
+        await database.execute("PRAGMA foreign_keys = ON")
+        yield database
+    finally:
+        await database.close()
+
+
 async def migrate_database(database_path: str | Path) -> int:
     path = Path(database_path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    async with aiosqlite.connect(path) as database:
+    async with connect_database(path) as database:
+        await database.execute("PRAGMA journal_mode = WAL")
         await database.execute(
             """
             CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -228,7 +249,7 @@ async def get_applied_migration_versions(
     if not path.is_file():
         return ()
 
-    async with aiosqlite.connect(path) as database:
+    async with connect_database(path) as database:
         cursor = await database.execute(
             """
             SELECT name
