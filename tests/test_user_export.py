@@ -231,7 +231,7 @@ def test_account_export_contains_all_user_cities_without_private_identifiers(
         ]
         legacy = data["cities"][0]
         assert legacy["city"]["name"] is None
-        assert legacy["interests"] == [{"id": "walks", "label": "🚶 Прогулки"}]
+        assert legacy["interests"] == [{"id": "walks", "label": "🌿 Прогулки"}]
 
         encoded = serialize_user_export(data).decode("utf-8").casefold()
         assert "user_id" not in encoded
