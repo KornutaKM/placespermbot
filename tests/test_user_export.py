@@ -1,6 +1,8 @@
 import asyncio
 import json
 
+import pytest
+
 from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
 from app.database import migrate_database
@@ -176,5 +178,27 @@ def test_serialized_export_is_utf8_deterministic_and_has_no_location_data(tmp_pa
         assert "bot_token" not in lowered
 
         assert export_filename(catalog) == "places-saint-petersburg.json"
+
+    asyncio.run(scenario())
+
+
+def test_export_rejects_repositories_from_different_databases(tmp_path) -> None:
+    async def scenario() -> None:
+        first = str(tmp_path / "first.db")
+        second = str(tmp_path / "second.db")
+        await migrate_database(first)
+        await migrate_database(second)
+
+        with pytest.raises(ValueError, match="same database"):
+            await build_user_export(
+                1,
+                get_catalog(CITY_SLUG),
+                dismissed_repo=DismissedRepository(first),
+                favorites_repo=FavoritesRepository(second),
+                interests_repo=InterestsRepository(first),
+                visited_repo=VisitedRepository(first),
+                saved_routes_repo=SavedRoutesRepository(first),
+                completed_routes_repo=CompletedRoutesRepository(first),
+            )
 
     asyncio.run(scenario())
