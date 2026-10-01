@@ -265,16 +265,18 @@ def test_completed_snapshot_identity_tampering_is_rejected_by_database(tmp_path)
         saved = await saved_routes.save(707, CITY_SLUG, "classic", 120, slugs)
         await completed.complete_route(707, saved, set(slugs))
 
-        with sqlite3.connect(database_path) as database:
-            with pytest.raises(sqlite3.IntegrityError, match="requires marker"):
-                database.execute(
-                    """
-                    UPDATE completed_route_snapshots
-                    SET route_id = 'tampered-route-id'
-                    WHERE user_id = ? AND city_slug = ? AND route_id = ?
-                    """,
-                    (707, CITY_SLUG, saved.route_id),
-                )
+        with (
+            sqlite3.connect(database_path) as database,
+            pytest.raises(sqlite3.IntegrityError, match="requires marker"),
+        ):
+            database.execute(
+                """
+                UPDATE completed_route_snapshots
+                SET route_id = 'tampered-route-id'
+                WHERE user_id = ? AND city_slug = ? AND route_id = ?
+                """,
+                (707, CITY_SLUG, saved.route_id),
+            )
 
     asyncio.run(scenario())
 
