@@ -7,7 +7,6 @@ from urllib.parse import urlparse
 from app.catalog import CityCatalog
 
 
-@dataclass(frozen=True, slots=True)
 MAX_SOURCE_AGE_DAYS = 366
 KNOWN_IRRELEVANT_SOURCE_PATHS = (
     "/tourism/lechebnaya-verkhovaya-ezda/",
@@ -15,6 +14,7 @@ KNOWN_IRRELEVANT_SOURCE_PATHS = (
 )
 
 
+@dataclass(frozen=True, slots=True)
 class CatalogIssue:
     code: str
     message: str
