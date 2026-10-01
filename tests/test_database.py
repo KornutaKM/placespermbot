@@ -301,3 +301,27 @@ def test_concurrent_writers_wait_instead_of_failing_locked(tmp_path) -> None:
         assert count == (2,)
 
     asyncio.run(scenario())
+
+
+def test_migration_rejects_known_version_with_wrong_name_before_applying_more(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = tmp_path / "tampered.db"
+        await migrate_database(database_path)
+
+        with sqlite3.connect(database_path) as database:
+            database.execute(
+                "UPDATE schema_migrations SET name = 'tampered' WHERE version = 5"
+            )
+            database.execute("DELETE FROM schema_migrations WHERE version = 9")
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="migration metadata is inconsistent"):
+            await migrate_database(database_path)
+
+        with sqlite3.connect(database_path) as database:
+            versions = database.execute(
+                "SELECT version FROM schema_migrations ORDER BY version"
+            ).fetchall()
+        assert versions == [(1,), (2,), (3,), (4,), (5,), (6,), (7,), (8,)]
+
+    asyncio.run(scenario())

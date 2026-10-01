@@ -8,7 +8,7 @@ import sqlite3
 import tempfile
 from pathlib import Path
 
-from app.database import KNOWN_SCHEMA_VERSIONS
+from app.database import validate_migration_ledger
 
 
 def _validate_backup(path: Path) -> None:
@@ -31,21 +31,16 @@ def _validate_backup(path: Path) -> None:
                 raise RuntimeError("Backup database has no migration metadata")
 
             rows = database.execute(
-                "SELECT version FROM schema_migrations"
+                "SELECT version, name FROM schema_migrations ORDER BY version"
             ).fetchall()
     except sqlite3.DatabaseError as error:
         raise RuntimeError("Backup is not a valid SQLite database") from error
 
-    versions = {int(row[0]) for row in rows}
-    unknown = versions - KNOWN_SCHEMA_VERSIONS
-    if unknown:
-        rendered = ", ".join(str(version) for version in sorted(unknown))
-        raise RuntimeError(f"Backup schema is newer than this app: {rendered}")
-
-    missing = KNOWN_SCHEMA_VERSIONS - versions
-    if missing:
-        rendered = ", ".join(str(version) for version in sorted(missing))
-        raise RuntimeError(f"Backup migrations are incomplete: {rendered}")
+    validate_migration_ledger(
+        [(int(row[0]), str(row[1])) for row in rows],
+        subject="Backup",
+        require_complete=True,
+    )
 
 
 def _restore_database(backup: Path, destination: Path) -> None:
