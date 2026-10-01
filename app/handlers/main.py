@@ -263,6 +263,7 @@ async def send_user_export(
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
     saved_routes_repo: SavedRoutesRepository,
+    completed_routes_repo: CompletedRoutesRepository,
 ) -> None:
     catalog = current_catalog()
     data = await build_user_export(
@@ -273,6 +274,7 @@ async def send_user_export(
         interests_repo=interests_repo,
         visited_repo=visited_repo,
         saved_routes_repo=saved_routes_repo,
+        completed_routes_repo=completed_routes_repo,
     )
     document = BufferedInputFile(
         serialize_user_export(data),
@@ -296,6 +298,7 @@ async def export_command(
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
     saved_routes_repo: SavedRoutesRepository,
+    completed_routes_repo: CompletedRoutesRepository,
 ) -> None:
     await send_user_export(
         message,
@@ -305,6 +308,7 @@ async def export_command(
         interests_repo,
         visited_repo,
         saved_routes_repo,
+        completed_routes_repo,
     )
 
 
@@ -316,6 +320,7 @@ async def export_from_profile(
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
     saved_routes_repo: SavedRoutesRepository,
+    completed_routes_repo: CompletedRoutesRepository,
 ) -> None:
     await send_user_export(
         callback.message,
@@ -325,6 +330,7 @@ async def export_from_profile(
         interests_repo,
         visited_repo,
         saved_routes_repo,
+        completed_routes_repo,
     )
     await callback.answer("Экспорт подготовлен")
 
@@ -336,8 +342,8 @@ async def data_controls(callback: CallbackQuery) -> None:
         "🧹 <b>Управление данными</b>\n\n"
         f"Активный город: <b>{catalog.name}</b>.\n\n"
         "Можно сначала выгрузить JSON-экспорт, а затем удалить "
-        "ваши интересы, избранное, посещённые места, скрытые рекомендации "
-        "и сохранённые маршруты "
+        "ваши интересы, избранное, посещённые места, скрытые рекомендации, "
+        "сохранённые и пройденные маршруты "
         "в этом городе. Выбор активного города останется сохранён.",
         reply_markup=data_controls_keyboard(catalog.slug),
     )
