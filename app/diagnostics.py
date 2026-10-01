@@ -7,7 +7,7 @@ from typing import Any
 
 from app.config import Settings, get_settings
 from app.database import connect_database
-from app.database_contract import validate_database_contract
+from app.database_contract import validate_database_contract, validate_integrity_result
 from app.runtime_checks import validate_static_runtime
 
 
@@ -26,6 +26,11 @@ async def collect_diagnostics(settings: Settings) -> dict[str, Any]:
         integrity_cursor = await database.execute("PRAGMA quick_check")
         integrity_row = await integrity_cursor.fetchone()
         await integrity_cursor.close()
+        validate_integrity_result(
+            integrity_row,
+            subject="Database",
+            mode="quick",
+        )
 
         migration_cursor = await database.execute(
             "SELECT version FROM schema_migrations ORDER BY version"

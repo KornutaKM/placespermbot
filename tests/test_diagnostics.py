@@ -1,4 +1,7 @@
 import asyncio
+from unittest.mock import patch
+
+import pytest
 
 from app.config import Settings
 from app.database import LATEST_SCHEMA_VERSION, migrate_database
@@ -34,3 +37,32 @@ def test_diagnostics_reports_operational_state_without_secrets(tmp_path) -> None
         assert str(database_path) not in rendered
 
     asyncio.run(scenario())
+
+def test_diagnostics_rejects_failed_quick_integrity_gate(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = tmp_path / "places.db"
+        await migrate_database(database_path)
+        settings = Settings(
+            bot_token="123456789:secret-token",
+            environment="test",
+            city_slug="saint-petersburg",
+            database_path=str(database_path),
+        )
+
+        with (
+            patch(
+                "app.diagnostics.validate_integrity_result",
+                side_effect=RuntimeError("Database database failed quick integrity check"),
+            ) as validate_integrity,
+            pytest.raises(RuntimeError, match="failed quick integrity check"),
+        ):
+            await collect_diagnostics(settings)
+
+        validate_integrity.assert_called_once()
+        assert validate_integrity.call_args.kwargs == {
+            "subject": "Database",
+            "mode": "quick",
+        }
+
+    asyncio.run(scenario())
+

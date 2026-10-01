@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass
+from typing import Literal
 
 from app.database import validate_migration_ledger
 from app.storage import validate_persisted_route_row
@@ -128,6 +129,33 @@ EXPECTED_PRIMARY_KEYS: dict[str, tuple[str, ...]] = {
 }
 
 
+IntegrityCheckMode = Literal["quick", "full"]
+
+
+def validate_integrity_result(
+    result: tuple[object, ...] | None,
+    *,
+    subject: str,
+    mode: IntegrityCheckMode,
+) -> None:
+    if result == ("ok",):
+        return
+
+    check_name = "quick integrity check" if mode == "quick" else "integrity check"
+    raise RuntimeError(f"{subject} database failed {check_name}")
+
+
+def validate_database_integrity(
+    database: sqlite3.Connection,
+    *,
+    subject: str,
+    mode: IntegrityCheckMode,
+) -> None:
+    pragma = "quick_check" if mode == "quick" else "integrity_check"
+    result = database.execute(f"PRAGMA {pragma}").fetchone()
+    validate_integrity_result(result, subject=subject, mode=mode)
+
+
 def validate_database_contract(
     database: sqlite3.Connection,
     *,
@@ -135,9 +163,7 @@ def validate_database_contract(
     check_integrity: bool = False,
 ) -> None:
     if check_integrity:
-        integrity = database.execute("PRAGMA integrity_check").fetchone()
-        if integrity != ("ok",):
-            raise RuntimeError(f"{subject} database failed integrity check")
+        validate_database_integrity(database, subject=subject, mode="full")
 
     existing_tables = {
         str(row[0])
