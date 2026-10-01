@@ -17,6 +17,8 @@ EXPECTED_TABLES = frozenset(
         "visited_places",
         "saved_routes",
         "dismissed_places",
+        "completed_routes",
+        "completed_route_snapshots",
     }
 )
 
