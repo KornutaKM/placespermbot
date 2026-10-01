@@ -75,3 +75,13 @@ def test_core_city_catalogs_have_richer_discovery_depth() -> None:
 
 def test_all_catalogs_pass_reusable_validation() -> None:
     assert validate_catalogs(list_catalogs()) == ()
+
+
+def test_deepened_city_catalogs_have_broader_discovery_depth() -> None:
+    for city_slug in ("sochi", "yaroslavl"):
+        catalog = get_catalog(city_slug)
+
+        assert len(catalog.places) >= 14
+        assert len(catalog.routes) >= 5
+        assert len({place.district for place in catalog.places}) >= 2
+        assert sum("с детьми" in place.tags for place in catalog.places) >= 3
