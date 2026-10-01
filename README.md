@@ -251,7 +251,7 @@ Docker healthcheck не обращается к Telegram API. Он провер�
 - что активный city catalog существует и не пуст;
 - что SQLite уже инициализирована;
 - что присутствуют все таблицы текущей схемы, включая `saved_routes`, `dismissed_places`,
-`completed_routes` и `completed_route_snapshots`.
+`completed_routes` и `completed_route_snapshots`, а также обязательные колонки каждой таблицы.
 
 Для диагностики:
 
