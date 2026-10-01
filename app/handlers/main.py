@@ -1697,6 +1697,7 @@ async def save_generated_route(
 async def show_saved_routes_page(
     callback: CallbackQuery,
     saved_routes_repo: SavedRoutesRepository,
+    completed_routes_repo: CompletedRoutesRepository,
     page_index: int,
 ) -> None:
     catalog = current_catalog()
@@ -1716,11 +1717,20 @@ async def show_saved_routes_page(
         return
 
     page = paginate(routes, page_index)
+    completed_route_ids = frozenset(
+        await completed_routes_repo.list_route_ids(
+            callback.from_user.id,
+            catalog.slug,
+        )
+    )
     await callback.message.edit_text(
         "🧭 <b>Сохранённые маршруты</b>\n\n"
         f"Сохранено: {page.total_items} · "
         f"страница {page.number}/{page.total_pages}.",
-        reply_markup=saved_routes_keyboard(page),
+        reply_markup=saved_routes_keyboard(
+            page,
+            completed_route_ids=completed_route_ids,
+        ),
     )
     await callback.answer()
 
@@ -1729,14 +1739,21 @@ async def show_saved_routes_page(
 async def saved_routes(
     callback: CallbackQuery,
     saved_routes_repo: SavedRoutesRepository,
+    completed_routes_repo: CompletedRoutesRepository,
 ) -> None:
-    await show_saved_routes_page(callback, saved_routes_repo, 0)
+    await show_saved_routes_page(
+        callback,
+        saved_routes_repo,
+        completed_routes_repo,
+        0,
+    )
 
 
 @router.callback_query(F.data.startswith("savedroutes:"))
 async def saved_routes_page(
     callback: CallbackQuery,
     saved_routes_repo: SavedRoutesRepository,
+    completed_routes_repo: CompletedRoutesRepository,
 ) -> None:
     try:
         page_index = int(callback.data.rsplit(":", 1)[1])
@@ -1744,7 +1761,12 @@ async def saved_routes_page(
         await callback.answer("Некорректная страница.", show_alert=True)
         return
 
-    await show_saved_routes_page(callback, saved_routes_repo, page_index)
+    await show_saved_routes_page(
+        callback,
+        saved_routes_repo,
+        completed_routes_repo,
+        page_index,
+    )
 
 
 @router.callback_query(F.data.startswith("savedroute:complete:"))
@@ -1789,6 +1811,7 @@ async def complete_saved_route_callback(
 async def delete_saved_route(
     callback: CallbackQuery,
     saved_routes_repo: SavedRoutesRepository,
+    completed_routes_repo: CompletedRoutesRepository,
 ) -> None:
     route_id = callback.data.removeprefix("savedroute:delete:").strip()
     catalog = current_catalog()
@@ -1801,13 +1824,19 @@ async def delete_saved_route(
         catalog.slug,
         route_id,
     )
-    await show_saved_routes_page(callback, saved_routes_repo, 0)
+    await show_saved_routes_page(
+        callback,
+        saved_routes_repo,
+        completed_routes_repo,
+        0,
+    )
 
 
 @router.callback_query(F.data.startswith("savedroute:"))
 async def saved_route_card(
     callback: CallbackQuery,
     saved_routes_repo: SavedRoutesRepository,
+    completed_routes_repo: CompletedRoutesRepository,
 ) -> None:
     route_id = callback.data.removeprefix("savedroute:").strip()
     catalog = current_catalog()
@@ -1851,9 +1880,18 @@ async def saved_route_card(
             "в текущем каталоге и пропущена."
         )
 
+    is_completed = await completed_routes_repo.contains(
+        callback.from_user.id,
+        catalog.slug,
+        route.route_id,
+    )
     await callback.message.edit_text(
         body,
-        reply_markup=saved_route_details_keyboard(route, places),
+        reply_markup=saved_route_details_keyboard(
+            route,
+            places,
+            is_completed=is_completed,
+        ),
     )
     await callback.answer()
 
