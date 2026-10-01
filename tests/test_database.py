@@ -5,6 +5,8 @@ import pytest
 
 from app.database import (
     LATEST_SCHEMA_VERSION,
+    SQLITE_BUSY_TIMEOUT_MS,
+    connect_database,
     get_applied_migration_versions,
     migrate_database,
 )
@@ -231,5 +233,70 @@ def test_migration_backfills_only_recoverable_completed_route_snapshots(
                 "2026-09-01 12:00:00",
             )
         ]
+
+    asyncio.run(scenario())
+
+
+def test_database_uses_wal_and_busy_timeout(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = tmp_path / "places.db"
+        await migrate_database(database_path)
+
+        async with connect_database(database_path) as database:
+            journal = await database.execute("PRAGMA journal_mode")
+            journal_row = await journal.fetchone()
+            await journal.close()
+            timeout = await database.execute("PRAGMA busy_timeout")
+            timeout_row = await timeout.fetchone()
+            await timeout.close()
+            foreign_keys = await database.execute("PRAGMA foreign_keys")
+            foreign_keys_row = await foreign_keys.fetchone()
+            await foreign_keys.close()
+
+        assert journal_row == ("wal",)
+        assert timeout_row == (SQLITE_BUSY_TIMEOUT_MS,)
+        assert foreign_keys_row == (1,)
+
+    asyncio.run(scenario())
+
+
+def test_concurrent_writers_wait_instead_of_failing_locked(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = tmp_path / "places.db"
+        await migrate_database(database_path)
+
+        first = await connect_database(database_path).__aenter__()
+        try:
+            await first.execute("BEGIN IMMEDIATE")
+            await first.execute(
+                """
+                INSERT INTO favorites (user_id, city_slug, place_slug)
+                VALUES (1, 'saint-petersburg', 'hermitage')
+                """
+            )
+
+            async def delayed_release() -> None:
+                await asyncio.sleep(0.1)
+                await first.commit()
+
+            async def waiting_writer() -> None:
+                async with connect_database(database_path) as second:
+                    await second.execute(
+                        """
+                        INSERT INTO favorites (user_id, city_slug, place_slug)
+                        VALUES (2, 'saint-petersburg', 'russian-museum')
+                        """
+                    )
+                    await second.commit()
+
+            await asyncio.gather(delayed_release(), waiting_writer())
+        finally:
+            await first.close()
+
+        with sqlite3.connect(database_path) as database:
+            count = database.execute(
+                "SELECT COUNT(*) FROM favorites"
+            ).fetchone()
+        assert count == (2,)
 
     asyncio.run(scenario())
