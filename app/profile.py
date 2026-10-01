@@ -135,5 +135,5 @@ def profile_text(summary: ProfileSummary) -> str:
     )
 
 
-async def _empty_completed_routes() -> tuple[()]:
+async def _empty_completed_routes() -> tuple[object, ...]:
     return ()
