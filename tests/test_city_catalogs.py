@@ -115,3 +115,18 @@ def test_kazan_and_yekaterinburg_have_deeper_discovery() -> None:
         assert len(catalog.routes) >= 5
         assert len({place.district for place in catalog.places}) >= 2
         assert sum(place.category == "museums" for place in catalog.places) >= 2
+
+
+def test_moscow_and_saint_petersburg_have_metropolitan_depth() -> None:
+    moscow = get_catalog("moscow")
+    petersburg = get_catalog("saint-petersburg")
+
+    assert len(moscow.places) >= 18
+    assert len(moscow.routes) >= 8
+    assert len({place.district for place in moscow.places}) >= 8
+    assert sum("с детьми" in place.tags for place in moscow.places) >= 5
+
+    assert len(petersburg.places) >= 20
+    assert len(petersburg.routes) >= 6
+    assert len({place.district for place in petersburg.places}) >= 5
+    assert sum(place.category == "museums" for place in petersburg.places) >= 7
