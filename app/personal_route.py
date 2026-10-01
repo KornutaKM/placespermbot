@@ -6,7 +6,10 @@ from dataclasses import dataclass
 from app.catalog import CityCatalog
 from app.domain import GeneratedRoute
 from app.planner import build_ranked_route
-from app.recommendations import PersonalRecommendation, recommend_personalized
+from app.recommendations import (
+    PersonalRecommendation,
+    recommend_personalized,
+)
 from app.saved_routes import PERSONAL_ROUTE_INTEREST
 
 
