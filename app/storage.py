@@ -4,7 +4,7 @@ from pathlib import Path
 
 import aiosqlite
 
-from app.database import migrate_database
+from app.database import connect_database, migrate_database
 from app.saved_routes import SavedRoute, route_id_for
 
 
@@ -16,7 +16,7 @@ class FavoritesRepository:
         await migrate_database(self.database_path)
 
     async def add(self, user_id: int, city_slug: str, place_slug: str) -> None:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             await database.execute(
                 """
                 INSERT OR IGNORE INTO favorites (user_id, city_slug, place_slug)
@@ -27,7 +27,7 @@ class FavoritesRepository:
             await database.commit()
 
     async def remove(self, user_id: int, city_slug: str, place_slug: str) -> None:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             await database.execute(
                 """
                 DELETE FROM favorites
@@ -38,7 +38,7 @@ class FavoritesRepository:
             await database.commit()
 
     async def contains(self, user_id: int, city_slug: str, place_slug: str) -> bool:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             cursor = await database.execute(
                 """
                 SELECT 1
@@ -53,7 +53,7 @@ class FavoritesRepository:
             return row is not None
 
     async def list_place_slugs(self, user_id: int, city_slug: str) -> tuple[str, ...]:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             cursor = await database.execute(
                 """
                 SELECT place_slug
@@ -77,7 +77,7 @@ class InterestsRepository:
         await migrate_database(self.database_path)
 
     async def add(self, user_id: int, city_slug: str, interest: str) -> None:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             await database.execute(
                 """
                 INSERT OR IGNORE INTO user_interests (user_id, city_slug, interest)
@@ -88,7 +88,7 @@ class InterestsRepository:
             await database.commit()
 
     async def remove(self, user_id: int, city_slug: str, interest: str) -> None:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             await database.execute(
                 """
                 DELETE FROM user_interests
@@ -99,7 +99,7 @@ class InterestsRepository:
             await database.commit()
 
     async def list_interests(self, user_id: int, city_slug: str) -> tuple[str, ...]:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             cursor = await database.execute(
                 """
                 SELECT interest
@@ -123,7 +123,7 @@ class UserCityRepository:
         await migrate_database(self.database_path)
 
     async def get_city_slug(self, user_id: int) -> str | None:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             cursor = await database.execute(
                 """
                 SELECT city_slug
@@ -141,7 +141,7 @@ class UserCityRepository:
         return str(row[0])
 
     async def set_city_slug(self, user_id: int, city_slug: str) -> None:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             await database.execute(
                 """
                 INSERT INTO user_city_preferences (user_id, city_slug)
@@ -164,7 +164,7 @@ class VisitedRepository:
         await migrate_database(self.database_path)
 
     async def add(self, user_id: int, city_slug: str, place_slug: str) -> None:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             await database.execute(
                 """
                 INSERT OR IGNORE INTO visited_places (
@@ -179,7 +179,7 @@ class VisitedRepository:
             await database.commit()
 
     async def remove(self, user_id: int, city_slug: str, place_slug: str) -> None:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             await database.execute(
                 """
                 DELETE FROM visited_places
@@ -190,7 +190,7 @@ class VisitedRepository:
             await database.commit()
 
     async def contains(self, user_id: int, city_slug: str, place_slug: str) -> bool:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             cursor = await database.execute(
                 """
                 SELECT 1
@@ -205,7 +205,7 @@ class VisitedRepository:
             return row is not None
 
     async def list_place_slugs(self, user_id: int, city_slug: str) -> tuple[str, ...]:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             cursor = await database.execute(
                 """
                 SELECT place_slug
@@ -255,7 +255,7 @@ class SavedRoutesRepository:
             separators=(",", ":"),
         )
 
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             await database.execute(
                 """
                 INSERT OR IGNORE INTO saved_routes (
@@ -290,7 +290,7 @@ class SavedRoutesRepository:
         city_slug: str,
         route_id: str,
     ) -> SavedRoute | None:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             cursor = await database.execute(
                 """
                 SELECT
@@ -316,7 +316,7 @@ class SavedRoutesRepository:
         user_id: int,
         city_slug: str,
     ) -> tuple[SavedRoute, ...]:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             cursor = await database.execute(
                 """
                 SELECT
@@ -343,7 +343,7 @@ class SavedRoutesRepository:
         city_slug: str,
         route_id: str,
     ) -> None:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             await database.execute(
                 """
                 DELETE FROM saved_routes
@@ -434,7 +434,7 @@ class CompletedRoutesRepository:
         await migrate_database(self.database_path)
 
     async def add(self, user_id: int, city_slug: str, route_id: str) -> None:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             await database.execute(
                 """
                 INSERT OR IGNORE INTO completed_routes (
@@ -460,7 +460,7 @@ class CompletedRoutesRepository:
             ensure_ascii=False,
             separators=(",", ":"),
         )
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             await database.execute(
                 """
                 INSERT OR IGNORE INTO completed_route_snapshots (
@@ -506,7 +506,7 @@ class CompletedRoutesRepository:
             separators=(",", ":"),
         )
 
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             try:
                 await database.execute("BEGIN IMMEDIATE")
                 already_visited = 0
@@ -584,7 +584,7 @@ class CompletedRoutesRepository:
         user_id: int,
         city_slug: str,
     ) -> tuple[CompletedRouteSnapshot, ...]:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             cursor = await database.execute(
                 """
                 SELECT
@@ -645,7 +645,7 @@ class CompletedRoutesRepository:
         return next((item for item in snapshots if item.route_id == route_id), None)
 
     async def contains(self, user_id: int, city_slug: str, route_id: str) -> bool:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             cursor = await database.execute(
                 """
                 SELECT 1
@@ -660,7 +660,7 @@ class CompletedRoutesRepository:
             return row is not None
 
     async def count(self, user_id: int, city_slug: str) -> int:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             cursor = await database.execute(
                 """
                 SELECT COUNT(*)
@@ -674,7 +674,7 @@ class CompletedRoutesRepository:
             return int(row[0]) if row is not None else 0
 
     async def list_route_ids(self, user_id: int, city_slug: str) -> tuple[str, ...]:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             cursor = await database.execute(
                 """
                 SELECT route_id
@@ -697,7 +697,7 @@ class DismissedRepository:
         await migrate_database(self.database_path)
 
     async def add(self, user_id: int, city_slug: str, place_slug: str) -> None:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             await database.execute(
                 """
                 INSERT OR IGNORE INTO dismissed_places (
@@ -712,7 +712,7 @@ class DismissedRepository:
             await database.commit()
 
     async def remove(self, user_id: int, city_slug: str, place_slug: str) -> None:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             await database.execute(
                 """
                 DELETE FROM dismissed_places
@@ -723,7 +723,7 @@ class DismissedRepository:
             await database.commit()
 
     async def contains(self, user_id: int, city_slug: str, place_slug: str) -> bool:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             cursor = await database.execute(
                 """
                 SELECT 1
@@ -738,7 +738,7 @@ class DismissedRepository:
             return row is not None
 
     async def list_place_slugs(self, user_id: int, city_slug: str) -> tuple[str, ...]:
-        async with aiosqlite.connect(self.database_path) as database:
+        async with connect_database(self.database_path) as database:
             cursor = await database.execute(
                 """
                 SELECT place_slug
