@@ -238,3 +238,31 @@ def test_completed_snapshot_fails_closed_on_corrupt_persisted_payload(
             await completed.list_snapshots(606, CITY_SLUG)
 
     asyncio.run(scenario())
+
+
+def test_completed_snapshot_rejects_route_id_tampering(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "bot.sqlite3")
+        saved_routes = SavedRoutesRepository(database_path)
+        completed = CompletedRoutesRepository(database_path)
+        await saved_routes.initialize()
+        catalog = get_catalog(CITY_SLUG)
+        slugs = tuple(place.slug for place in catalog.places[:2])
+        saved = await saved_routes.save(707, CITY_SLUG, "classic", 120, slugs)
+        await completed.complete_route(707, saved, set(slugs))
+
+        with sqlite3.connect(database_path) as database:
+            database.execute(
+                """
+                UPDATE completed_route_snapshots
+                SET route_id = 'tampered-route-id'
+                WHERE user_id = ? AND city_slug = ? AND route_id = ?
+                """,
+                (707, CITY_SLUG, saved.route_id),
+            )
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="id does not match"):
+            await completed.list_snapshots(707, CITY_SLUG)
+
+    asyncio.run(scenario())
