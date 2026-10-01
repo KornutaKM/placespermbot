@@ -118,7 +118,9 @@ async def build_account_export(
     *,
     database_path: str,
 ) -> dict[str, Any]:
-    account = await UserDataSnapshotRepository(database_path).load_account(user_id)\n    snapshots = account.cities\n    cities: list[dict[str, Any]] = []
+    account = await UserDataSnapshotRepository(database_path).load_account(user_id)
+    snapshots = account.cities
+    cities: list[dict[str, Any]] = []
     for city_slug, snapshot in snapshots.items():
         catalog = get_catalog(city_slug) if has_catalog(city_slug) else None
 
@@ -225,7 +227,8 @@ def serialize_user_export(data: dict[str, Any]) -> bytes:
             indent=2,
             sort_keys=True,
         )
-        + "\n"
+        + "
+"
     ).encode("utf-8")
 
 
