@@ -250,7 +250,8 @@ Docker healthcheck не обращается к Telegram API. Он провер�
 - что bot token настроен;
 - что активный city catalog существует и не пуст;
 - что SQLite уже инициализирована;
-- что присутствуют таблицы `favorites`, `user_interests`, `user_city_preferences` и `visited_places`.
+- что присутствуют все таблицы текущей схемы, включая `saved_routes`, `dismissed_places`,
+`completed_routes` и `completed_route_snapshots`.
 
 Для диагностики:
 
@@ -272,7 +273,9 @@ CI дополнительно собирает реальный Docker image и 
 3. `create_user_city_preferences`;
 4. `create_visited_places`;
 5. `create_saved_routes`;
-6. `create_dismissed_places`.
+6. `create_dismissed_places`;
+7. `create_completed_routes`;
+8. `create_completed_route_snapshots`.
 
 Переход со старой БД безопасен: migrations используют существующие таблицы и не удаляют
 сохранённые строки. Повторный запуск idempotent. Если volume содержит неизвестную более новую
