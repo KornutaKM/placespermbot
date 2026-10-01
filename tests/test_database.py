@@ -29,7 +29,7 @@ def test_fresh_database_reaches_latest_schema(tmp_path) -> None:
         version = await migrate_database(database_path)
 
         assert version == LATEST_SCHEMA_VERSION
-        assert await get_applied_migration_versions(database_path) == (1, 2, 3, 4, 5, 6, 7, 8)
+        assert await get_applied_migration_versions(database_path) == (1, 2, 3, 4, 5, 6, 7, 8, 9)
         assert {
             "schema_migrations",
             "favorites",
@@ -103,7 +103,7 @@ def test_legacy_rows_survive_migration(tmp_path) -> None:
 
         assert favorite == (42, "saint-petersburg", "hermitage")
         assert interest == (42, "saint-petersburg", "museums")
-        assert await get_applied_migration_versions(database_path) == (1, 2, 3, 4, 5, 6, 7, 8)
+        assert await get_applied_migration_versions(database_path) == (1, 2, 3, 4, 5, 6, 7, 8, 9)
 
     asyncio.run(scenario())
 
@@ -117,14 +117,14 @@ def test_migration_is_idempotent(tmp_path) -> None:
 
         assert first == LATEST_SCHEMA_VERSION
         assert second == LATEST_SCHEMA_VERSION
-        assert await get_applied_migration_versions(database_path) == (1, 2, 3, 4, 5, 6, 7, 8)
+        assert await get_applied_migration_versions(database_path) == (1, 2, 3, 4, 5, 6, 7, 8, 9)
 
         with sqlite3.connect(database_path) as database:
             count = database.execute(
                 "SELECT COUNT(*) FROM schema_migrations"
             ).fetchone()
 
-        assert count == (8,)
+        assert count == (9,)
 
     asyncio.run(scenario())
 
@@ -152,5 +152,84 @@ def test_future_schema_version_fails_closed(tmp_path) -> None:
 
         with pytest.raises(RuntimeError, match="newer than this app"):
             await migrate_database(database_path)
+
+    asyncio.run(scenario())
+
+
+def test_migration_backfills_only_recoverable_completed_route_snapshots(
+    tmp_path,
+) -> None:
+    async def scenario() -> None:
+        database_path = tmp_path / "legacy-completions.db"
+        await migrate_database(database_path)
+
+        with sqlite3.connect(database_path) as database:
+            database.execute(
+                "DELETE FROM schema_migrations WHERE version = 9"
+            )
+            database.execute(
+                "DELETE FROM completed_route_snapshots"
+            )
+            database.execute(
+                """
+                INSERT INTO saved_routes (
+                    user_id,
+                    city_slug,
+                    route_id,
+                    interest,
+                    budget_minutes,
+                    place_slugs_json
+                )
+                VALUES (42, 'saint-petersburg', 'recoverable', 'museums', 240,
+                        '["hermitage","russian-museum"]')
+                """
+            )
+            database.execute(
+                """
+                INSERT INTO completed_routes (
+                    user_id,
+                    city_slug,
+                    route_id,
+                    completed_at
+                )
+                VALUES (42, 'saint-petersburg', 'recoverable',
+                        '2026-09-01 12:00:00')
+                """
+            )
+            database.execute(
+                """
+                INSERT INTO completed_routes (
+                    user_id,
+                    city_slug,
+                    route_id,
+                    completed_at
+                )
+                VALUES (42, 'saint-petersburg', 'orphan',
+                        '2026-09-02 12:00:00')
+                """
+            )
+            database.commit()
+
+        assert await migrate_database(database_path) == LATEST_SCHEMA_VERSION
+
+        with sqlite3.connect(database_path) as database:
+            rows = database.execute(
+                """
+                SELECT route_id, interest, budget_minutes, place_slugs_json,
+                       completed_at
+                FROM completed_route_snapshots
+                ORDER BY route_id
+                """
+            ).fetchall()
+
+        assert rows == [
+            (
+                "recoverable",
+                "museums",
+                240,
+                '["hermitage","russian-museum"]',
+                "2026-09-01 12:00:00",
+            )
+        ]
 
     asyncio.run(scenario())
