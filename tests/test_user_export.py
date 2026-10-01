@@ -12,7 +12,9 @@ from app.storage import (
     FavoritesRepository,
     InterestsRepository,
     SavedRoutesRepository,
-    UserCityRepository,\n    VisitedRepository,\n)
+    UserCityRepository,
+    VisitedRepository,
+)
 from app.user_export import (
     EXPORT_SCHEMA_VERSION,
     account_export_filename,
@@ -167,7 +169,8 @@ def test_serialized_export_is_utf8_deterministic_and_has_no_location_data(tmp_pa
         second = serialize_user_export(data)
 
         assert first == second
-        assert first.endswith(b"\n")
+        assert first.endswith(b"
+")
         decoded = first.decode("utf-8")
         parsed = json.loads(decoded)
         assert parsed == data
@@ -212,14 +215,21 @@ def test_account_export_contains_all_user_cities_without_private_identifiers(
     async def scenario() -> None:
         database_path = str(tmp_path / "places.db")
         await migrate_database(database_path)
-        favorites = FavoritesRepository(database_path)\n        interests = InterestsRepository(database_path)\n        city_preferences = UserCityRepository(database_path)\n\n        await city_preferences.set_city_slug(1, "moscow")\n        await favorites.add(1, CITY_SLUG, "hermitage")
+        favorites = FavoritesRepository(database_path)
+        interests = InterestsRepository(database_path)
+        city_preferences = UserCityRepository(database_path)
+
+        await city_preferences.set_city_slug(1, "moscow")
+        await favorites.add(1, CITY_SLUG, "hermitage")
         await favorites.add(1, "moscow", "red-square")
         await interests.add(1, "legacy-city", "walks")
         await favorites.add(2, "moscow", "red-square")
 
         data = await build_account_export(1, database_path=database_path)
 
-        assert data["scope"] == "account"\n        assert data["selected_city"] == {"slug": "moscow", "name": "Москва"}\n        assert [city["city"]["slug"] for city in data["cities"]] == [
+        assert data["scope"] == "account"
+        assert data["selected_city"] == {"slug": "moscow", "name": "Москва"}
+        assert [city["city"]["slug"] for city in data["cities"]] == [
             "legacy-city",
             "moscow",
             CITY_SLUG,
