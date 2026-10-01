@@ -21,6 +21,7 @@ def test_route_completion_result_shape() -> None:
     assert result.added == 1
     assert result.already_visited == 2
     assert result.unavailable == 3
+    assert result.already_completed is False
 
 
 def test_complete_saved_route_marks_available_places_and_skips_stale(tmp_path) -> None:
@@ -92,7 +93,7 @@ def test_complete_saved_route_is_idempotent(tmp_path) -> None:
         )
 
         assert first == RouteCompletionResult(added=2, already_visited=0, unavailable=0)
-        assert second == RouteCompletionResult(added=0, already_visited=2, unavailable=0)
+        assert second == RouteCompletionResult(\n            added=0,\n            already_visited=0,\n            unavailable=0,\n            already_completed=True,\n        )
         assert set(await visited.list_place_slugs(202, CITY_SLUG)) == set(slugs)
         assert await completed.contains(202, CITY_SLUG, saved.route_id)
         assert await completed.count(202, CITY_SLUG) == 1
