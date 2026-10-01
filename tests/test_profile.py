@@ -1,4 +1,5 @@
 import asyncio
+import sqlite3
 
 from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
@@ -60,10 +61,7 @@ def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
             place_slugs=("hermitage",),
             created_at="2026-10-01 00:00:00",
         )
-        await completed_routes.add(1, CITY_SLUG, completed_route.route_id)
-        await completed_routes.add_snapshot(1, completed_route)
-        await completed_routes.add(1, "another-city", "other-completed")
-        await completed_routes.add(2, CITY_SLUG, "foreign-completed")
+        await completed_routes.complete_route(1, completed_route, {"hermitage"})
 
         await saved_routes.save(
             1,
@@ -173,8 +171,7 @@ def test_profile_awards_route_explorer_after_three_completed_routes(tmp_path) ->
                 place_slugs=("palace-square",),
                 created_at="2026-10-01 00:00:00",
             )
-            await completed.add(77, CITY_SLUG, route.route_id)
-            await completed.add_snapshot(77, route)
+            await completed.complete_route(77, route, {"palace-square"})
 
         summary = await build_profile_summary(
             77,
@@ -198,7 +195,15 @@ def test_profile_ignores_legacy_completion_marker_without_snapshot(tmp_path) -> 
         database_path = str(tmp_path / "places.db")
         await migrate_database(database_path)
         completed = CompletedRoutesRepository(database_path)
-        await completed.add(88, CITY_SLUG, "legacy-marker")
+        with sqlite3.connect(database_path) as database:
+            database.execute(
+                """
+                INSERT INTO completed_routes (user_id, city_slug, route_id)
+                VALUES (?, ?, ?)
+                """,
+                (88, CITY_SLUG, "legacy-marker"),
+            )
+            database.commit()
 
         summary = await build_profile_summary(
             88,
