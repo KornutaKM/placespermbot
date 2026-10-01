@@ -474,3 +474,29 @@ def test_health_rejects_missing_completion_trigger(tmp_path) -> None:
 
     asyncio.run(scenario())
 
+def test_health_rejects_tampered_completion_trigger_definition(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+
+        with sqlite3.connect(config.database_path) as database:
+            database.execute("DROP TRIGGER completed_marker_delete_guard")
+            database.execute(
+                """
+                CREATE TRIGGER completed_marker_delete_guard
+                BEFORE DELETE ON completed_routes
+                BEGIN
+                    SELECT 1;
+                END
+                """
+            )
+            database.commit()
+
+        with pytest.raises(
+            RuntimeError,
+            match="trigger completed_marker_delete_guard has an invalid definition",
+        ):
+            await validate_health(config)
+
+    asyncio.run(scenario())
+
