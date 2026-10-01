@@ -93,7 +93,12 @@ def test_complete_saved_route_is_idempotent(tmp_path) -> None:
         )
 
         assert first == RouteCompletionResult(added=2, already_visited=0, unavailable=0)
-        assert second == RouteCompletionResult(\n            added=0,\n            already_visited=0,\n            unavailable=0,\n            already_completed=True,\n        )
+        assert second == RouteCompletionResult(
+            added=0,
+            already_visited=0,
+            unavailable=0,
+            already_completed=True,
+        )
         assert set(await visited.list_place_slugs(202, CITY_SLUG)) == set(slugs)
         assert await completed.contains(202, CITY_SLUG, saved.route_id)
         assert await completed.count(202, CITY_SLUG) == 1
