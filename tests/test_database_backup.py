@@ -1,5 +1,6 @@
 import asyncio
 import sqlite3
+from unittest.mock import patch
 
 import pytest
 
@@ -114,5 +115,19 @@ def test_backup_rejects_source_with_incomplete_schema_without_replacing_snapshot
 
         assert destination.read_bytes() == original
         assert list(tmp_path.glob(".snapshot.db.backup-*.tmp")) == []
+
+    asyncio.run(scenario())
+
+
+def test_backup_fsyncs_parent_directory_after_atomic_replace(tmp_path) -> None:
+    async def scenario() -> None:
+        source = tmp_path / "live.db"
+        destination = tmp_path / "backups" / "snapshot.db"
+        await migrate_database(source)
+
+        with patch("app.database_backup.fsync_directory") as sync_directory:
+            await create_database_backup(source, destination)
+
+        sync_directory.assert_called_once_with(destination.parent.resolve())
 
     asyncio.run(scenario())
