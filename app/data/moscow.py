@@ -7,13 +7,13 @@ CITY_NAME = "Москва"
 SOURCE_CHECKED_AT = date(2026, 10, 1)
 
 DISCOVER_MOSCOW = PlaceSource(
-    name="Discover Moscow — официальный туристический портал Москвы",
-    url="https://discoverrussia.travel/cities/moscow",
+    name="Москва — официальный туристический путеводитель mos.ru",
+    url="https://www.mos.ru/upload/documents/files/2937/Moskvachtoposmotret.pdf",
     checked_at=SOURCE_CHECKED_AT,
 )
 MOSCOW_GUIDE = PlaceSource(
-    name="Discover Moscow — обзорная туристическая карта",
-    url="https://www.mos.ru/upload/documents/files/5394/KartaA3narysskom.pdf",
+    name="Москва — официальная туристическая карта mos.ru",
+    url="https://www.mos.ru/upload/documents/files/9197/KartaMoskvinarysskomyazikeA3.pdf",
     checked_at=SOURCE_CHECKED_AT,
 )
 

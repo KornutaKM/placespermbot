@@ -11,9 +11,14 @@ VISIT_KALININGRAD = PlaceSource(
     url="https://visit-kaliningrad.ru/",
     checked_at=SOURCE_CHECKED_AT,
 )
-ACCESSIBLE_KALININGRAD = PlaceSource(
-    name="Visit Kaliningrad — доступный туризм",
-    url="https://visit-kaliningrad.ru/tourism/lechebnaya-verkhovaya-ezda/",
+KING_GATE_SOURCE = PlaceSource(
+    name="Туристический центр Калининградской области — Королевские ворота",
+    url="https://visit-kaliningrad.ru/entertainment/sights/gates/korolevskie-vorota/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+FRIEDRICHSBURG_GATE_SOURCE = PlaceSource(
+    name="Туристический центр Калининградской области — Фридрихсбургские ворота",
+    url="https://visit-kaliningrad.ru/entertainment/sights/gates/fridrikhsburgskie-gate/",
     checked_at=SOURCE_CHECKED_AT,
 )
 
@@ -32,8 +37,8 @@ PLACES = (
     Place("fish-village", "Рыбная деревня", "sights", "Современный квартал у Преголи с прогулочной набережной и видами на остров Канта.", "🏘", "Московский район", 60, True, 54.7044, 20.5157, VISIT_KALININGRAD, ("набережная", "прогулка", "архитектура", "бесплатно")),
     Place("museum-world-ocean", "Музей Мирового океана", "museums", "Большой музейный комплекс на набережной с морскими коллекциями и музейными судами.", "⚓", "Ленинградский район", 180, False, 54.7069, 20.5010, VISIT_KALININGRAD, ("музей", "море", "корабли", "с детьми")),
     Place("amber-museum", "Музей янтаря", "museums", "Музей, посвящённый янтарю, в исторической башне Дона у Верхнего озера.", "🟠", "Ленинградский район", 90, False, 54.7228, 20.5214, VISIT_KALININGRAD, ("музей", "янтарь", "история")),
-    Place("king-gate", "Королевские ворота", "sights", "Исторические городские ворота и музейный объект фортификационного наследия.", "🏰", "Ленинградский район", 45, False, 54.7164, 20.5360, ACCESSIBLE_KALININGRAD, ("фортификация", "история", "архитектура")),
-    Place("friedrichsburg-gate", "Фридрихсбургские ворота", "sights", "Сохранившийся элемент бывшей крепости Фридрихсбург, связанный с историей городских укреплений.", "🏰", "Московский район", 45, False, 54.7025, 20.4925, ACCESSIBLE_KALININGRAD, ("фортификация", "история", "архитектура")),
+    Place("king-gate", "Королевские ворота", "sights", "Исторические городские ворота и музейный объект фортификационного наследия.", "🏰", "Ленинградский район", 45, False, 54.7164, 20.5360, KING_GATE_SOURCE, ("фортификация", "история", "архитектура")),
+    Place("friedrichsburg-gate", "Фридрихсбургские ворота", "sights", "Сохранившийся элемент бывшей крепости Фридрихсбург, связанный с историей городских укреплений.", "🏰", "Московский район", 45, False, 54.7025, 20.4925, FRIEDRICHSBURG_GATE_SOURCE, ("фортификация", "история", "архитектура")),
     Place("victory-square-kaliningrad", "Площадь Победы", "sights", "Главная современная площадь Калининграда и удобная точка знакомства с центром.", "🏙", "Центральный район", 30, True, 54.7207, 20.5004, VISIT_KALININGRAD, ("центр", "прогулка", "бесплатно")),
     Place("upper-pond-kaliningrad", "Верхнее озеро", "parks", "Прогулочная зона вокруг городского озера рядом с Музеем янтаря.", "🌊", "Ленинградский район", 90, True, 54.7280, 20.5220, VISIT_KALININGRAD, ("озеро", "прогулка", "с детьми", "бесплатно")),
     Place("amalienau", "Амалиенау", "sights", "Исторический район вилл с выразительной архитектурой начала XX века.", "🏘", "Центральный район", 120, True, 54.7160, 20.4780, VISIT_KALININGRAD, ("архитектура", "история", "прогулка", "бесплатно")),
