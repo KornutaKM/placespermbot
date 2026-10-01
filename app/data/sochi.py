@@ -50,5 +50,5 @@ ROUTES = (
     RoutePlan("sochi-green", "Зелёный Сочи", "Дендрарий, ботаническая история и курортная Мацеста.", 360, 7.0, ("sochi-arboretum", "friendship-tree-sochi", "matsesta-sochi")),
     RoutePlan("sochi-nature", "Горы и водопады", "Природный день в Сочинском национальном парке.", 420, 6.0, ("agura-waterfalls", "eagle-rocks-sochi")),
     RoutePlan("sochi-family", "Сочи с семьёй", "Парк Ривьера, морская прогулочная зона и городской порт.", 300, 3.5, ("riviera-park-sochi", "marine-station-sochi", "primorskaya-embankment-sochi")),
-    RoutePlan("sochi-waterfalls", "Водопады Сочи", "Два самостоятельных природных сценария: компактная тропа Змейковских водопадов и каскады Джегоша в Лазаревском районе.", 360, 55.0, ("zmeykovskie-waterfalls", "thirty-three-waterfalls")),
+    RoutePlan("sochi-matsesta-nature", "Мацеста и водопады", "Курортная история Старой Мацесты и природная тропа Змейковских водопадов.", 270, 7.0, ("matsesta-sochi", "zmeykovskie-waterfalls")),
 )
