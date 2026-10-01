@@ -255,6 +255,7 @@ def test_health_rejects_completed_snapshot_without_marker(tmp_path) -> None:
 
     asyncio.run(scenario())
 
+
 def test_health_allows_legacy_completion_marker_without_snapshot(tmp_path) -> None:
     async def scenario() -> None:
         config = settings(tmp_path)
@@ -324,6 +325,7 @@ def test_health_rejects_mismatched_completion_timestamps(tmp_path) -> None:
             await validate_health(config)
 
     asyncio.run(scenario())
+
 
 def test_health_rejects_table_with_wrong_primary_key(tmp_path) -> None:
     async def scenario() -> None:
