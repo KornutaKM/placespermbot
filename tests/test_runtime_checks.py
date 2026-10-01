@@ -87,3 +87,21 @@ def test_health_rejects_incomplete_schema(tmp_path) -> None:
             await validate_health(config)
 
     asyncio.run(scenario())
+
+
+def test_health_rejects_missing_completed_route_snapshot_table(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+
+        with sqlite3.connect(config.database_path) as database:
+            database.execute("DROP TABLE completed_route_snapshots")
+            database.commit()
+
+        with pytest.raises(
+            RuntimeError,
+            match="completed_route_snapshots",
+        ):
+            await validate_health(config)
+
+    asyncio.run(scenario())
