@@ -187,7 +187,7 @@ PLACES: tuple[Place, ...] = (
         longitude=56.216121,
         source=THEATRE_SOURCE,
         tags=("театр", "архитектура", "культура", "центр"),
-    ),,
+    ),
     Place(
         slug="perm-esplanade",
         title="Пермская эспланада",
@@ -277,7 +277,7 @@ ROUTES: tuple[RoutePlan, ...] = (
             "front-and-rear-monument",
             "theatre-theatre",
         ),
-    ),,
+    ),
     RoutePlan(
         slug="perm-kama-walk",
         title="Пермь и Кама",
