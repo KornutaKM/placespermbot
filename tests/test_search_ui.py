@@ -6,6 +6,7 @@ from app.search_ui import (
     search_prompt,
     search_results_text,
 )
+from app.telegram_ui import TELEGRAM_MESSAGE_LIMIT, USER_TEXT_PREVIEW_LIMIT
 
 
 def test_search_prompt_uses_active_city_catalog_example() -> None:
@@ -55,3 +56,16 @@ def test_search_copy_does_not_mutate_query_used_for_matching() -> None:
 
     assert catalog.search_places(query) == ()
     assert query == "<b>медведь</b>"
+
+
+def test_search_copy_bounds_very_long_user_query() -> None:
+    query = "<b>" + "x" * 10_000 + "</b>"
+
+    not_found = search_not_found_text(query)
+    results = search_results_text(query, 3)
+
+    for body in (not_found, results):
+        assert len(body) < TELEGRAM_MESSAGE_LIMIT
+        assert query not in body
+        assert "…" in body
+        assert body.count("x") <= USER_TEXT_PREVIEW_LIMIT

@@ -2,6 +2,7 @@ from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
 from app.personal_route import build_explained_personal_route
 from app.personal_route_ui import personal_route_result_text
+from app.telegram_ui import TELEGRAM_MESSAGE_LIMIT
 
 
 def catalog():
@@ -49,4 +50,4 @@ def test_personal_route_text_stays_within_telegram_message_limit() -> None:
 
     text = personal_route_result_text(result, location_used=True)
 
-    assert len(text) <= 4096
+    assert len(text) <= TELEGRAM_MESSAGE_LIMIT

@@ -1,6 +1,7 @@
 from html import escape
 
 from app.catalog import CityCatalog
+from app.telegram_ui import user_text_preview
 
 
 def search_prompt(catalog: CityCatalog) -> str:
@@ -19,7 +20,7 @@ def search_prompt(catalog: CityCatalog) -> str:
 
 def search_not_found_text(query: str) -> str:
     return (
-        f"🔍 По запросу <b>{escape(query)}</b> ничего не нашлось.\n\n"
+        f"🔍 По запросу <b>{escape(user_text_preview(query))}</b> ничего не нашлось.\n\n"
         "Попробуйте название места, «музей», «парк», «архитектура» или район."
     )
 
@@ -29,6 +30,6 @@ def search_results_text(query: str, result_count: int) -> str:
         raise ValueError("result_count must not be negative")
 
     return (
-        f"🔍 <b>Результаты поиска: {escape(query)}</b>\n\n"
+        f"🔍 <b>Результаты поиска: {escape(user_text_preview(query))}</b>\n\n"
         f"Найдено: {result_count}. Выберите место:"
     )
