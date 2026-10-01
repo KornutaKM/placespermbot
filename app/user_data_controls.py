@@ -6,6 +6,7 @@ from pathlib import Path
 import aiosqlite
 
 from app.database import connect_database
+
 _DATA_TABLES = (
     ("favorites", "favorites"),
     ("user_interests", "interests"),
