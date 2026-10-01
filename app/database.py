@@ -138,6 +138,36 @@ MIGRATIONS: tuple[Migration, ...] = (
             """,
         ),
     ),
+    Migration(
+        version=9,
+        name="backfill_completed_route_snapshots",
+        statements=(
+            """
+            INSERT OR IGNORE INTO completed_route_snapshots (
+                user_id,
+                city_slug,
+                route_id,
+                interest,
+                budget_minutes,
+                place_slugs_json,
+                completed_at
+            )
+            SELECT
+                completed.user_id,
+                completed.city_slug,
+                completed.route_id,
+                saved.interest,
+                saved.budget_minutes,
+                saved.place_slugs_json,
+                completed.completed_at
+            FROM completed_routes AS completed
+            INNER JOIN saved_routes AS saved
+                ON saved.user_id = completed.user_id
+                AND saved.city_slug = completed.city_slug
+                AND saved.route_id = completed.route_id
+            """,
+        ),
+    ),
 )
 
 KNOWN_SCHEMA_VERSIONS = frozenset(migration.version for migration in MIGRATIONS)
