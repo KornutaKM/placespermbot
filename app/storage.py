@@ -455,6 +455,15 @@ class CompletedRoutesRepository:
             budget_minutes=route.budget_minutes,
             place_slugs=route.place_slugs,
         )
+        expected_route_id = route_id_for(
+            route.city_slug,
+            route.interest,
+            route.budget_minutes,
+            route.place_slugs,
+        )
+        if route.route_id != expected_route_id:
+            raise ValueError("route id does not match route snapshot")
+
         available = tuple(
             slug for slug in route.place_slugs if slug in available_place_slugs
         )
