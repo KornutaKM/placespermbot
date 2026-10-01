@@ -1,4 +1,5 @@
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 import aiosqlite
@@ -368,6 +369,16 @@ def _saved_route_from_row(row: tuple[object, ...]) -> SavedRoute:
 
 
 
+@dataclass(frozen=True, slots=True)
+class CompletedRouteSnapshot:
+    route_id: str
+    city_slug: str
+    interest: str
+    budget_minutes: int
+    place_slugs: tuple[str, ...]
+    completed_at: str
+
+
 class CompletedRoutesRepository:
     def __init__(self, database_path: str) -> None:
         self.database_path = Path(database_path)
@@ -389,6 +400,88 @@ class CompletedRoutesRepository:
                 (user_id, city_slug, route_id),
             )
             await database.commit()
+
+    async def add_snapshot(self, user_id: int, route: SavedRoute) -> None:
+        payload = json.dumps(
+            list(route.place_slugs),
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        async with aiosqlite.connect(self.database_path) as database:
+            await database.execute(
+                """
+                INSERT OR IGNORE INTO completed_route_snapshots (
+                    user_id,
+                    city_slug,
+                    route_id,
+                    interest,
+                    budget_minutes,
+                    place_slugs_json
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    user_id,
+                    route.city_slug,
+                    route.route_id,
+                    route.interest,
+                    route.budget_minutes,
+                    payload,
+                ),
+            )
+            await database.commit()
+
+    async def list_snapshots(
+        self,
+        user_id: int,
+        city_slug: str,
+    ) -> tuple[CompletedRouteSnapshot, ...]:
+        async with aiosqlite.connect(self.database_path) as database:
+            cursor = await database.execute(
+                """
+                SELECT
+                    route_id,
+                    city_slug,
+                    interest,
+                    budget_minutes,
+                    place_slugs_json,
+                    completed_at
+                FROM completed_route_snapshots
+                WHERE user_id = ? AND city_slug = ?
+                ORDER BY completed_at DESC, route_id ASC
+                """,
+                (user_id, city_slug),
+            )
+            rows = await cursor.fetchall()
+            await cursor.close()
+
+        snapshots: list[CompletedRouteSnapshot] = []
+        for row in rows:
+            raw_slugs = json.loads(str(row[4]))
+            if not isinstance(raw_slugs, list) or not all(
+                isinstance(value, str) and value for value in raw_slugs
+            ):
+                raise RuntimeError("completed route contains invalid place payload")
+            snapshots.append(
+                CompletedRouteSnapshot(
+                    route_id=str(row[0]),
+                    city_slug=str(row[1]),
+                    interest=str(row[2]),
+                    budget_minutes=int(row[3]),
+                    place_slugs=tuple(raw_slugs),
+                    completed_at=str(row[5]),
+                )
+            )
+        return tuple(snapshots)
+
+    async def get_snapshot(
+        self,
+        user_id: int,
+        city_slug: str,
+        route_id: str,
+    ) -> CompletedRouteSnapshot | None:
+        snapshots = await self.list_snapshots(user_id, city_slug)
+        return next((item for item in snapshots if item.route_id == route_id), None)
 
     async def contains(self, user_id: int, city_slug: str, route_id: str) -> bool:
         async with aiosqlite.connect(self.database_path) as database:
