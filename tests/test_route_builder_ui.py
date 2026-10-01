@@ -263,8 +263,8 @@ def test_city_selector_supports_first_run_without_preselection() -> None:
     callbacks = callback_values(markup)
 
     assert callbacks == {
-        "city:set:perm",
-        "city:set:saint-petersburg",
+        f"city:set:{catalog.slug}"
+        for catalog in list_catalogs()
     }
     assert all(
         not button.text.startswith("✅ ")
