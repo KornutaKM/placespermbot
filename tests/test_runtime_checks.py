@@ -236,3 +236,52 @@ def test_health_allows_legacy_completion_marker_without_snapshot(tmp_path) -> No
         await validate_health(config)
 
     asyncio.run(scenario())
+
+
+def test_health_rejects_mismatched_completion_timestamps(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+        saved_routes = SavedRoutesRepository(config.database_path)
+        route = await saved_routes.save(
+            24,
+            "saint-petersburg",
+            "classic",
+            120,
+            ("hermitage", "russian-museum"),
+        )
+
+        with sqlite3.connect(config.database_path) as database:
+            database.execute(
+                """
+                INSERT INTO completed_routes (
+                    user_id, city_slug, route_id, completed_at
+                )
+                VALUES (?, ?, ?, ?)
+                """,
+                (24, route.city_slug, route.route_id, "2026-01-01 10:00:00"),
+            )
+            database.execute(
+                """
+                INSERT INTO completed_route_snapshots (
+                    user_id, city_slug, route_id, interest,
+                    budget_minutes, place_slugs_json, completed_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    24,
+                    route.city_slug,
+                    route.route_id,
+                    route.interest,
+                    route.budget_minutes,
+                    '["hermitage","russian-museum"]',
+                    "2026-01-01 10:00:01",
+                ),
+            )
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="inconsistent completed route timestamps"):
+            await validate_health(config)
+
+    asyncio.run(scenario())

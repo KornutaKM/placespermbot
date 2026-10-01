@@ -106,6 +106,23 @@ def validate_database_contract(
             f"{subject} contains a completed route snapshot without its marker"
         )
 
+    timestamp_mismatch = database.execute(
+        """
+        SELECT 1
+        FROM completed_route_snapshots AS snapshot
+        INNER JOIN completed_routes AS completed
+            ON completed.user_id = snapshot.user_id
+            AND completed.city_slug = snapshot.city_slug
+            AND completed.route_id = snapshot.route_id
+        WHERE snapshot.completed_at != completed.completed_at
+        LIMIT 1
+        """
+    ).fetchone()
+    if timestamp_mismatch is not None:
+        raise RuntimeError(
+            f"{subject} contains inconsistent completed route timestamps"
+        )
+
     for table_name, kind in (
         ("saved_routes", "saved route"),
         ("completed_route_snapshots", "completed route"),
