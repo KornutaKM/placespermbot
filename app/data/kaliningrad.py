@@ -16,6 +16,16 @@ KING_GATE_SOURCE = PlaceSource(
     url="https://visit-kaliningrad.ru/entertainment/sights/gates/korolevskie-vorota/",
     checked_at=SOURCE_CHECKED_AT,
 )
+FRIEDLAND_GATE_SOURCE = PlaceSource(
+    name="Туристический центр Калининградской области — Фридландские ворота",
+    url="https://visit-kaliningrad.ru/entertainment/culture/museums/muzey-istorii-goroda-fridlandskie-vorota/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+BUNKER_SOURCE = PlaceSource(
+    name="Туристический центр Калининградской области — Музей «Бункер»",
+    url="https://visit-kaliningrad.ru/entertainment/culture/museums/muzey-bunker-blindazh-generala-otto-lyasha/",
+    checked_at=SOURCE_CHECKED_AT,
+)
 FRIEDRICHSBURG_GATE_SOURCE = PlaceSource(
     name="Туристический центр Калининградской области — Фридрихсбургские ворота",
     url="https://visit-kaliningrad.ru/entertainment/sights/gates/fridrikhsburgskie-gate/",
@@ -43,6 +53,8 @@ PLACES = (
     Place("upper-pond-kaliningrad", "Верхнее озеро", "parks", "Прогулочная зона вокруг городского озера рядом с Музеем янтаря.", "🌊", "Ленинградский район", 90, True, 54.7280, 20.5220, VISIT_KALININGRAD, ("озеро", "прогулка", "с детьми", "бесплатно")),
     Place("amalienau", "Амалиенау", "sights", "Исторический район вилл с выразительной архитектурой начала XX века.", "🏘", "Центральный район", 120, True, 54.7160, 20.4780, VISIT_KALININGRAD, ("архитектура", "история", "прогулка", "бесплатно")),
     Place("fort-five-kaliningrad", "Форт № 5", "museums", "Фортификационный памятник внешнего оборонительного пояса Кёнигсберга.", "🏰", "Центральный район", 90, False, 54.7520, 20.4425, VISIT_KALININGRAD, ("фортификация", "музей", "история")),
+    Place("friedland-gate", "Фридландские ворота", "museums", "Музей истории города в неоготических воротах XIX века с экспозициями о повседневной жизни Кёнигсберга.", "🏰", "Московский район", 90, False, 54.6954, 20.5218, FRIEDLAND_GATE_SOURCE, ("музей", "фортификация", "история", "архитектура")),
+    Place("bunker-museum-kaliningrad", "Музей «Бункер»", "museums", "Подземный командный пункт 1945 года с экспозицией о штурме Кёнигсберга и капитуляции гарнизона.", "🪖", "Ленинградский район", 75, False, 54.7131, 20.5097, BUNKER_SOURCE, ("музей", "военная история", "история", "подземелье")),
     Place("kaliningrad-zoo", "Калининградский зоопарк", "family", "Исторический зоопарк в центре города с большой коллекцией животных и зелёной территорией.", "🦒", "Центральный район", 180, False, 54.7206, 20.4886, VISIT_KALININGRAD, ("зоопарк", "с детьми", "животные"))
 )
 
@@ -51,5 +63,6 @@ ROUTES = (
     RoutePlan("kaliningrad-fortifications", "Городские ворота", "Знакомство с сохранившимися элементами фортификационного наследия города.", 210, 5.5, ("friedrichsburg-gate", "king-gate")),
     RoutePlan("kaliningrad-museums", "Музейный Калининград", "Янтарь, море и исторический центр в одном насыщенном дне.", 420, 6.0, ("amber-museum", "museum-world-ocean", "kant-island")),
     RoutePlan("kaliningrad-villas", "Виллы и Верхнее озеро", "Архитектура Амалиенау и зелёные прогулочные пространства северо-запада центра.", 270, 4.5, ("amalienau", "upper-pond-kaliningrad", "amber-museum")),
-    RoutePlan("kaliningrad-family", "Семейный Калининград", "Зоопарк и прогулка через центральные районы к Верхнему озеру.", 300, 3.0, ("kaliningrad-zoo", "upper-pond-kaliningrad"))
+    RoutePlan("kaliningrad-family", "Семейный Калининград", "Зоопарк и прогулка через центральные районы к Верхнему озеру.", 300, 3.0, ("kaliningrad-zoo", "upper-pond-kaliningrad")),
+    RoutePlan("kaliningrad-war-history", "Кёнигсберг 1945", "Военная история города через подземный командный пункт и южное фортификационное кольцо.", 240, 3.5, ("bunker-museum-kaliningrad", "friedland-gate")),
 )
