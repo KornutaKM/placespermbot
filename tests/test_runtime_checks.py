@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from app.config import Settings
-from app.database import migrate_database
+from app.database import LATEST_SCHEMA_VERSION, migrate_database
 from app.runtime_checks import validate_health, validate_static_runtime
 from app.storage import SavedRoutesRepository
 
@@ -19,6 +19,24 @@ def settings(tmp_path, **overrides) -> Settings:
     }
     values.update(overrides)
     return Settings(**values)
+
+
+def remove_completion_trigger_migration(database_path: str) -> None:
+    with sqlite3.connect(database_path) as database:
+        trigger_rows = database.execute(
+            """
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'trigger' AND name LIKE 'completed_%'
+            """
+        ).fetchall()
+        for (trigger_name,) in trigger_rows:
+            database.execute(f'DROP TRIGGER "{trigger_name}"')
+        database.execute(
+            "DELETE FROM schema_migrations WHERE version = ?",
+            (LATEST_SCHEMA_VERSION,),
+        )
+        database.commit()
 
 
 def test_static_runtime_accepts_valid_config(tmp_path) -> None:
@@ -210,6 +228,7 @@ def test_health_rejects_completed_snapshot_without_marker(tmp_path) -> None:
             ("hermitage", "russian-museum"),
         )
 
+        remove_completion_trigger_migration(config.database_path)
         with sqlite3.connect(config.database_path) as database:
             database.execute(
                 """
@@ -230,11 +249,11 @@ def test_health_rejects_completed_snapshot_without_marker(tmp_path) -> None:
             )
             database.commit()
 
+        await migrate_database(config.database_path)
         with pytest.raises(RuntimeError, match="snapshot without its marker"):
             await validate_health(config)
 
     asyncio.run(scenario())
-
 
 def test_health_allows_legacy_completion_marker_without_snapshot(tmp_path) -> None:
     async def scenario() -> None:
@@ -269,6 +288,7 @@ def test_health_rejects_mismatched_completion_timestamps(tmp_path) -> None:
             ("hermitage", "russian-museum"),
         )
 
+        remove_completion_trigger_migration(config.database_path)
         with sqlite3.connect(config.database_path) as database:
             database.execute(
                 """
@@ -299,11 +319,11 @@ def test_health_rejects_mismatched_completion_timestamps(tmp_path) -> None:
             )
             database.commit()
 
+        await migrate_database(config.database_path)
         with pytest.raises(RuntimeError, match="inconsistent completed route timestamps"):
             await validate_health(config)
 
     asyncio.run(scenario())
-
 
 def test_health_rejects_table_with_wrong_primary_key(tmp_path) -> None:
     async def scenario() -> None:
@@ -434,6 +454,20 @@ def test_health_rejects_invalid_persisted_storage_type(tmp_path) -> None:
             database.commit()
 
         with pytest.raises(RuntimeError, match="values with invalid storage types"):
+            await validate_health(config)
+
+    asyncio.run(scenario())
+
+def test_health_rejects_missing_completion_trigger(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+
+        with sqlite3.connect(config.database_path) as database:
+            database.execute("DROP TRIGGER completed_marker_delete_guard")
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="missing triggers"):
             await validate_health(config)
 
     asyncio.run(scenario())
