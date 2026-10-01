@@ -27,17 +27,15 @@ def test_personalization_context_is_city_and_user_scoped(tmp_path) -> None:
         await favorites.add(1, CITY_SLUG, "russian-museum")
         await visited.add(1, CITY_SLUG, "hermitage")
         await dismissed.add(1, CITY_SLUG, "faberge-museum")
-        await completed.add_snapshot(
-            1,
-            SavedRoute(
+        route = SavedRoute(
                 route_id="route-1",
                 city_slug=CITY_SLUG,
                 interest="museums",
                 budget_minutes=240,
                 place_slugs=("erarta", "removed-place"),
                 created_at="2026-10-01 00:00:00",
-            ),
-        )
+            )
+        await completed.complete_route(1, route, set())
 
         await interests.add(2, CITY_SLUG, "walks")
         await favorites.add(1, "other-city", "foreign-place")
