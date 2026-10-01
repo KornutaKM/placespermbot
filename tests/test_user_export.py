@@ -75,7 +75,7 @@ def test_export_is_user_and_city_scoped_and_preserves_route_order(tmp_path) -> N
         await completed_routes.complete_route(
             1,
             route,
-            {"palace-square", "hermitage", "summer-garden"},
+            set(),
         )
 
         data = await build_user_export(
