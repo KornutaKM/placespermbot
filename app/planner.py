@@ -25,6 +25,7 @@ def build_route(
     interest: str,
     start_latitude: float | None = None,
     start_longitude: float | None = None,
+    prefer_variety: bool = False,
 ) -> GeneratedRoute | None:
     if interest not in INTEREST_LABELS:
         raise ValueError(f"Unsupported interest: {interest}")
@@ -45,6 +46,7 @@ def build_ranked_route(
     route_interest: str,
     start_latitude: float | None = None,
     start_longitude: float | None = None,
+    prefer_variety: bool = False,
 ) -> GeneratedRoute | None:
     if budget_minutes <= 0:
         raise ValueError("budget_minutes must be positive")
@@ -75,10 +77,12 @@ def build_ranked_route(
         current = selected[-1]
         ranked = sorted(
             remaining,
-            key=lambda place: (
-                distance_km(current, place),
-                ordered.index(place),
-                place.title,
+            key=lambda place: _next_stop_rank(
+                place,
+                current=current,
+                selected=selected,
+                ordered=ordered,
+                prefer_variety=prefer_variety,
             ),
         )
 
@@ -113,6 +117,28 @@ def build_ranked_route(
         places=tuple(selected),
     )
 
+
+
+def _next_stop_rank(
+    place: Place,
+    *,
+    current: Place,
+    selected: list[Place],
+    ordered: list[Place],
+    prefer_variety: bool,
+) -> tuple[int, int, float, int, str]:
+    if not prefer_variety:
+        return (0, 0, distance_km(current, place), ordered.index(place), place.title)
+
+    used_categories = {item.category for item in selected}
+    used_districts = {item.district for item in selected}
+    return (
+        int(place.category in used_categories),
+        int(place.district in used_districts),
+        distance_km(current, place),
+        ordered.index(place),
+        place.title,
+    )
 
 def _deduplicate_candidates(candidates: tuple[Place, ...]) -> list[Place]:
     seen: set[str] = set()

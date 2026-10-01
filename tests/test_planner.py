@@ -231,3 +231,53 @@ def test_ranked_route_rejects_blank_route_interest() -> None:
             budget_minutes=120,
             route_interest=" ",
         )
+
+
+def test_ranked_route_variety_prefers_new_category_then_district() -> None:
+    city = catalog()
+    palace = city.place_by_slug("palace-square")
+    summer = city.place_by_slug("summer-garden")
+    hermitage = city.place_by_slug("hermitage")
+    sevkabel = city.place_by_slug("sevkabel-port")
+    assert palace is not None
+    assert summer is not None
+    assert hermitage is not None
+    assert sevkabel is not None
+
+    route = build_ranked_route(
+        (palace, summer, hermitage, sevkabel),
+        budget_minutes=480,
+        route_interest="personal",
+        prefer_variety=True,
+    )
+
+    assert route is not None
+    assert route.places[0] == palace
+    if len(route.places) >= 2:
+        assert route.places[1].category != palace.category
+
+
+def test_ranked_route_default_keeps_proximity_behavior() -> None:
+    city = catalog()
+    candidates = tuple(city.places[:6])
+
+    route = build_ranked_route(
+        candidates,
+        budget_minutes=360,
+        route_interest="classic",
+    )
+
+    assert route is not None
+    assert route.places[0] == candidates[0]
+    if len(route.places) >= 2:
+        nearest = min(
+            candidates[1:],
+            key=lambda place: (
+                __import__("app.catalog", fromlist=["distance_km"]).distance_km(
+                    candidates[0], place
+                ),
+                candidates.index(place),
+                place.title,
+            ),
+        )
+        assert route.places[1] == nearest

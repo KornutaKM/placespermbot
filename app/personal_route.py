@@ -57,6 +57,7 @@ def build_explained_personal_route(
         route_interest=PERSONAL_ROUTE_INTEREST,
         start_latitude=start_latitude,
         start_longitude=start_longitude,
+        prefer_variety=True,
     )
     if route is None:
         return None
