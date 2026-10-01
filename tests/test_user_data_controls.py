@@ -168,3 +168,46 @@ def test_bound_city_callback_rejects_missing_city() -> None:
             prefix="profile:data:delete:",
             current_city_slug=CITY_SLUG,
         )
+
+
+def test_delete_all_data_removes_every_city_and_preference_but_not_other_user(
+    tmp_path,
+) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "places.db")
+        await migrate_database(database_path)
+        favorites = FavoritesRepository(database_path)
+        interests = InterestsRepository(database_path)
+        visited = VisitedRepository(database_path)
+        city_preferences = UserCityRepository(database_path)
+        controls = UserDataControlsRepository(database_path)
+
+        await city_preferences.set_city_slug(1, CITY_SLUG)
+        await favorites.add(1, CITY_SLUG, "hermitage")
+        await favorites.add(1, "moscow", "red-square")
+        await interests.add(1, CITY_SLUG, "museums")
+        await visited.add(1, "moscow", "red-square")
+
+        await city_preferences.set_city_slug(2, "moscow")
+        await favorites.add(2, "moscow", "red-square")
+
+        result = await controls.delete_all_data(1)
+
+        assert result.favorites == 2
+        assert result.interests == 1
+        assert result.visited == 1
+        assert result.city_preferences == 1
+        assert result.total == 5
+        assert await favorites.list_place_slugs(1, CITY_SLUG) == ()
+        assert await favorites.list_place_slugs(1, "moscow") == ()
+        assert await interests.list_interests(1, CITY_SLUG) == ()
+        assert await visited.list_place_slugs(1, "moscow") == ()
+        assert await city_preferences.get_city_slug(1) is None
+
+        assert await favorites.list_place_slugs(2, "moscow") == ("red-square",)
+        assert await city_preferences.get_city_slug(2) == "moscow"
+
+        repeated = await controls.delete_all_data(1)
+        assert repeated.total == 0
+
+    asyncio.run(scenario())
