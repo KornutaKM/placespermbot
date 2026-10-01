@@ -285,3 +285,37 @@ def test_health_rejects_mismatched_completion_timestamps(tmp_path) -> None:
             await validate_health(config)
 
     asyncio.run(scenario())
+
+
+def test_health_rejects_table_with_wrong_primary_key(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+
+        with sqlite3.connect(config.database_path) as database:
+            database.execute("ALTER TABLE favorites RENAME TO favorites_old")
+            database.execute(
+                """
+                CREATE TABLE favorites (
+                    user_id INTEGER NOT NULL,
+                    city_slug TEXT NOT NULL,
+                    place_slug TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, city_slug)
+                )
+                """
+            )
+            database.execute(
+                """
+                INSERT INTO favorites
+                SELECT user_id, city_slug, place_slug, created_at
+                FROM favorites_old
+                """
+            )
+            database.execute("DROP TABLE favorites_old")
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="invalid primary key"):
+            await validate_health(config)
+
+    asyncio.run(scenario())
