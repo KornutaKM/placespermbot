@@ -204,13 +204,25 @@ def test_restore_rejects_tampered_route_snapshot_without_touching_live_database(
     asyncio.run(scenario())
 
 
-def test_restore_fsyncs_parent_directory_after_atomic_replace(tmp_path) -> None:
+def test_restore_removes_sidecars_before_fsyncing_parent_directory(tmp_path) -> None:
     async def scenario() -> None:
         backup = tmp_path / "backup.db"
         destination = tmp_path / "data" / "live.db"
         await migrate_database(backup)
+        destination.parent.mkdir(parents=True, exist_ok=True)
 
-        with patch("app.database_restore.fsync_directory") as sync_directory:
+        for suffix in ("-wal", "-shm", "-journal"):
+            (destination.parent / f"{destination.name}{suffix}").write_bytes(b"stale")
+
+        def assert_sidecars_removed(path) -> None:
+            assert path == destination.parent.resolve()
+            for suffix in ("-wal", "-shm", "-journal"):
+                assert not (destination.parent / f"{destination.name}{suffix}").exists()
+
+        with patch(
+            "app.database_restore.fsync_directory",
+            side_effect=assert_sidecars_removed,
+        ) as sync_directory:
             await restore_database_backup(backup, destination)
 
         sync_directory.assert_called_once_with(destination.parent.resolve())
