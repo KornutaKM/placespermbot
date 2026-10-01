@@ -319,3 +319,41 @@ def test_health_rejects_table_with_wrong_primary_key(tmp_path) -> None:
             await validate_health(config)
 
     asyncio.run(scenario())
+
+@pytest.mark.parametrize(
+    "place_slug_definition",
+    (
+        "INTEGER NOT NULL",
+        "TEXT",
+        "TEXT NOT NULL DEFAULT 'unexpected'",
+    ),
+)
+def test_health_rejects_invalid_column_definition(
+    tmp_path,
+    place_slug_definition: str,
+) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+
+        with sqlite3.connect(config.database_path) as database:
+            database.execute("ALTER TABLE favorites RENAME TO favorites_old")
+            database.execute(
+                f"""
+                CREATE TABLE favorites (
+                    user_id INTEGER NOT NULL,
+                    city_slug TEXT NOT NULL,
+                    place_slug {place_slug_definition},
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, city_slug, place_slug)
+                )
+                """
+            )
+            database.execute("DROP TABLE favorites_old")
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="column place_slug has an invalid definition"):
+            await validate_health(config)
+
+    asyncio.run(scenario())
+

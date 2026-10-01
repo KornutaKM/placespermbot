@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+from dataclasses import dataclass
 
 from app.database import validate_migration_ledger
 from app.storage import validate_persisted_route_row
@@ -45,6 +46,74 @@ EXPECTED_COLUMNS: dict[str, frozenset[str]] = {
     ),
 }
 
+
+@dataclass(frozen=True, slots=True)
+class ColumnContract:
+    declared_type: str
+    not_null: bool
+    default_value: str | None = None
+
+
+EXPECTED_COLUMN_CONTRACTS: dict[str, dict[str, ColumnContract]] = {
+    "schema_migrations": {
+        "version": ColumnContract("INTEGER", False),
+        "name": ColumnContract("TEXT", True),
+        "applied_at": ColumnContract("TEXT", True, "CURRENT_TIMESTAMP"),
+    },
+    "favorites": {
+        "user_id": ColumnContract("INTEGER", True),
+        "city_slug": ColumnContract("TEXT", True),
+        "place_slug": ColumnContract("TEXT", True),
+        "created_at": ColumnContract("TEXT", True, "CURRENT_TIMESTAMP"),
+    },
+    "user_interests": {
+        "user_id": ColumnContract("INTEGER", True),
+        "city_slug": ColumnContract("TEXT", True),
+        "interest": ColumnContract("TEXT", True),
+        "created_at": ColumnContract("TEXT", True, "CURRENT_TIMESTAMP"),
+    },
+    "user_city_preferences": {
+        "user_id": ColumnContract("INTEGER", False),
+        "city_slug": ColumnContract("TEXT", True),
+        "updated_at": ColumnContract("TEXT", True, "CURRENT_TIMESTAMP"),
+    },
+    "visited_places": {
+        "user_id": ColumnContract("INTEGER", True),
+        "city_slug": ColumnContract("TEXT", True),
+        "place_slug": ColumnContract("TEXT", True),
+        "visited_at": ColumnContract("TEXT", True, "CURRENT_TIMESTAMP"),
+    },
+    "saved_routes": {
+        "user_id": ColumnContract("INTEGER", True),
+        "city_slug": ColumnContract("TEXT", True),
+        "route_id": ColumnContract("TEXT", True),
+        "interest": ColumnContract("TEXT", True),
+        "budget_minutes": ColumnContract("INTEGER", True),
+        "place_slugs_json": ColumnContract("TEXT", True),
+        "created_at": ColumnContract("TEXT", True, "CURRENT_TIMESTAMP"),
+    },
+    "dismissed_places": {
+        "user_id": ColumnContract("INTEGER", True),
+        "city_slug": ColumnContract("TEXT", True),
+        "place_slug": ColumnContract("TEXT", True),
+        "dismissed_at": ColumnContract("TEXT", True, "CURRENT_TIMESTAMP"),
+    },
+    "completed_routes": {
+        "user_id": ColumnContract("INTEGER", True),
+        "city_slug": ColumnContract("TEXT", True),
+        "route_id": ColumnContract("TEXT", True),
+        "completed_at": ColumnContract("TEXT", True, "CURRENT_TIMESTAMP"),
+    },
+    "completed_route_snapshots": {
+        "user_id": ColumnContract("INTEGER", True),
+        "city_slug": ColumnContract("TEXT", True),
+        "route_id": ColumnContract("TEXT", True),
+        "interest": ColumnContract("TEXT", True),
+        "budget_minutes": ColumnContract("INTEGER", True),
+        "place_slugs_json": ColumnContract("TEXT", True),
+        "completed_at": ColumnContract("TEXT", True, "CURRENT_TIMESTAMP"),
+    },
+}
 
 EXPECTED_PRIMARY_KEYS: dict[str, tuple[str, ...]] = {
     "schema_migrations": ("version",),
@@ -92,6 +161,22 @@ def validate_database_contract(
             raise RuntimeError(
                 f"{subject} table {table_name} is incomplete; missing columns: {missing}"
             )
+
+        column_rows = {str(row[1]): row for row in table_info}
+        for column_name, expected in EXPECTED_COLUMN_CONTRACTS[table_name].items():
+            column = column_rows[column_name]
+            actual_type = str(column[2]).upper()
+            actual_not_null = bool(column[3])
+            actual_default = None if column[4] is None else str(column[4]).strip()
+            if (
+                actual_type != expected.declared_type
+                or actual_not_null != expected.not_null
+                or actual_default != expected.default_value
+            ):
+                raise RuntimeError(
+                    f"{subject} table {table_name} column {column_name} "
+                    "has an invalid definition"
+                )
 
         actual_primary_key = tuple(
             str(row[1])
