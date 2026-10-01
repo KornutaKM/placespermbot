@@ -123,7 +123,12 @@ async def build_account_export(
     for city_slug, snapshot in snapshots.items():
         catalog = get_catalog(city_slug) if has_catalog(city_slug) else None
 
-        def place_reference(\n            place_slug: str,\n            city_catalog: CityCatalog | None = catalog,\n        ) -> dict[str, str | None]:\n            if city_catalog is None:\n                return {"place_slug": place_slug, "title": None}
+        def place_reference(
+            place_slug: str,
+            city_catalog: CityCatalog | None = catalog,
+        ) -> dict[str, str | None]:
+            if city_catalog is None:
+                return {"place_slug": place_slug, "title": None}
             return _place_reference(city_catalog, place_slug)
 
         cities.append(
