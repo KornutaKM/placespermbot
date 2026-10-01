@@ -17,6 +17,114 @@ class Migration:
     statements: tuple[str, ...]
 
 
+COMPLETION_TRIGGER_SQL: dict[str, str] = {
+    "completed_snapshot_requires_marker_insert": """
+        CREATE TRIGGER completed_snapshot_requires_marker_insert
+        BEFORE INSERT ON completed_route_snapshots
+        WHEN NOT EXISTS (
+            SELECT 1
+            FROM completed_routes
+            WHERE user_id = NEW.user_id
+              AND city_slug = NEW.city_slug
+              AND route_id = NEW.route_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'completed snapshot requires marker');
+        END
+    """,
+    "completed_snapshot_requires_marker_update": """
+        CREATE TRIGGER completed_snapshot_requires_marker_update
+        BEFORE UPDATE OF user_id, city_slug, route_id
+        ON completed_route_snapshots
+        WHEN NOT EXISTS (
+            SELECT 1
+            FROM completed_routes
+            WHERE user_id = NEW.user_id
+              AND city_slug = NEW.city_slug
+              AND route_id = NEW.route_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'completed snapshot requires marker');
+        END
+    """,
+    "completed_snapshot_timestamp_insert": """
+        CREATE TRIGGER completed_snapshot_timestamp_insert
+        BEFORE INSERT ON completed_route_snapshots
+        WHEN EXISTS (
+            SELECT 1
+            FROM completed_routes
+            WHERE user_id = NEW.user_id
+              AND city_slug = NEW.city_slug
+              AND route_id = NEW.route_id
+              AND completed_at != NEW.completed_at
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'completed snapshot timestamp mismatch');
+        END
+    """,
+    "completed_snapshot_timestamp_update": """
+        CREATE TRIGGER completed_snapshot_timestamp_update
+        BEFORE UPDATE OF completed_at
+        ON completed_route_snapshots
+        WHEN EXISTS (
+            SELECT 1
+            FROM completed_routes
+            WHERE user_id = NEW.user_id
+              AND city_slug = NEW.city_slug
+              AND route_id = NEW.route_id
+              AND completed_at != NEW.completed_at
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'completed snapshot timestamp mismatch');
+        END
+    """,
+    "completed_marker_identity_update_guard": """
+        CREATE TRIGGER completed_marker_identity_update_guard
+        BEFORE UPDATE OF user_id, city_slug, route_id
+        ON completed_routes
+        WHEN EXISTS (
+            SELECT 1
+            FROM completed_route_snapshots
+            WHERE user_id = OLD.user_id
+              AND city_slug = OLD.city_slug
+              AND route_id = OLD.route_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'completed marker identity has snapshot');
+        END
+    """,
+    "completed_marker_timestamp_update_guard": """
+        CREATE TRIGGER completed_marker_timestamp_update_guard
+        BEFORE UPDATE OF completed_at
+        ON completed_routes
+        WHEN EXISTS (
+            SELECT 1
+            FROM completed_route_snapshots
+            WHERE user_id = OLD.user_id
+              AND city_slug = OLD.city_slug
+              AND route_id = OLD.route_id
+              AND completed_at != NEW.completed_at
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'completed marker timestamp mismatch');
+        END
+    """,
+    "completed_marker_delete_guard": """
+        CREATE TRIGGER completed_marker_delete_guard
+        BEFORE DELETE ON completed_routes
+        WHEN EXISTS (
+            SELECT 1
+            FROM completed_route_snapshots
+            WHERE user_id = OLD.user_id
+              AND city_slug = OLD.city_slug
+              AND route_id = OLD.route_id
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'completed marker has snapshot');
+        END
+    """,
+}
+
 MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=1,
@@ -175,113 +283,7 @@ MIGRATIONS: tuple[Migration, ...] = (
     Migration(
         version=10,
         name="enforce_completed_route_snapshot_invariants",
-        statements=(
-            """
-            CREATE TRIGGER completed_snapshot_requires_marker_insert
-            BEFORE INSERT ON completed_route_snapshots
-            WHEN NOT EXISTS (
-                SELECT 1
-                FROM completed_routes
-                WHERE user_id = NEW.user_id
-                  AND city_slug = NEW.city_slug
-                  AND route_id = NEW.route_id
-            )
-            BEGIN
-                SELECT RAISE(ABORT, 'completed snapshot requires marker');
-            END
-            """,
-            """
-            CREATE TRIGGER completed_snapshot_requires_marker_update
-            BEFORE UPDATE OF user_id, city_slug, route_id
-            ON completed_route_snapshots
-            WHEN NOT EXISTS (
-                SELECT 1
-                FROM completed_routes
-                WHERE user_id = NEW.user_id
-                  AND city_slug = NEW.city_slug
-                  AND route_id = NEW.route_id
-            )
-            BEGIN
-                SELECT RAISE(ABORT, 'completed snapshot requires marker');
-            END
-            """,
-            """
-            CREATE TRIGGER completed_snapshot_timestamp_insert
-            BEFORE INSERT ON completed_route_snapshots
-            WHEN EXISTS (
-                SELECT 1
-                FROM completed_routes
-                WHERE user_id = NEW.user_id
-                  AND city_slug = NEW.city_slug
-                  AND route_id = NEW.route_id
-                  AND completed_at != NEW.completed_at
-            )
-            BEGIN
-                SELECT RAISE(ABORT, 'completed snapshot timestamp mismatch');
-            END
-            """,
-            """
-            CREATE TRIGGER completed_snapshot_timestamp_update
-            BEFORE UPDATE OF completed_at
-            ON completed_route_snapshots
-            WHEN EXISTS (
-                SELECT 1
-                FROM completed_routes
-                WHERE user_id = NEW.user_id
-                  AND city_slug = NEW.city_slug
-                  AND route_id = NEW.route_id
-                  AND completed_at != NEW.completed_at
-            )
-            BEGIN
-                SELECT RAISE(ABORT, 'completed snapshot timestamp mismatch');
-            END
-            """,
-            """
-            CREATE TRIGGER completed_marker_identity_update_guard
-            BEFORE UPDATE OF user_id, city_slug, route_id
-            ON completed_routes
-            WHEN EXISTS (
-                SELECT 1
-                FROM completed_route_snapshots
-                WHERE user_id = OLD.user_id
-                  AND city_slug = OLD.city_slug
-                  AND route_id = OLD.route_id
-            )
-            BEGIN
-                SELECT RAISE(ABORT, 'completed marker identity has snapshot');
-            END
-            """,
-            """
-            CREATE TRIGGER completed_marker_timestamp_update_guard
-            BEFORE UPDATE OF completed_at
-            ON completed_routes
-            WHEN EXISTS (
-                SELECT 1
-                FROM completed_route_snapshots
-                WHERE user_id = OLD.user_id
-                  AND city_slug = OLD.city_slug
-                  AND route_id = OLD.route_id
-                  AND completed_at != NEW.completed_at
-            )
-            BEGIN
-                SELECT RAISE(ABORT, 'completed marker timestamp mismatch');
-            END
-            """,
-            """
-            CREATE TRIGGER completed_marker_delete_guard
-            BEFORE DELETE ON completed_routes
-            WHEN EXISTS (
-                SELECT 1
-                FROM completed_route_snapshots
-                WHERE user_id = OLD.user_id
-                  AND city_slug = OLD.city_slug
-                  AND route_id = OLD.route_id
-            )
-            BEGIN
-                SELECT RAISE(ABORT, 'completed marker has snapshot');
-            END
-            """,
-        ),
+        statements=tuple(COMPLETION_TRIGGER_SQL.values()),
     ),
 )
 
