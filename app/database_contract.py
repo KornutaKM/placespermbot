@@ -46,6 +46,19 @@ EXPECTED_COLUMNS: dict[str, frozenset[str]] = {
 }
 
 
+EXPECTED_PRIMARY_KEYS: dict[str, tuple[str, ...]] = {
+    "schema_migrations": ("version",),
+    "favorites": ("user_id", "city_slug", "place_slug"),
+    "user_interests": ("user_id", "city_slug", "interest"),
+    "user_city_preferences": ("user_id",),
+    "visited_places": ("user_id", "city_slug", "place_slug"),
+    "saved_routes": ("user_id", "city_slug", "route_id"),
+    "dismissed_places": ("user_id", "city_slug", "place_slug"),
+    "completed_routes": ("user_id", "city_slug", "route_id"),
+    "completed_route_snapshots": ("user_id", "city_slug", "route_id"),
+}
+
+
 def validate_database_contract(
     database: sqlite3.Connection,
     *,
@@ -69,15 +82,26 @@ def validate_database_contract(
         raise RuntimeError(f"{subject} schema is incomplete: {missing}")
 
     for table_name, expected_columns in EXPECTED_COLUMNS.items():
-        existing_columns = {
-            str(row[1])
-            for row in database.execute(f"PRAGMA table_info({table_name})").fetchall()
-        }
+        table_info = database.execute(
+            f"PRAGMA table_info({table_name})"
+        ).fetchall()
+        existing_columns = {str(row[1]) for row in table_info}
         missing_columns = expected_columns - existing_columns
         if missing_columns:
             missing = ", ".join(sorted(missing_columns))
             raise RuntimeError(
                 f"{subject} table {table_name} is incomplete; missing columns: {missing}"
+            )
+
+        actual_primary_key = tuple(
+            str(row[1])
+            for row in sorted(table_info, key=lambda row: int(row[5]))
+            if int(row[5]) > 0
+        )
+        expected_primary_key = EXPECTED_PRIMARY_KEYS[table_name]
+        if actual_primary_key != expected_primary_key:
+            raise RuntimeError(
+                f"{subject} table {table_name} has an invalid primary key"
             )
 
     migration_rows = database.execute(
