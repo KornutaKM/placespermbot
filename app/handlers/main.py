@@ -1071,8 +1071,8 @@ async def personal_recommendations(
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
-,
-    completed_routes_repo: CompletedRoutesRepository) -> None:
+    completed_routes_repo: CompletedRoutesRepository,
+) -> None:
     previous_state = await state.get_state()
     await state.clear()
     if previous_state in LOCATION_REQUEST_STATES:
@@ -1099,8 +1099,8 @@ async def personal_recommendations_page(
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
-,
-    completed_routes_repo: CompletedRoutesRepository) -> None:
+    completed_routes_repo: CompletedRoutesRepository,
+) -> None:
     try:
         page_index = int(callback.data.rsplit(":", 1)[1])
     except (ValueError, AttributeError):
@@ -1233,8 +1233,8 @@ async def personal_route_duration(
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
-,
-    completed_routes_repo: CompletedRoutesRepository) -> None:
+    completed_routes_repo: CompletedRoutesRepository,
+) -> None:
     try:
         budget_minutes = int(callback.data.rsplit(":", 1)[1])
     except (ValueError, AttributeError):
@@ -1419,8 +1419,8 @@ async def finish_interests(
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
-,
-    completed_routes_repo: CompletedRoutesRepository) -> None:
+    completed_routes_repo: CompletedRoutesRepository,
+) -> None:
     catalog = current_catalog()
     interests = await interests_repo.list_interests(
         callback.from_user.id,
