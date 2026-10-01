@@ -227,8 +227,7 @@ def serialize_user_export(data: dict[str, Any]) -> bytes:
             indent=2,
             sort_keys=True,
         )
-        + "
-"
+        + "\n"
     ).encode("utf-8")
 
 
