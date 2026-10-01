@@ -22,6 +22,48 @@ EXPECTED_TABLES = frozenset(
     }
 )
 
+EXPECTED_COLUMNS: dict[str, frozenset[str]] = {
+    "schema_migrations": frozenset({"version", "name", "applied_at"}),
+    "favorites": frozenset({"user_id", "city_slug", "place_slug", "created_at"}),
+    "user_interests": frozenset(
+        {"user_id", "city_slug", "interest", "created_at"}
+    ),
+    "user_city_preferences": frozenset(
+        {"user_id", "city_slug", "updated_at"}
+    ),
+    "visited_places": frozenset(
+        {"user_id", "city_slug", "place_slug", "visited_at"}
+    ),
+    "saved_routes": frozenset(
+        {
+            "user_id",
+            "city_slug",
+            "route_id",
+            "interest",
+            "budget_minutes",
+            "place_slugs_json",
+            "created_at",
+        }
+    ),
+    "dismissed_places": frozenset(
+        {"user_id", "city_slug", "place_slug", "dismissed_at"}
+    ),
+    "completed_routes": frozenset(
+        {"user_id", "city_slug", "route_id", "completed_at"}
+    ),
+    "completed_route_snapshots": frozenset(
+        {
+            "user_id",
+            "city_slug",
+            "route_id",
+            "interest",
+            "budget_minutes",
+            "place_slugs_json",
+            "completed_at",
+        }
+    ),
+}
+
 
 def validate_static_runtime(settings: Settings) -> None:
     settings.require_bot_token()
@@ -54,6 +96,20 @@ async def validate_health(settings: Settings) -> None:
     if missing_tables:
         missing = ", ".join(sorted(missing_tables))
         raise RuntimeError(f"Database schema is incomplete: {missing}")
+
+    async with aiosqlite.connect(database_path) as database:
+        for table_name, expected_columns in EXPECTED_COLUMNS.items():
+            cursor = await database.execute(f"PRAGMA table_info({table_name})")
+            column_rows = await cursor.fetchall()
+            await cursor.close()
+            existing_columns = {str(row[1]) for row in column_rows}
+            missing_columns = expected_columns - existing_columns
+            if missing_columns:
+                missing = ", ".join(sorted(missing_columns))
+                raise RuntimeError(
+                    "Database table "
+                    f"{table_name} is incomplete; missing columns: {missing}"
+                )
 
     applied_versions = set(
         await get_applied_migration_versions(database_path)
