@@ -27,6 +27,7 @@ class DeletionResult:
     dismissed: int
     completed_routes: int
     completed_route_snapshots: int
+    city_preferences: int = 0
 
     @property
     def total(self) -> int:
@@ -38,6 +39,7 @@ class DeletionResult:
             + self.dismissed
             + self.completed_routes
             + self.completed_route_snapshots
+            + self.city_preferences
         )
 
 
@@ -78,6 +80,42 @@ class UserDataControlsRepository:
             dismissed=counts["dismissed"],
             completed_routes=counts["completed_routes"],
             completed_route_snapshots=counts["completed_route_snapshots"],
+        )
+
+    async def delete_all_data(self, user_id: int) -> DeletionResult:
+        counts: dict[str, int] = {}
+
+        async with connect_database(self.database_path) as database:
+            try:
+                await database.execute("BEGIN IMMEDIATE")
+                for table_name, result_key in _DATA_TABLES:
+                    cursor = await database.execute(
+                        f"DELETE FROM {table_name} WHERE user_id = ?",
+                        (user_id,),
+                    )
+                    counts[result_key] = max(cursor.rowcount, 0)
+                    await cursor.close()
+
+                cursor = await database.execute(
+                    "DELETE FROM user_city_preferences WHERE user_id = ?",
+                    (user_id,),
+                )
+                counts["city_preferences"] = max(cursor.rowcount, 0)
+                await cursor.close()
+                await database.commit()
+            except aiosqlite.Error:
+                await database.rollback()
+                raise
+
+        return DeletionResult(
+            favorites=counts["favorites"],
+            interests=counts["interests"],
+            visited=counts["visited"],
+            saved_routes=counts["saved_routes"],
+            dismissed=counts["dismissed"],
+            completed_routes=counts["completed_routes"],
+            completed_route_snapshots=counts["completed_route_snapshots"],
+            city_preferences=counts["city_preferences"],
         )
 
 
