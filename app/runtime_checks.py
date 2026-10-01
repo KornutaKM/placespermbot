@@ -5,9 +5,8 @@ from pathlib import Path
 from app.catalog import get_catalog
 from app.config import Settings
 from app.database import (
-    KNOWN_SCHEMA_VERSIONS,
     connect_database,
-    get_applied_migration_versions,
+    validate_migration_ledger,
 )
 
 EXPECTED_TABLES = frozenset(
@@ -113,15 +112,15 @@ async def validate_health(settings: Settings) -> None:
                     f"{table_name} is incomplete; missing columns: {missing}"
                 )
 
-    applied_versions = set(
-        await get_applied_migration_versions(database_path)
-    )
-    unknown_versions = applied_versions - KNOWN_SCHEMA_VERSIONS
-    if unknown_versions:
-        versions = ", ".join(str(version) for version in sorted(unknown_versions))
-        raise RuntimeError(f"Database schema is newer than this app: {versions}")
+    async with connect_database(database_path) as database:
+        cursor = await database.execute(
+            "SELECT version, name FROM schema_migrations ORDER BY version"
+        )
+        migration_rows = await cursor.fetchall()
+        await cursor.close()
 
-    missing_versions = KNOWN_SCHEMA_VERSIONS - applied_versions
-    if missing_versions:
-        versions = ", ".join(str(version) for version in sorted(missing_versions))
-        raise RuntimeError(f"Database migrations are incomplete: {versions}")
+    validate_migration_ledger(
+        [(int(row[0]), str(row[1])) for row in migration_rows],
+        subject="Database",
+        require_complete=True,
+    )
