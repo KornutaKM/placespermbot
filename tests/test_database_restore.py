@@ -6,7 +6,7 @@ import pytest
 from app.database import LATEST_SCHEMA_VERSION, migrate_database
 from app.database_backup import create_database_backup
 from app.database_restore import restore_database_backup
-from app.storage import FavoritesRepository
+from app.storage import FavoritesRepository, SavedRoutesRepository
 
 
 def test_restore_replaces_database_atomically(tmp_path) -> None:
@@ -161,5 +161,43 @@ def test_restore_rejects_missing_column_without_touching_live_database(tmp_path)
             await restore_database_backup(backup, destination)
 
         assert await favorites.list_place_slugs(13, "perm") == ("esplanade",)
+
+    asyncio.run(scenario())
+
+
+def test_restore_rejects_tampered_route_snapshot_without_touching_live_database(
+    tmp_path,
+) -> None:
+    async def scenario() -> None:
+        backup = tmp_path / "tampered-route.db"
+        await migrate_database(backup)
+        saved_routes = SavedRoutesRepository(str(backup))
+        route = await saved_routes.save(
+            31,
+            "saint-petersburg",
+            "classic",
+            120,
+            ("hermitage", "russian-museum"),
+        )
+        with sqlite3.connect(backup) as database:
+            database.execute(
+                """
+                UPDATE saved_routes
+                SET place_slugs_json = ?
+                WHERE route_id = ?
+                """,
+                ('["hermitage","summer-garden"]', route.route_id),
+            )
+            database.commit()
+
+        destination = tmp_path / "live.db"
+        await migrate_database(destination)
+        favorites = FavoritesRepository(str(destination))
+        await favorites.add(31, "moscow", "red-square")
+
+        with pytest.raises(RuntimeError, match="id does not match"):
+            await restore_database_backup(backup, destination)
+
+        assert await favorites.list_place_slugs(31, "moscow") == ("red-square",)
 
     asyncio.run(scenario())
