@@ -1,7 +1,7 @@
 from datetime import date
 
-from app.catalog import CityCatalog
 from app.catalog_validation import validate_catalog
+from app.catalog import CityCatalog
 from app.domain import Place, PlaceSource, RoutePlan
 
 
