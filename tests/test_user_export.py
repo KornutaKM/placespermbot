@@ -12,8 +12,7 @@ from app.storage import (
     FavoritesRepository,
     InterestsRepository,
     SavedRoutesRepository,
-    VisitedRepository,
-)
+    UserCityRepository,\n    VisitedRepository,\n)
 from app.user_export import (
     EXPORT_SCHEMA_VERSION,
     account_export_filename,
@@ -213,18 +212,14 @@ def test_account_export_contains_all_user_cities_without_private_identifiers(
     async def scenario() -> None:
         database_path = str(tmp_path / "places.db")
         await migrate_database(database_path)
-        favorites = FavoritesRepository(database_path)
-        interests = InterestsRepository(database_path)
-
-        await favorites.add(1, CITY_SLUG, "hermitage")
+        favorites = FavoritesRepository(database_path)\n        interests = InterestsRepository(database_path)\n        city_preferences = UserCityRepository(database_path)\n\n        await city_preferences.set_city_slug(1, "moscow")\n        await favorites.add(1, CITY_SLUG, "hermitage")
         await favorites.add(1, "moscow", "red-square")
         await interests.add(1, "legacy-city", "walks")
         await favorites.add(2, "moscow", "red-square")
 
         data = await build_account_export(1, database_path=database_path)
 
-        assert data["scope"] == "account"
-        assert [city["city"]["slug"] for city in data["cities"]] == [
+        assert data["scope"] == "account"\n        assert data["selected_city"] == {"slug": "moscow", "name": "Москва"}\n        assert [city["city"]["slug"] for city in data["cities"]] == [
             "legacy-city",
             "moscow",
             CITY_SLUG,
@@ -239,5 +234,25 @@ def test_account_export_contains_all_user_cities_without_private_identifiers(
         assert "longitude" not in encoded
         assert "bot_token" not in encoded
         assert account_export_filename() == "places-all-cities.json"
+
+    asyncio.run(scenario())
+
+
+def test_account_export_includes_preference_when_no_city_scoped_data(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "places.db")
+        await migrate_database(database_path)
+        preferences = UserCityRepository(database_path)
+        await preferences.set_city_slug(77, "legacy-city")
+
+        data = await build_account_export(77, database_path=database_path)
+
+        assert data["schema_version"] == EXPORT_SCHEMA_VERSION
+        assert data["scope"] == "account"
+        assert data["selected_city"] == {
+            "slug": "legacy-city",
+            "name": None,
+        }
+        assert data["cities"] == []
 
     asyncio.run(scenario())
