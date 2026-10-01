@@ -13,9 +13,9 @@ from app.excursions import get_excursion_providers
 from app.keyboards import (
     back_home_keyboard,
     categories_keyboard,
+    cities_keyboard,
     completed_route_details_keyboard,
     completed_routes_keyboard,
-    cities_keyboard,
     data_controls_keyboard,
     data_delete_confirm_keyboard,
     event_providers_keyboard,
