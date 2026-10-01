@@ -52,6 +52,7 @@ async def complete_saved_route(
 
     if completed_routes is not None:
         await completed_routes.add(user_id, city_slug, route_id)
+        await completed_routes.add_snapshot(user_id, route)
 
     return RouteCompletionResult(
         added=added,

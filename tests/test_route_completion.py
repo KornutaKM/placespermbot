@@ -93,6 +93,18 @@ def test_complete_saved_route_is_idempotent(tmp_path) -> None:
         assert await completed.contains(202, CITY_SLUG, saved.route_id)
         assert await completed.count(202, CITY_SLUG) == 1
 
+        snapshots = await completed.list_snapshots(202, CITY_SLUG)
+        assert len(snapshots) == 1
+        assert snapshots[0].route_id == saved.route_id
+        assert snapshots[0].interest == "classic"
+        assert snapshots[0].budget_minutes == 120
+        assert snapshots[0].place_slugs == slugs
+
+        await saved_routes.remove(202, CITY_SLUG, saved.route_id)
+        persisted = await completed.get_snapshot(202, CITY_SLUG, saved.route_id)
+        assert persisted is not None
+        assert persisted.place_slugs == slugs
+
     asyncio.run(scenario())
 
 

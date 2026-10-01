@@ -15,7 +15,7 @@ from app.storage import (
     VisitedRepository,
 )
 
-EXPORT_SCHEMA_VERSION = 3
+EXPORT_SCHEMA_VERSION = 4
 
 
 async def build_user_export(
@@ -35,14 +35,14 @@ async def build_user_export(
         favorite_slugs,
         visited_slugs,
         saved_routes,
-        completed_route_ids,
+        completed_routes,
     ) = await asyncio.gather(
         interests_repo.list_interests(user_id, catalog.slug),
         dismissed_repo.list_place_slugs(user_id, catalog.slug),
         favorites_repo.list_place_slugs(user_id, catalog.slug),
         visited_repo.list_place_slugs(user_id, catalog.slug),
         saved_routes_repo.list_routes(user_id, catalog.slug),
-        completed_routes_repo.list_route_ids(user_id, catalog.slug),
+        completed_routes_repo.list_snapshots(user_id, catalog.slug),
     )
 
     return {
@@ -70,7 +70,22 @@ async def build_user_export(
             _place_reference(catalog, slug)
             for slug in visited_slugs
         ],
-        "completed_routes": list(completed_route_ids),
+        "completed_routes": [
+            {
+                "route_id": route.route_id,
+                "interest": {
+                    "id": route.interest,
+                    "label": INTEREST_LABELS.get(route.interest, route.interest),
+                },
+                "budget_minutes": route.budget_minutes,
+                "stops": [
+                    _place_reference(catalog, slug)
+                    for slug in route.place_slugs
+                ],
+                "completed_at": route.completed_at,
+            }
+            for route in completed_routes
+        ],
         "saved_routes": [
             {
                 "route_id": route.route_id,

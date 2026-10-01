@@ -342,6 +342,7 @@ def test_profile_keyboard_links_existing_user_flows() -> None:
         "menu:visited",
         "menu:dismissed",
         "menu:savedroutes",
+        "menu:completedroutes",
         "profile:export",
         "profile:data",
         "menu:home",
