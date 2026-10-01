@@ -2,19 +2,40 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sqlite3
+import tempfile
 from pathlib import Path
 
 
 def _backup_database(source: Path, destination: Path) -> None:
-    with (
-        sqlite3.connect(source) as source_database,
-        sqlite3.connect(destination) as destination_database,
-    ):
-        source_database.backup(destination_database)
-        row = destination_database.execute("PRAGMA integrity_check").fetchone()
-        if row != ("ok",):
-            raise RuntimeError("SQLite backup failed integrity check")
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            dir=destination.parent,
+            prefix=f".{destination.name}.backup-",
+            suffix=".tmp",
+            delete=False,
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+
+        with (
+            sqlite3.connect(f"file:{source}?mode=ro", uri=True) as source_database,
+            sqlite3.connect(temporary_path) as destination_database,
+        ):
+            source_database.backup(destination_database)
+            row = destination_database.execute("PRAGMA integrity_check").fetchone()
+            if row != ("ok",):
+                raise RuntimeError("SQLite backup failed integrity check")
+
+        with temporary_path.open("rb") as backup_file:
+            os.fsync(backup_file.fileno())
+
+        os.replace(temporary_path, destination)
+        temporary_path = None
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
 
 
 async def create_database_backup(
