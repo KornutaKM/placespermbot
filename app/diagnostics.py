@@ -6,16 +6,19 @@ from pathlib import Path
 from typing import Any
 
 from app.config import Settings, get_settings
-from app.database import connect_database, get_applied_migration_versions
-from app.runtime_checks import validate_health
+from app.database import connect_database
+from app.database_contract import validate_database_contract
+from app.runtime_checks import validate_static_runtime
 
 
 async def collect_diagnostics(settings: Settings) -> dict[str, Any]:
-    await validate_health(settings)
+    validate_static_runtime(settings)
     database_path = Path(settings.database_path)
-    versions = await get_applied_migration_versions(database_path)
+    if not database_path.is_file():
+        raise RuntimeError("Database is not initialized")
 
     async with connect_database(database_path) as database:
+        await database.execute("BEGIN")
         journal_cursor = await database.execute("PRAGMA journal_mode")
         journal_row = await journal_cursor.fetchone()
         await journal_cursor.close()
@@ -23,6 +26,16 @@ async def collect_diagnostics(settings: Settings) -> dict[str, Any]:
         integrity_cursor = await database.execute("PRAGMA quick_check")
         integrity_row = await integrity_cursor.fetchone()
         await integrity_cursor.close()
+
+        migration_cursor = await database.execute(
+            "SELECT version FROM schema_migrations ORDER BY version"
+        )
+        migration_rows = await migration_cursor.fetchall()
+        await migration_cursor.close()
+        await database.rollback()
+
+    await asyncio.to_thread(_validate_contract, database_path)
+    versions = tuple(int(row[0]) for row in migration_rows)
 
     return {
         "status": "healthy",
@@ -36,6 +49,16 @@ async def collect_diagnostics(settings: Settings) -> dict[str, Any]:
             "latest_migration": max(versions, default=0),
         },
     }
+
+
+def _validate_contract(database_path: Path) -> None:
+    import sqlite3
+
+    try:
+        with sqlite3.connect(f"file:{database_path}?mode=ro", uri=True) as database:
+            validate_database_contract(database, subject="Database")
+    except sqlite3.DatabaseError as error:
+        raise RuntimeError("Database is not a valid SQLite database") from error
 
 
 async def _main() -> None:

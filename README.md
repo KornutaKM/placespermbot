@@ -499,7 +499,7 @@ favorites; visited и «Не интересно» исключаются до pl
 ```bash
 python -m app.database_backup ./data/places.db ./backups/places.db
 
-Backup создаётся во временный файл, проверяется через SQLite `integrity_check` и только после этого атомарно заменяет конечный snapshot. Уже существующий backup остаётся доступным до успешной публикации нового.
+Backup создаётся во временный файл, проходит SQLite `integrity_check` и полный restore contract: обязательные таблицы/колонки, migration ledger и persisted route invariants. Только после этого он атомарно заменяет конечный snapshot. Уже существующий backup остаётся доступным до успешной публикации нового.
 ```
 
 Команда не требует останавливать бота, создаёт каталог назначения при необходимости и перед
@@ -511,7 +511,7 @@ Backup создаётся во временный файл, проверяетс
 python -m app.database_restore ./backups/places.db ./data/places.db
 ```
 
-Restore проверяет SQLite integrity и полную историю известных migrations до изменения рабочей
+Restore проверяет SQLite integrity, полную историю известных migrations, структуру обязательных таблиц и persisted route invariants до изменения рабочей
 БД, повторно валидирует временную копию и только затем атомарно заменяет основной файл. Backup
 с неизвестной более новой схемой, неполной migration history или повреждённым SQLite-файлом
 отклоняется без изменения рабочей БД. После restore обычный startup повторно проверяет runtime
