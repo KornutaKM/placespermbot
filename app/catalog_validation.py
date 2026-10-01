@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from urllib.parse import urlparse
 
 from app.catalog import CityCatalog
-
 
 MAX_SOURCE_AGE_DAYS = 366
 KNOWN_IRRELEVANT_SOURCE_PATHS = (
