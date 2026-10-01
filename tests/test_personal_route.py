@@ -230,3 +230,15 @@ def test_explained_personal_route_matches_compatibility_wrapper() -> None:
 
     assert explained is not None
     assert explained.route == route
+
+
+def test_personal_route_prefers_variety_when_budget_allows() -> None:
+    route = build_personal_route(
+        catalog(),
+        ("classic", "museums", "walks", "unusual"),
+        budget_minutes=480,
+    )
+
+    assert route is not None
+    assert len(route.places) >= 3
+    assert len({place.category for place in route.places}) >= 2
