@@ -10,9 +10,9 @@ from app.storage import (
     DismissedRepository,
     FavoritesRepository,
     InterestsRepository,
+    SavedRoute,
     SavedRoutesRepository,
     VisitedRepository,
-    SavedRoute,
 )
 
 
