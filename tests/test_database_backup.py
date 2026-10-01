@@ -93,3 +93,26 @@ def test_backup_atomically_replaces_previous_snapshot(tmp_path) -> None:
         assert list(tmp_path.glob(".snapshot.db.backup-*.tmp")) == []
 
     asyncio.run(scenario())
+
+
+def test_backup_rejects_source_with_incomplete_schema_without_replacing_snapshot(
+    tmp_path,
+) -> None:
+    async def scenario() -> None:
+        source = tmp_path / "live.db"
+        destination = tmp_path / "snapshot.db"
+        await migrate_database(source)
+        await create_database_backup(source, destination)
+        original = destination.read_bytes()
+
+        with sqlite3.connect(source) as database:
+            database.execute("DROP TABLE completed_route_snapshots")
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="Backup schema is incomplete"):
+            await create_database_backup(source, destination)
+
+        assert destination.read_bytes() == original
+        assert list(tmp_path.glob(".snapshot.db.backup-*.tmp")) == []
+
+    asyncio.run(scenario())
