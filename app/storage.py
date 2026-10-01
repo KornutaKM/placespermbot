@@ -405,8 +405,18 @@ def _saved_route_from_row(row: tuple[object, ...]) -> SavedRoute:
     except ValueError as exc:
         raise RuntimeError("saved route contains invalid metadata") from exc
 
+    route_id = str(row[0])
+    expected_route_id = route_id_for(
+        city_slug,
+        interest,
+        budget_minutes,
+        place_slugs,
+    )
+    if route_id != expected_route_id:
+        raise RuntimeError("saved route id does not match persisted snapshot")
+
     return SavedRoute(
-        route_id=str(row[0]),
+        route_id=route_id,
         city_slug=city_slug,
         interest=interest,
         budget_minutes=budget_minutes,
@@ -640,8 +650,18 @@ def _completed_route_snapshot_from_row(
         )
     except ValueError as exc:
         raise RuntimeError("completed route contains invalid metadata") from exc
+    route_id = str(row[0])
+    expected_route_id = route_id_for(
+        city_slug,
+        interest,
+        budget_minutes,
+        place_slugs,
+    )
+    if route_id != expected_route_id:
+        raise RuntimeError("completed route id does not match persisted snapshot")
+
     return CompletedRouteSnapshot(
-        route_id=str(row[0]),
+        route_id=route_id,
         city_slug=city_slug,
         interest=interest,
         budget_minutes=budget_minutes,
