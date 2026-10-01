@@ -603,37 +603,33 @@ class CompletedRoutesRepository:
             rows = await cursor.fetchall()
             await cursor.close()
 
-        snapshots: list[CompletedRouteSnapshot] = []
-        for row in rows:
-            city_slug = str(row[1])
-            interest = str(row[2])
-            budget_minutes = int(row[3])
-            place_slugs = _decode_route_place_slugs(
-                row[4],
-                kind="completed route",
-            )
-            try:
-                _validate_route_values(
-                    city_slug=city_slug,
-                    interest=interest,
-                    budget_minutes=budget_minutes,
-                    place_slugs=place_slugs,
-                )
-            except ValueError as exc:
-                raise RuntimeError(
-                    "completed route contains invalid metadata"
-                ) from exc
-            snapshots.append(
-                CompletedRouteSnapshot(
-                    route_id=str(row[0]),
-                    city_slug=city_slug,
-                    interest=interest,
-                    budget_minutes=budget_minutes,
-                    place_slugs=place_slugs,
-                    completed_at=str(row[5]),
-                )
-            )
-        return tuple(snapshots)
+        return tuple(_completed_route_snapshot_from_row(row) for row in rows)
+
+def _completed_route_snapshot_from_row(
+    row: tuple[object, ...],
+) -> CompletedRouteSnapshot:
+    city_slug = str(row[1])
+    interest = str(row[2])
+    budget_minutes = int(row[3])
+    place_slugs = _decode_route_place_slugs(row[4], kind="completed route")
+    try:
+        _validate_route_values(
+            city_slug=city_slug,
+            interest=interest,
+            budget_minutes=budget_minutes,
+            place_slugs=place_slugs,
+        )
+    except ValueError as exc:
+        raise RuntimeError("completed route contains invalid metadata") from exc
+    return CompletedRouteSnapshot(
+        route_id=str(row[0]),
+        city_slug=city_slug,
+        interest=interest,
+        budget_minutes=budget_minutes,
+        place_slugs=place_slugs,
+        completed_at=str(row[5]),
+    )
+
 
     async def get_snapshot(
         self,
@@ -751,3 +747,113 @@ class DismissedRepository:
             rows = await cursor.fetchall()
             await cursor.close()
             return tuple(str(row[0]) for row in rows)
+
+
+@dataclass(frozen=True, slots=True)
+class UserDataSnapshot:
+    interests: tuple[str, ...]
+    dismissed_slugs: tuple[str, ...]
+    favorite_slugs: tuple[str, ...]
+    visited_slugs: tuple[str, ...]
+    saved_routes: tuple[SavedRoute, ...]
+    completed_routes: tuple[CompletedRouteSnapshot, ...]
+
+
+class UserDataSnapshotRepository:
+    """Read exportable user data from one consistent SQLite snapshot."""
+
+    def __init__(self, database_path: str | Path) -> None:
+        self.database_path = Path(database_path)
+
+    async def load(self, user_id: int, city_slug: str) -> UserDataSnapshot:
+        async with connect_database(self.database_path) as database:
+            await database.execute("BEGIN")
+            try:
+                interests = await _read_single_column(
+                    database,
+                    """
+                    SELECT interest FROM user_interests
+                    WHERE user_id = ? AND city_slug = ?
+                    ORDER BY interest ASC
+                    """,
+                    (user_id, city_slug),
+                )
+                dismissed = await _read_single_column(
+                    database,
+                    """
+                    SELECT place_slug FROM dismissed_places
+                    WHERE user_id = ? AND city_slug = ?
+                    ORDER BY dismissed_at DESC, place_slug ASC
+                    """,
+                    (user_id, city_slug),
+                )
+                favorites = await _read_single_column(
+                    database,
+                    """
+                    SELECT place_slug FROM favorites
+                    WHERE user_id = ? AND city_slug = ?
+                    ORDER BY created_at DESC, place_slug ASC
+                    """,
+                    (user_id, city_slug),
+                )
+                visited = await _read_single_column(
+                    database,
+                    """
+                    SELECT place_slug FROM visited_places
+                    WHERE user_id = ? AND city_slug = ?
+                    ORDER BY visited_at DESC, place_slug ASC
+                    """,
+                    (user_id, city_slug),
+                )
+
+                cursor = await database.execute(
+                    """
+                    SELECT route_id, city_slug, interest, budget_minutes,
+                           place_slugs_json, created_at
+                    FROM saved_routes
+                    WHERE user_id = ? AND city_slug = ?
+                    ORDER BY created_at DESC, route_id ASC
+                    """,
+                    (user_id, city_slug),
+                )
+                saved_rows = await cursor.fetchall()
+                await cursor.close()
+
+                cursor = await database.execute(
+                    """
+                    SELECT route_id, city_slug, interest, budget_minutes,
+                           place_slugs_json, completed_at
+                    FROM completed_route_snapshots
+                    WHERE user_id = ? AND city_slug = ?
+                    ORDER BY completed_at DESC, route_id ASC
+                    """,
+                    (user_id, city_slug),
+                )
+                completed_rows = await cursor.fetchall()
+                await cursor.close()
+                await database.commit()
+            except Exception:
+                await database.rollback()
+                raise
+
+        return UserDataSnapshot(
+            interests=interests,
+            dismissed_slugs=dismissed,
+            favorite_slugs=favorites,
+            visited_slugs=visited,
+            saved_routes=tuple(_saved_route_from_row(row) for row in saved_rows),
+            completed_routes=tuple(
+                _completed_route_snapshot_from_row(row) for row in completed_rows
+            ),
+        )
+
+
+async def _read_single_column(
+    database: aiosqlite.Connection,
+    query: str,
+    parameters: tuple[object, ...],
+) -> tuple[str, ...]:
+    cursor = await database.execute(query, parameters)
+    rows = await cursor.fetchall()
+    await cursor.close()
+    return tuple(str(row[0]) for row in rows)
