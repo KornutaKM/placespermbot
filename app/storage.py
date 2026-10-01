@@ -605,32 +605,6 @@ class CompletedRoutesRepository:
 
         return tuple(_completed_route_snapshot_from_row(row) for row in rows)
 
-def _completed_route_snapshot_from_row(
-    row: tuple[object, ...],
-) -> CompletedRouteSnapshot:
-    city_slug = str(row[1])
-    interest = str(row[2])
-    budget_minutes = int(row[3])
-    place_slugs = _decode_route_place_slugs(row[4], kind="completed route")
-    try:
-        _validate_route_values(
-            city_slug=city_slug,
-            interest=interest,
-            budget_minutes=budget_minutes,
-            place_slugs=place_slugs,
-        )
-    except ValueError as exc:
-        raise RuntimeError("completed route contains invalid metadata") from exc
-    return CompletedRouteSnapshot(
-        route_id=str(row[0]),
-        city_slug=city_slug,
-        interest=interest,
-        budget_minutes=budget_minutes,
-        place_slugs=place_slugs,
-        completed_at=str(row[5]),
-    )
-
-
     async def get_snapshot(
         self,
         user_id: int,
@@ -683,6 +657,33 @@ def _completed_route_snapshot_from_row(
             rows = await cursor.fetchall()
             await cursor.close()
             return tuple(str(row[0]) for row in rows)
+
+
+
+def _completed_route_snapshot_from_row(
+    row: tuple[object, ...],
+) -> CompletedRouteSnapshot:
+    city_slug = str(row[1])
+    interest = str(row[2])
+    budget_minutes = int(row[3])
+    place_slugs = _decode_route_place_slugs(row[4], kind="completed route")
+    try:
+        _validate_route_values(
+            city_slug=city_slug,
+            interest=interest,
+            budget_minutes=budget_minutes,
+            place_slugs=place_slugs,
+        )
+    except ValueError as exc:
+        raise RuntimeError("completed route contains invalid metadata") from exc
+    return CompletedRouteSnapshot(
+        route_id=str(row[0]),
+        city_slug=city_slug,
+        interest=interest,
+        budget_minutes=budget_minutes,
+        place_slugs=place_slugs,
+        completed_at=str(row[5]),
+    )
 
 
 class DismissedRepository:
