@@ -250,3 +250,33 @@ def test_saved_route_fails_closed_on_corrupt_persisted_payload(tmp_path) -> None
             await repository.get(42, CITY_SLUG, "corrupt-route")
 
     asyncio.run(scenario())
+
+
+def test_saved_route_rejects_route_id_tampering(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "places.db")
+        await migrate_database(database_path)
+        repository = SavedRoutesRepository(database_path)
+        saved = await repository.save(
+            42,
+            CITY_SLUG,
+            "classic",
+            120,
+            ("hermitage", "russian-museum"),
+        )
+
+        with sqlite3.connect(database_path) as database:
+            database.execute(
+                """
+                UPDATE saved_routes
+                SET place_slugs_json = ?
+                WHERE user_id = ? AND city_slug = ? AND route_id = ?
+                """,
+                ('["hermitage","summer-garden"]', 42, CITY_SLUG, saved.route_id),
+            )
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="id does not match"):
+            await repository.get(42, CITY_SLUG, saved.route_id)
+
+    asyncio.run(scenario())
