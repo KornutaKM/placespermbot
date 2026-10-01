@@ -8,6 +8,16 @@ SOURCE_CHECKED_AT = date(2026, 10, 1)
 
 SOCHI_NP = PlaceSource("ФГБУ «Сочинский национальный парк»", "https://npsochi.ru/", SOURCE_CHECKED_AT)
 SOCHI_CITY = PlaceSource("Город Сочи — туристические объекты", "https://sochi.ru/", SOURCE_CHECKED_AT)
+ZMEYKOVSKIE_SOURCE = PlaceSource(
+    "Сочинский национальный парк — Змейковские водопады",
+    "https://npsochi.ru/mesta/turisticheskie-obekty-natsparka/zmeykovskie-vodopady/",
+    SOURCE_CHECKED_AT,
+)
+THIRTY_THREE_WATERFALLS_SOURCE = PlaceSource(
+    "Сочинский национальный парк — 33 водопада",
+    "https://npsochi.ru/mesta/turisticheskie-obekty-natsparka/rekreatsionnyy-obekt-33-vodopada",
+    SOURCE_CHECKED_AT,
+)
 
 CATEGORY_LABELS = {
     "sights": "🏛 Достопримечательности",
@@ -30,6 +40,8 @@ PLACES = (
     Place("sochi-art-museum", "Сочинский художественный музей", "museums", "Художественный музей в центре Сочи в здании советского периода.", "🖼", "Центральный район", 120, False, 43.5756, 39.7256, SOCHI_CITY, ("музей", "искусство", "архитектура")),
     Place("friendship-tree-sochi", "Сад-музей «Дерево Дружбы»", "museums", "Сад и музей, посвящённые уникальному цитрусовому дереву и истории селекции.", "🍊", "Хостинский район", 90, False, 43.5650, 39.7545, SOCHI_CITY, ("музей", "ботаника", "с детьми")),
     Place("primorskaya-embankment-sochi", "Приморская набережная", "parks", "Центральная прогулочная линия Сочи вдоль Чёрного моря.", "🌊", "Центральный район", 90, True, 43.5750, 39.7220, SOCHI_CITY, ("набережная", "море", "прогулка", "бесплатно")),
+    Place("zmeykovskie-waterfalls", "Змейковские водопады", "parks", "Оборудованная экологическая тропа Сочинского национального парка вдоль каскада водопадов на реке Змейке.", "💦", "Хостинский район", 120, False, 43.6342, 39.8189, ZMEYKOVSKIE_SOURCE, ("водопад", "природа", "треккинг", "с детьми")),
+    Place("thirty-three-waterfalls", "33 водопада", "parks", "Экологическая тропа по ущелью Джегош с каскадами водопадов и колхидским лесом.", "🌿", "Лазаревский район", 120, False, 43.8394, 39.5588, THIRTY_THREE_WATERFALLS_SOURCE, ("водопад", "природа", "экотропа", "с детьми")),
     Place("festivalny-sochi", "Концертный зал «Фестивальный»", "sights", "Открытый концертный комплекс в центральной части Сочи рядом с морем.", "🎵", "Центральный район", 35, True, 43.5785, 39.7210, SOCHI_CITY, ("музыка", "архитектура", "центр", "бесплатно")),
 )
 
@@ -38,4 +50,5 @@ ROUTES = (
     RoutePlan("sochi-green", "Зелёный Сочи", "Дендрарий, ботаническая история и курортная Мацеста.", 360, 7.0, ("sochi-arboretum", "friendship-tree-sochi", "matsesta-sochi")),
     RoutePlan("sochi-nature", "Горы и водопады", "Природный день в Сочинском национальном парке.", 420, 6.0, ("agura-waterfalls", "eagle-rocks-sochi")),
     RoutePlan("sochi-family", "Сочи с семьёй", "Парк Ривьера, морская прогулочная зона и городской порт.", 300, 3.5, ("riviera-park-sochi", "marine-station-sochi", "primorskaya-embankment-sochi")),
+    RoutePlan("sochi-waterfalls", "Водопады Сочи", "Два самостоятельных природных сценария: компактная тропа Змейковских водопадов и каскады Джегоша в Лазаревском районе.", 360, 55.0, ("zmeykovskie-waterfalls", "thirty-three-waterfalls")),
 )
