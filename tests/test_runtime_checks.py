@@ -1,5 +1,6 @@
 import asyncio
 import sqlite3
+from unittest.mock import patch
 
 import pytest
 
@@ -40,6 +41,23 @@ def test_health_accepts_initialized_database(tmp_path) -> None:
         await migrate_database(config.database_path)
 
         await validate_health(config)
+
+    asyncio.run(scenario())
+
+
+def test_health_uses_quick_integrity_gate(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+
+        with patch("app.runtime_checks.validate_database_integrity") as validate_integrity:
+            await validate_health(config)
+
+        validate_integrity.assert_called_once()
+        assert validate_integrity.call_args.kwargs == {
+            "subject": "Database",
+            "mode": "quick",
+        }
 
     asyncio.run(scenario())
 
