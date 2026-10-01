@@ -2,7 +2,12 @@ import pytest
 
 from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
-from app.recommendations import recommend_personalized, recommend_places
+from app.recommendations import (
+    PersonalRecommendation,
+    recommend_personalized,
+    recommend_places,
+    recommendation_reason_text,
+)
 
 
 def catalog():
@@ -502,3 +507,23 @@ def test_independent_visited_history_remains_separate_from_completed_route() -> 
         reason.startswith("похоже на пройденный маршрут:")
         for reason in russian.reasons
     )
+
+
+def test_recommendation_reason_text_caps_secondary_signals() -> None:
+    recommendation = PersonalRecommendation(
+        place=catalog().place_by_slug("russian-museum"),
+        score=12,
+        reasons=(
+            "интерес: 🖼 Музеи",
+            "похоже на избранное: искусство, музей",
+            "похоже на посещённое: искусство, музей",
+        ),
+    )
+
+    assert recommendation_reason_text(recommendation) == (
+        "интерес: 🖼 Музеи · похоже на избранное: искусство, музей"
+    )
+    assert recommendation_reason_text(recommendation, max_reasons=1) == (
+        "интерес: 🖼 Музеи"
+    )
+    assert recommendation_reason_text(recommendation, max_reasons=0) == ""

@@ -64,7 +64,7 @@ from app.personalization_context import load_personalization_context
 from app.place_route import build_place_route
 from app.planner import INTEREST_LABELS, build_route
 from app.profile import ProfileSummary, build_profile_summary, profile_text
-from app.recommendations import recommend_personalized
+from app.recommendations import recommend_personalized, recommendation_reason_text
 from app.route_completion import complete_saved_route
 from app.saved_routes import (
     PERSONAL_ROUTE_INTEREST,
@@ -740,7 +740,7 @@ async def similar_places(callback: CallbackQuery) -> None:
 
     lines = "\n".join(
         f"{index}. {item.place.emoji} <b>{item.place.title}</b>\n"
-        f"   ↳ {' · '.join(item.reasons)}"
+        f"   ↳ {recommendation_reason_text(item)}"
         for index, item in enumerate(results, start=1)
     )
     places = tuple(item.place for item in results)

@@ -28,6 +28,17 @@ class PersonalRecommendation:
     reasons: tuple[str, ...]
 
 
+def recommendation_reason_text(
+    recommendation: PersonalRecommendation,
+    *,
+    max_reasons: int = 2,
+) -> str:
+    """Return a compact, deterministic user-facing explanation."""
+    if max_reasons <= 0:
+        return ""
+    return " · ".join(recommendation.reasons[:max_reasons])
+
+
 def recommend_personalized(
     catalog: CityCatalog,
     interests: tuple[str, ...],
