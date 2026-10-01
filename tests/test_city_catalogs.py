@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from app.catalog import get_catalog, list_catalogs
 from app.catalog_validation import validate_catalogs
 
-
 EXPECTED_CITIES = {
     "kaliningrad": "Калининград",
     "kazan": "Казань",
