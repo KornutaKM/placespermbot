@@ -7,6 +7,8 @@ import sqlite3
 import tempfile
 from pathlib import Path
 
+from app.database_contract import validate_database_contract
+
 
 def _backup_database(source: Path, destination: Path) -> None:
     temporary_path: Path | None = None
@@ -24,9 +26,11 @@ def _backup_database(source: Path, destination: Path) -> None:
             sqlite3.connect(temporary_path) as destination_database,
         ):
             source_database.backup(destination_database)
-            row = destination_database.execute("PRAGMA integrity_check").fetchone()
-            if row != ("ok",):
-                raise RuntimeError("SQLite backup failed integrity check")
+            validate_database_contract(
+                destination_database,
+                subject="Backup",
+                check_integrity=True,
+            )
 
         with temporary_path.open("rb") as backup_file:
             os.fsync(backup_file.fileno())
