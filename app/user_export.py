@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from app.catalog import CityCatalog, has_catalog, get_catalog
+from app.catalog import CityCatalog, get_catalog, has_catalog
 from app.planner import INTEREST_LABELS
 from app.storage import (
     CompletedRoutesRepository,
@@ -123,10 +123,8 @@ async def build_account_export(
     for city_slug, snapshot in snapshots.items():
         catalog = get_catalog(city_slug) if has_catalog(city_slug) else None
 
-        def place_reference(place_slug: str) -> dict[str, str | None]:
-            if catalog is None:
-                return {"place_slug": place_slug, "title": None}
-            return _place_reference(catalog, place_slug)
+        def place_reference(\n            place_slug: str,\n            city_catalog: CityCatalog | None = catalog,\n        ) -> dict[str, str | None]:\n            if city_catalog is None:\n                return {"place_slug": place_slug, "title": None}
+            return _place_reference(city_catalog, place_slug)
 
         cities.append(
             {
