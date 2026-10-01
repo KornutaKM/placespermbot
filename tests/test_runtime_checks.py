@@ -375,3 +375,46 @@ def test_health_rejects_invalid_column_definition(
 
     asyncio.run(scenario())
 
+def test_health_rejects_unexpected_application_table(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+
+        with sqlite3.connect(config.database_path) as database:
+            database.execute("CREATE TABLE unledgered_data (value TEXT)")
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="unexpected tables: unledgered_data"):
+            await validate_health(config)
+
+    asyncio.run(scenario())
+
+
+def test_health_rejects_unexpected_column(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+
+        with sqlite3.connect(config.database_path) as database:
+            database.execute("ALTER TABLE favorites ADD COLUMN legacy_note TEXT")
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="unexpected columns: legacy_note"):
+            await validate_health(config)
+
+    asyncio.run(scenario())
+
+
+def test_health_allows_sqlite_internal_tables(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+
+        with sqlite3.connect(config.database_path) as database:
+            database.execute("ANALYZE")
+            database.commit()
+
+        await validate_health(config)
+
+    asyncio.run(scenario())
+
