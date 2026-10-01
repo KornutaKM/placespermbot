@@ -514,3 +514,17 @@ Restore проверяет SQLite integrity и полную историю из�
 с неизвестной более новой схемой, неполной migration history или повреждённым SQLite-файлом
 отклоняется без изменения рабочей БД. После restore обычный startup повторно проверяет runtime
 schema перед запуском polling.
+
+
+### Диагностика production runtime
+
+Для read-only диагностики запущенного окружения доступна команда:
+
+```bash
+python -m app.diagnostics
+```
+
+Она сначала выполняет полный health validation, затем печатает одну JSON-строку со статусом,
+environment, активным catalog slug, размером SQLite-файла, journal mode, quick integrity check
+и применёнными версиями migrations. Bot token, абсолютный путь к БД и пользовательские данные
+в диагностический output не включаются.
