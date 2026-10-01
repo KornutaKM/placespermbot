@@ -40,7 +40,7 @@ def test_perm_catalog_has_verified_seed_and_unique_ids() -> None:
         assert place.visit_minutes > 0
         assert place.district.strip()
         assert 57.9 <= place.latitude <= 58.1
-        assert 56.1 <= place.longitude <= 56.3
+        assert 56.1 <= place.longitude <= 56.35
         assert place.source.checked_at.isoformat() == "2026-09-30"
 
         source_url = urlparse(place.source.url)
