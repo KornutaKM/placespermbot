@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
+from app.catalog_validation import CatalogIssue
 from app.config import Settings
 from app.database import LATEST_SCHEMA_VERSION, migrate_database
 from app.runtime_checks import validate_health, validate_static_runtime
@@ -51,6 +52,22 @@ def test_static_runtime_rejects_missing_token(tmp_path) -> None:
 def test_static_runtime_rejects_unknown_city(tmp_path) -> None:
     with pytest.raises(RuntimeError, match="Unsupported city"):
         validate_static_runtime(settings(tmp_path, city_slug="unknown-city"))
+
+
+def test_static_runtime_rejects_invalid_registered_catalog(tmp_path) -> None:
+    issue = CatalogIssue(
+        "place.title.empty",
+        "broken-place: title must not be empty",
+    )
+
+    with (
+        patch("app.runtime_checks.validate_catalogs", return_value=(issue,)),
+        pytest.raises(
+            RuntimeError,
+            match="Catalog contract is invalid: place.title.empty",
+        ),
+    ):
+        validate_static_runtime(settings(tmp_path))
 
 
 def test_health_accepts_initialized_database(tmp_path) -> None:

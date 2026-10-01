@@ -28,11 +28,92 @@ def validate_catalog(catalog: CityCatalog) -> tuple[CatalogIssue, ...]:
         issues.append(CatalogIssue("city.slug.empty", "City slug must not be empty."))
     if not catalog.name.strip():
         issues.append(CatalogIssue("city.name.empty", "City name must not be empty."))
+    if not catalog.category_labels:
+        issues.append(
+            CatalogIssue(
+                "city.categories.empty",
+                f"{catalog.slug or '<empty>'}: category labels must not be empty",
+            )
+        )
+    for category, label in catalog.category_labels.items():
+        if not category.strip():
+            issues.append(
+                CatalogIssue(
+                    "city.category.slug.empty",
+                    f"{catalog.slug or '<empty>'}: category slug must not be empty",
+                )
+            )
+        if not label.strip():
+            issues.append(
+                CatalogIssue(
+                    "city.category.label.empty",
+                    f"{catalog.slug or '<empty>'}: category label must not be empty",
+                )
+            )
+    if not catalog.places:
+        issues.append(
+            CatalogIssue(
+                "city.places.empty",
+                f"{catalog.slug or '<empty>'}: catalog must contain places",
+            )
+        )
+    if not catalog.routes:
+        issues.append(
+            CatalogIssue(
+                "city.routes.empty",
+                f"{catalog.slug or '<empty>'}: catalog must contain routes",
+            )
+        )
 
     for place in catalog.places:
         if place.slug in place_slugs:
             issues.append(CatalogIssue("place.slug.duplicate", f"Duplicate place slug: {place.slug}"))
         place_slugs.add(place.slug)
+
+        if not place.slug.strip():
+            issues.append(
+                CatalogIssue("place.slug.empty", "Place slug must not be empty")
+            )
+        if not place.title.strip():
+            issues.append(
+                CatalogIssue("place.title.empty", f"{place.slug}: title must not be empty")
+            )
+        if not place.summary.strip():
+            issues.append(
+                CatalogIssue(
+                    "place.summary.empty",
+                    f"{place.slug}: summary must not be empty",
+                )
+            )
+        if not place.district.strip():
+            issues.append(
+                CatalogIssue(
+                    "place.district.empty",
+                    f"{place.slug}: district must not be empty",
+                )
+            )
+        if not place.emoji.strip():
+            issues.append(
+                CatalogIssue("place.emoji.empty", f"{place.slug}: emoji must not be empty")
+            )
+        if not place.tags:
+            issues.append(
+                CatalogIssue("place.tags.empty", f"{place.slug}: tags must not be empty")
+            )
+        elif any(not tag.strip() for tag in place.tags):
+            issues.append(
+                CatalogIssue(
+                    "place.tag.empty",
+                    f"{place.slug}: tags must not contain empty values",
+                )
+            )
+        elif len(place.tags) != len(set(place.tags)):
+            issues.append(
+                CatalogIssue(
+                    "place.tag.duplicate",
+                    f"{place.slug}: tags must be unique",
+                )
+            )
 
         if place.category not in catalog.category_labels:
             issues.append(
@@ -63,8 +144,26 @@ def validate_catalog(catalog: CityCatalog) -> tuple[CatalogIssue, ...]:
             issues.append(CatalogIssue("route.slug.duplicate", f"Duplicate route slug: {route.slug}"))
         route_slugs.add(route.slug)
 
+        if not route.slug.strip():
+            issues.append(CatalogIssue("route.slug.empty", "Route slug must not be empty"))
+        if not route.title.strip():
+            issues.append(
+                CatalogIssue("route.title.empty", f"{route.slug}: title must not be empty")
+            )
+        if not route.summary.strip():
+            issues.append(
+                CatalogIssue(
+                    "route.summary.empty",
+                    f"{route.slug}: summary must not be empty",
+                )
+            )
         if route.duration_minutes <= 0 or route.distance_km <= 0:
-            issues.append(CatalogIssue("route.metrics.invalid", f"{route.slug}: route metrics must be positive"))
+            issues.append(
+                CatalogIssue(
+                    "route.metrics.invalid",
+                    f"{route.slug}: route metrics must be positive",
+                )
+            )
         if not route.place_slugs:
             issues.append(CatalogIssue("route.empty", f"{route.slug}: route must contain places"))
         missing = set(route.place_slugs) - place_slugs
