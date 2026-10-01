@@ -401,6 +401,7 @@ def test_data_controls_keyboard_binds_active_city() -> None:
         "profile:export",
         f"profile:data:confirm:{CITY_SLUG}",
         "profile:data:confirm-all",
+        "profile:data:export-all",
         "menu:profile",
     }
 
