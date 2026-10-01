@@ -2,8 +2,7 @@ import asyncio
 
 from app.data.spb import CITY_SLUG
 from app.personalization_context import load_personalization_context
-from app.saved_routes import route_id_for
-from app.saved_routes import SavedRoute
+from app.saved_routes import SavedRoute, route_id_for
 from app.storage import (
     CompletedRoutesRepository,
     DismissedRepository,
