@@ -1,12 +1,12 @@
 import pytest
 
-from app.telegram_ui import TELEGRAM_MESSAGE_LIMIT, USER_TEXT_PREVIEW_LIMIT
 from app.catalog import get_catalog
 from app.search_ui import (
     search_not_found_text,
     search_prompt,
     search_results_text,
 )
+from app.telegram_ui import TELEGRAM_MESSAGE_LIMIT, USER_TEXT_PREVIEW_LIMIT
 
 
 def test_search_prompt_uses_active_city_catalog_example() -> None:
