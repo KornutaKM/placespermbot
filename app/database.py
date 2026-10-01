@@ -175,7 +175,43 @@ MIGRATIONS: tuple[Migration, ...] = (
 )
 
 KNOWN_SCHEMA_VERSIONS = frozenset(migration.version for migration in MIGRATIONS)
+EXPECTED_MIGRATION_NAMES = {migration.version: migration.name for migration in MIGRATIONS}
 LATEST_SCHEMA_VERSION = max(KNOWN_SCHEMA_VERSIONS)
+
+
+def validate_migration_ledger(
+    rows: list[tuple[int, str]] | tuple[tuple[int, str], ...],
+    *,
+    subject: str = "Database",
+    require_complete: bool = False,
+) -> set[int]:
+    ledger = {int(version): str(name) for version, name in rows}
+    versions = set(ledger)
+
+    unknown = versions - KNOWN_SCHEMA_VERSIONS
+    if unknown:
+        rendered = ", ".join(str(version) for version in sorted(unknown))
+        raise RuntimeError(f"{subject} schema is newer than this app: {rendered}")
+
+    mismatched = {
+        version: (EXPECTED_MIGRATION_NAMES[version], ledger[version])
+        for version in versions
+        if ledger[version] != EXPECTED_MIGRATION_NAMES[version]
+    }
+    if mismatched:
+        rendered = ", ".join(
+            f"{version} expected {expected!r}, found {actual!r}"
+            for version, (expected, actual) in sorted(mismatched.items())
+        )
+        raise RuntimeError(f"{subject} migration metadata is inconsistent: {rendered}")
+
+    if require_complete:
+        missing = KNOWN_SCHEMA_VERSIONS - versions
+        if missing:
+            rendered = ", ".join(str(version) for version in sorted(missing))
+            raise RuntimeError(f"{subject} migrations are incomplete: {rendered}")
+
+    return versions
 
 
 @asynccontextmanager
@@ -211,11 +247,10 @@ async def migrate_database(database_path: str | Path) -> int:
         )
         await database.commit()
 
-        applied = await _applied_versions(database)
-        unknown = applied - KNOWN_SCHEMA_VERSIONS
-        if unknown:
-            versions = ", ".join(str(version) for version in sorted(unknown))
-            raise RuntimeError(f"Database schema is newer than this app: {versions}")
+        applied = validate_migration_ledger(
+            await _migration_ledger(database),
+            subject="Database",
+        )
 
         for migration in MIGRATIONS:
             if migration.version in applied:
@@ -268,14 +303,20 @@ async def get_applied_migration_versions(
     return tuple(sorted(versions))
 
 
-async def _applied_versions(database: aiosqlite.Connection) -> set[int]:
+async def _migration_ledger(
+    database: aiosqlite.Connection,
+) -> list[tuple[int, str]]:
     cursor = await database.execute(
         """
-        SELECT version
+        SELECT version, name
         FROM schema_migrations
         ORDER BY version ASC
         """
     )
     rows = await cursor.fetchall()
     await cursor.close()
-    return {int(row[0]) for row in rows}
+    return [(int(row[0]), str(row[1])) for row in rows]
+
+
+async def _applied_versions(database: aiosqlite.Connection) -> set[int]:
+    return {version for version, _ in await _migration_ledger(database)}
