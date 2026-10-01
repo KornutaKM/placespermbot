@@ -8,6 +8,16 @@ SOURCE_CHECKED_AT = date(2026, 10, 1)
 
 YAROSLAVIA = PlaceSource("Ярославия — официальный туристический портал Ярославской области", "https://visityaroslavia.ru/", SOURCE_CHECKED_AT)
 YAR_KREMLIN = PlaceSource("Ярославский музей-заповедник", "https://yarkremlin.ru/", SOURCE_CHECKED_AT)
+MILITARY_GLORY_SOURCE = PlaceSource(
+    "Ярославский музей-заповедник — Музей боевой славы",
+    "https://yarkremlin.ru/museum/muzey-boevoy-slavy/",
+    SOURCE_CHECKED_AT,
+)
+CITY_HISTORY_SOURCE = PlaceSource(
+    "Музей истории города Ярославля",
+    "https://www.mukmig.yaroslavl.ru/",
+    SOURCE_CHECKED_AT,
+)
 
 CATEGORY_LABELS = {
     "sights": "🏛 Достопримечательности",
@@ -30,6 +40,8 @@ PLACES = (
     Place("damansky-island-yar", "Даманский остров", "parks", "Зелёная прогулочная территория у Которосли рядом со Стрелкой.", "🎡", "Кировский район", 90, True, 57.6157, 39.8978, YAROSLAVIA, ("парк", "с детьми", "прогулка", "бесплатно")),
     Place("sobinov-house-yar", "Дом-музей Л. В. Собинова", "museums", "Мемориальный музей оперного певца Леонида Собинова.", "🎼", "Кировский район", 75, False, 57.6269, 39.8789, YAR_KREMLIN, ("музей", "музыка", "история")),
     Place("epiphany-church-yar", "Церковь Богоявления", "sights", "Яркий храм конца XVII века рядом с Богоявленской площадью.", "⛪", "Кировский район", 35, True, 57.6211, 39.8848, YAROSLAVIA, ("архитектура", "история", "бесплатно")),
+    Place("military-glory-yar", "Музей боевой славы", "museums", "Филиал музея-заповедника об истории Ярославля и ярославцев в годы Великой Отечественной войны.", "🎖", "Ленинский район", 90, False, 57.6332, 39.8318, MILITARY_GLORY_SOURCE, ("музей", "военная история", "история", "с детьми")),
+    Place("city-history-yar", "Музей истории города Ярославля", "museums", "Городской музей в купеческой усадьбе на Волжской набережной с экспозицией от основания Ярославля до XXI века.", "🏙", "Кировский район", 120, False, 57.6270, 39.8986, CITY_HISTORY_SOURCE, ("музей", "история", "краеведение", "с детьми")),
     Place("kirova-street-yar", "Улица Кирова", "sights", "Пешеходная улица исторического центра с городской архитектурой и кафе.", "🚶", "Кировский район", 60, True, 57.6259, 39.8880, YAROSLAVIA, ("прогулка", "центр", "архитектура", "бесплатно")),
 )
 
@@ -38,4 +50,5 @@ ROUTES = (
     RoutePlan("yar-volga", "Вдоль Волги", "Набережная, художественный музей и панорамы Стрелки.", 240, 2.8, ("governors-house-yar", "volga-embankment-yar", "strelka-yar")),
     RoutePlan("yar-museums", "Музейный Ярославль", "История города, музыка и художественные коллекции.", 360, 3.5, ("yaroslavl-museum-reserve", "sobinov-house-yar", "governors-house-yar")),
     RoutePlan("yar-family", "Семейная прогулка", "Городской символ, пешеходный центр и зелёный Даманский остров.", 210, 2.5, ("bear-monument-yar", "kirova-street-yar", "damansky-island-yar")),
+    RoutePlan("yar-history-depth", "Ярославль: история глубже", "Два разных слоя городской истории — военная память и развитие Ярославля от основания до современности.", 300, 6.5, ("military-glory-yar", "city-history-yar", "volga-embankment-yar")),
 )
