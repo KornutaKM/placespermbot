@@ -16,6 +16,8 @@ from app.storage import (
 )
 from app.user_export import (
     EXPORT_SCHEMA_VERSION,
+    account_export_filename,
+    build_account_export,
     build_user_export,
     export_filename,
     serialize_user_export,
@@ -201,5 +203,41 @@ def test_export_rejects_repositories_from_different_databases(tmp_path) -> None:
                 saved_routes_repo=SavedRoutesRepository(first),
                 completed_routes_repo=CompletedRoutesRepository(first),
             )
+
+    asyncio.run(scenario())
+
+
+def test_account_export_contains_all_user_cities_without_private_identifiers(
+    tmp_path,
+) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "places.db")
+        await migrate_database(database_path)
+        favorites = FavoritesRepository(database_path)
+        interests = InterestsRepository(database_path)
+
+        await favorites.add(1, CITY_SLUG, "hermitage")
+        await favorites.add(1, "moscow", "red-square")
+        await interests.add(1, "legacy-city", "walks")
+        await favorites.add(2, "moscow", "red-square")
+
+        data = await build_account_export(1, database_path=database_path)
+
+        assert data["scope"] == "account"
+        assert [city["city"]["slug"] for city in data["cities"]] == [
+            "legacy-city",
+            "moscow",
+            CITY_SLUG,
+        ]
+        legacy = data["cities"][0]
+        assert legacy["city"]["name"] is None
+        assert legacy["interests"] == [{"id": "walks", "label": "🌿 Прогулки"}]
+
+        encoded = serialize_user_export(data).decode("utf-8").casefold()
+        assert "user_id" not in encoded
+        assert "latitude" not in encoded
+        assert "longitude" not in encoded
+        assert "bot_token" not in encoded
+        assert account_export_filename() == "places-all-cities.json"
 
     asyncio.run(scenario())

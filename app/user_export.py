@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from app.catalog import CityCatalog
+from app.catalog import CityCatalog, get_catalog, has_catalog
 from app.planner import INTEREST_LABELS
 from app.storage import (
     CompletedRoutesRepository,
@@ -111,6 +111,96 @@ async def build_user_export(
         ],
     }
 
+
+
+async def build_account_export(
+    user_id: int,
+    *,
+    database_path: str,
+) -> dict[str, Any]:
+    snapshots = await UserDataSnapshotRepository(database_path).load_all(user_id)
+    cities: list[dict[str, Any]] = []
+    for city_slug, snapshot in snapshots.items():
+        catalog = get_catalog(city_slug) if has_catalog(city_slug) else None
+
+        def place_reference(
+            place_slug: str,
+            city_catalog: CityCatalog | None = catalog,
+        ) -> dict[str, str | None]:
+            if city_catalog is None:
+                return {"place_slug": place_slug, "title": None}
+            return _place_reference(city_catalog, place_slug)
+
+        cities.append(
+            {
+                "city": {
+                    "slug": city_slug,
+                    "name": catalog.name if catalog is not None else None,
+                },
+                "interests": [
+                    {
+                        "id": interest,
+                        "label": INTEREST_LABELS.get(interest, interest),
+                    }
+                    for interest in snapshot.interests
+                ],
+                "dismissed": [
+                    place_reference(slug) for slug in snapshot.dismissed_slugs
+                ],
+                "favorites": [
+                    place_reference(slug) for slug in snapshot.favorite_slugs
+                ],
+                "visited": [
+                    place_reference(slug) for slug in snapshot.visited_slugs
+                ],
+                "completed_routes": [
+                    {
+                        "route_id": route.route_id,
+                        "interest": {
+                            "id": route.interest,
+                            "label": INTEREST_LABELS.get(
+                                route.interest,
+                                route.interest,
+                            ),
+                        },
+                        "budget_minutes": route.budget_minutes,
+                        "stops": [
+                            place_reference(slug) for slug in route.place_slugs
+                        ],
+                        "completed_at": route.completed_at,
+                    }
+                    for route in snapshot.completed_routes
+                ],
+                "saved_routes": [
+                    {
+                        "route_id": route.route_id,
+                        "interest": {
+                            "id": route.interest,
+                            "label": INTEREST_LABELS.get(
+                                route.interest,
+                                route.interest,
+                            ),
+                        },
+                        "budget_minutes": route.budget_minutes,
+                        "stops": [
+                            place_reference(slug) for slug in route.place_slugs
+                        ],
+                        "created_at": route.created_at,
+                    }
+                    for route in snapshot.saved_routes
+                ],
+            }
+        )
+
+    return {
+        "schema_version": EXPORT_SCHEMA_VERSION,
+        "scope": "account",
+        "cities": cities,
+    }
+
+
+def account_export_filename() -> str:
+    return "places-all-cities.json"
 
 def serialize_user_export(data: dict[str, Any]) -> bytes:
     return (

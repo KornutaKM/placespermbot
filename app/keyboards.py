@@ -149,6 +149,12 @@ def data_controls_keyboard(city_slug: str) -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
+                    text="📦 Экспорт всех городов",
+                    callback_data="profile:data:export-all",
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text="🗑 Удалить все мои данные",
                     callback_data="profile:data:confirm-all",
                 )

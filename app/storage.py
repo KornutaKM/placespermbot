@@ -828,83 +828,115 @@ class UserDataSnapshotRepository:
         async with connect_database(self.database_path) as database:
             await database.execute("BEGIN")
             try:
-                interests = await _read_single_column(
+                snapshot = await _load_user_data_snapshot(
                     database,
-                    """
-                    SELECT interest FROM user_interests
-                    WHERE user_id = ? AND city_slug = ?
-                    ORDER BY interest ASC
-                    """,
-                    (user_id, city_slug),
+                    user_id,
+                    city_slug,
                 )
-                dismissed = await _read_single_column(
-                    database,
-                    """
-                    SELECT place_slug FROM dismissed_places
-                    WHERE user_id = ? AND city_slug = ?
-                    ORDER BY dismissed_at DESC, place_slug ASC
-                    """,
-                    (user_id, city_slug),
-                )
-                favorites = await _read_single_column(
-                    database,
-                    """
-                    SELECT place_slug FROM favorites
-                    WHERE user_id = ? AND city_slug = ?
-                    ORDER BY created_at DESC, place_slug ASC
-                    """,
-                    (user_id, city_slug),
-                )
-                visited = await _read_single_column(
-                    database,
-                    """
-                    SELECT place_slug FROM visited_places
-                    WHERE user_id = ? AND city_slug = ?
-                    ORDER BY visited_at DESC, place_slug ASC
-                    """,
-                    (user_id, city_slug),
-                )
-
-                cursor = await database.execute(
-                    """
-                    SELECT route_id, city_slug, interest, budget_minutes,
-                           place_slugs_json, created_at
-                    FROM saved_routes
-                    WHERE user_id = ? AND city_slug = ?
-                    ORDER BY created_at DESC, route_id ASC
-                    """,
-                    (user_id, city_slug),
-                )
-                saved_rows = await cursor.fetchall()
-                await cursor.close()
-
-                cursor = await database.execute(
-                    """
-                    SELECT route_id, city_slug, interest, budget_minutes,
-                           place_slugs_json, completed_at
-                    FROM completed_route_snapshots
-                    WHERE user_id = ? AND city_slug = ?
-                    ORDER BY completed_at DESC, route_id ASC
-                    """,
-                    (user_id, city_slug),
-                )
-                completed_rows = await cursor.fetchall()
-                await cursor.close()
                 await database.commit()
             except Exception:
                 await database.rollback()
                 raise
+        return snapshot
 
-        return UserDataSnapshot(
-            interests=interests,
-            dismissed_slugs=dismissed,
-            favorite_slugs=favorites,
-            visited_slugs=visited,
-            saved_routes=tuple(_saved_route_from_row(row) for row in saved_rows),
-            completed_routes=tuple(
-                _completed_route_snapshot_from_row(row) for row in completed_rows
-            ),
-        )
+    async def load_all(self, user_id: int) -> dict[str, UserDataSnapshot]:
+        async with connect_database(self.database_path) as database:
+            await database.execute("BEGIN")
+            try:
+                city_slugs: set[str] = set()
+                for table_name in (
+                    "favorites",
+                    "user_interests",
+                    "visited_places",
+                    "saved_routes",
+                    "dismissed_places",
+                    "completed_routes",
+                    "completed_route_snapshots",
+                ):
+                    cursor = await database.execute(
+                        f"SELECT DISTINCT city_slug FROM {table_name} WHERE user_id = ?",
+                        (user_id,),
+                    )
+                    city_slugs.update(str(row[0]) for row in await cursor.fetchall())
+                    await cursor.close()
+
+                snapshots = {
+                    city_slug: await _load_user_data_snapshot(
+                        database,
+                        user_id,
+                        city_slug,
+                    )
+                    for city_slug in sorted(city_slugs)
+                }
+                await database.commit()
+            except Exception:
+                await database.rollback()
+                raise
+        return snapshots
+
+
+async def _load_user_data_snapshot(
+    database: aiosqlite.Connection,
+    user_id: int,
+    city_slug: str,
+) -> UserDataSnapshot:
+    interests = await _read_single_column(
+        database,
+        "SELECT interest FROM user_interests WHERE user_id = ? AND city_slug = ? ORDER BY interest ASC",
+        (user_id, city_slug),
+    )
+    dismissed = await _read_single_column(
+        database,
+        "SELECT place_slug FROM dismissed_places WHERE user_id = ? AND city_slug = ? ORDER BY dismissed_at DESC, place_slug ASC",
+        (user_id, city_slug),
+    )
+    favorites = await _read_single_column(
+        database,
+        "SELECT place_slug FROM favorites WHERE user_id = ? AND city_slug = ? ORDER BY created_at DESC, place_slug ASC",
+        (user_id, city_slug),
+    )
+    visited = await _read_single_column(
+        database,
+        "SELECT place_slug FROM visited_places WHERE user_id = ? AND city_slug = ? ORDER BY visited_at DESC, place_slug ASC",
+        (user_id, city_slug),
+    )
+
+    cursor = await database.execute(
+        """
+        SELECT route_id, city_slug, interest, budget_minutes,
+               place_slugs_json, created_at
+        FROM saved_routes
+        WHERE user_id = ? AND city_slug = ?
+        ORDER BY created_at DESC, route_id ASC
+        """,
+        (user_id, city_slug),
+    )
+    saved_rows = await cursor.fetchall()
+    await cursor.close()
+
+    cursor = await database.execute(
+        """
+        SELECT route_id, city_slug, interest, budget_minutes,
+               place_slugs_json, completed_at
+        FROM completed_route_snapshots
+        WHERE user_id = ? AND city_slug = ?
+        ORDER BY completed_at DESC, route_id ASC
+        """,
+        (user_id, city_slug),
+    )
+    completed_rows = await cursor.fetchall()
+    await cursor.close()
+
+    return UserDataSnapshot(
+        interests=interests,
+        dismissed_slugs=dismissed,
+        favorite_slugs=favorites,
+        visited_slugs=visited,
+        saved_routes=tuple(_saved_route_from_row(row) for row in saved_rows),
+        completed_routes=tuple(
+            _completed_route_snapshot_from_row(row) for row in completed_rows
+        ),
+    )
 
 
 async def _read_single_column(
