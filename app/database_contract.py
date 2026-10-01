@@ -89,6 +89,23 @@ def validate_database_contract(
         require_complete=True,
     )
 
+    orphan_snapshot = database.execute(
+        """
+        SELECT snapshot.user_id, snapshot.city_slug, snapshot.route_id
+        FROM completed_route_snapshots AS snapshot
+        LEFT JOIN completed_routes AS completed
+            ON completed.user_id = snapshot.user_id
+            AND completed.city_slug = snapshot.city_slug
+            AND completed.route_id = snapshot.route_id
+        WHERE completed.route_id IS NULL
+        LIMIT 1
+        """
+    ).fetchone()
+    if orphan_snapshot is not None:
+        raise RuntimeError(
+            f"{subject} contains a completed route snapshot without its marker"
+        )
+
     for table_name, kind in (
         ("saved_routes", "saved route"),
         ("completed_route_snapshots", "completed route"),
