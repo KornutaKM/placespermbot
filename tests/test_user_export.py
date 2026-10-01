@@ -71,6 +71,7 @@ def test_export_is_user_and_city_scoped_and_preserves_route_order(tmp_path) -> N
         )
 
         await completed_routes.add(1, CITY_SLUG, route.route_id)
+        await completed_routes.add_snapshot(1, route)
         await completed_routes.add(1, "another-city", "other-completed")
         await completed_routes.add(2, CITY_SLUG, "foreign-completed")
 
@@ -119,7 +120,15 @@ def test_export_is_user_and_city_scoped_and_preserves_route_order(tmp_path) -> N
             }
         ]
 
-        assert data["completed_routes"] == [route.route_id]
+        assert len(data["completed_routes"]) == 1
+        completed = data["completed_routes"][0]
+        assert completed["route_id"] == route.route_id
+        assert completed["budget_minutes"] == 240
+        assert [stop["place_slug"] for stop in completed["stops"]] == [
+            "palace-square",
+            "hermitage",
+            "summer-garden",
+        ]
         assert len(data["saved_routes"]) == 1
         exported_route = data["saved_routes"][0]
         assert exported_route["route_id"] == route.route_id
