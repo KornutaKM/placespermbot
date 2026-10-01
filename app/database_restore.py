@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 
 from app.database_contract import validate_database_contract
+from app.filesystem_durability import fsync_directory
 
 
 def _validate_backup(path: Path) -> None:
@@ -45,9 +46,7 @@ def _restore_database(backup: Path, destination: Path) -> None:
             os.fsync(temporary.fileno())
 
         _validate_backup(temporary_path)
-        os.replace(temporary_path, destination)
-        temporary_path = None
-
+        os.replace(temporary_path, destination)\n        fsync_directory(destination.parent)\n        temporary_path = None\n
         for suffix in ("-wal", "-shm"):
             Path(f"{destination}{suffix}").unlink(missing_ok=True)
     finally:
