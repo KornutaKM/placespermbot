@@ -11,6 +11,16 @@ CITY_CENTER_SOURCE = PlaceSource(
     url="https://go-to-ural.ru/contacts/",
     checked_at=SOURCE_CHECKED_AT,
 )
+WATER_TOWER_SOURCE = PlaceSource(
+    name="Центр развития туризма Свердловской области — Водонапорная башня на Плотинке",
+    url="https://go-to-ural.ru/contacts/ekaterinburg/3734/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+CITY_HISTORY_SOURCE = PlaceSource(
+    name="Центр развития туризма Свердловской области — Музей истории Екатеринбурга",
+    url="https://go-to-ural.ru/professional/inklyuzivnyy-turizm",
+    checked_at=SOURCE_CHECKED_AT,
+)
 YELTSIN_CENTER_SOURCE = PlaceSource(
     name="Ельцин Центр — официальный сайт",
     url="https://yeltsin.ru/about/",
@@ -43,6 +53,8 @@ PLACES = (
     Place("keyboard-monument", "Памятник клавиатуре", "unusual", "Городской арт-объект на набережной Исети в виде крупной компьютерной клавиатуры.", "⌨️", "Ленинский район", 25, True, 56.8322, 60.6076, CITY_CENTER_SOURCE, ("городское искусство", "необычное", "прогулка", "бесплатно")),
     Place("qwerty-embankment", "Набережная Исети", "parks", "Центральный прогулочный маршрут вдоль реки Исеть рядом с Историческим сквером.", "🌊", "Ленинский район", 75, True, 56.8342, 60.6078, CITY_CENTER_SOURCE, ("набережная", "прогулка", "центр", "бесплатно")),
     Place("opera-ekb", "Театр оперы и балета", "sights", "Историческое театральное здание на проспекте Ленина и одна из культурных доминант центра.", "🎭", "Кировский район", 45, True, 56.8389, 60.6168, CITY_CENTER_SOURCE, ("театр", "архитектура", "культура", "бесплатно")),
+    Place("water-tower-plotinka", "Водонапорная башня на Плотинке", "museums", "Памятник промышленной архитектуры XIX века с музейной экспозицией об истории башни и туристско-информационным центром.", "🗼", "Ленинский район", 60, False, 56.8372, 60.6050, WATER_TOWER_SOURCE, ("музей", "промышленная архитектура", "история", "плотинка")),
+    Place("ekb-city-history-museum", "Музей истории Екатеринбурга", "museums", "Городской музей на улице Карла Либкнехта, посвящённый истории и развитию Екатеринбурга.", "🏙", "Кировский район", 120, False, 56.8399, 60.6136, CITY_HISTORY_SOURCE, ("музей", "история города", "архитектура")),
     Place("ural-geology-museum", "Уральский геологический музей", "museums", "Музей минералогии и геологии Урала с коллекциями минералов и горных пород.", "💎", "Ленинский район", 90, False, 56.8276, 60.5992, CITY_CENTER_SOURCE, ("музей", "геология", "минералы"))
 )
 
@@ -51,5 +63,6 @@ ROUTES = (
     RoutePlan("ekb-history", "История Екатеринбурга", "Исторический сквер, литературный квартал и ключевые места истории XX века.", 360, 4.0, ("plotinka", "literary-quarter", "church-on-blood", "yeltsin-center")),
     RoutePlan("ekb-green-center", "Зелёный центр", "Короткая прогулка через исторический центр к Харитоновскому саду.", 150, 2.1, ("plotinka", "sevastyanov-house", "kharitonovsky-garden")),
     RoutePlan("ekb-urban-art", "Городские детали", "Центральная прогулка от улицы Вайнера к Исети и памятнику клавиатуре.", 180, 2.4, ("weiner-street", "qwerty-embankment", "keyboard-monument", "plotinka")),
-    RoutePlan("ekb-culture", "Культурный Екатеринбург", "Театр, литературный квартал и геологические коллекции города.", 300, 4.2, ("opera-ekb", "literary-quarter", "ural-geology-museum"))
+    RoutePlan("ekb-culture", "Культурный Екатеринбург", "Театр, литературный квартал и геологические коллекции города.", 300, 4.2, ("opera-ekb", "literary-quarter", "ural-geology-museum")),
+    RoutePlan("ekb-city-story", "Как появился Екатеринбург", "Промышленное ядро Плотинки, историческая водонапорная башня и городской музей.", 240, 2.0, ("plotinka", "water-tower-plotinka", "ekb-city-history-museum")),
 )
