@@ -4,7 +4,7 @@ import sqlite3
 from dataclasses import dataclass
 from typing import Literal
 
-from app.database import validate_migration_ledger
+from app.database import COMPLETION_TRIGGER_SQL, validate_migration_ledger
 from app.storage import validate_persisted_route_row
 
 EXPECTED_TABLES = frozenset(
@@ -21,17 +21,7 @@ EXPECTED_TABLES = frozenset(
     }
 )
 
-EXPECTED_TRIGGERS = frozenset(
-    {
-        "completed_snapshot_requires_marker_insert",
-        "completed_snapshot_requires_marker_update",
-        "completed_snapshot_timestamp_insert",
-        "completed_snapshot_timestamp_update",
-        "completed_marker_identity_update_guard",
-        "completed_marker_timestamp_update_guard",
-        "completed_marker_delete_guard",
-    }
-)
+EXPECTED_TRIGGERS = frozenset(COMPLETION_TRIGGER_SQL)
 
 EXPECTED_COLUMNS: dict[str, frozenset[str]] = {
     "schema_migrations": frozenset({"version", "name", "applied_at"}),
@@ -144,6 +134,10 @@ EXPECTED_PRIMARY_KEYS: dict[str, tuple[str, ...]] = {
 IntegrityCheckMode = Literal["quick", "full"]
 
 
+def _normalize_schema_sql(sql: str) -> str:
+    return " ".join(sql.strip().rstrip(";").split())
+
+
 def validate_integrity_result(
     result: tuple[object, ...] | None,
     *,
@@ -197,13 +191,15 @@ def validate_database_contract(
         unexpected = ", ".join(sorted(unexpected_tables))
         raise RuntimeError(f"{subject} schema has unexpected tables: {unexpected}")
 
-    existing_triggers = {
-        str(row[0])
-        for row in database.execute(
-            "SELECT name FROM sqlite_master WHERE type = 'trigger'"
-        ).fetchall()
+    trigger_rows = database.execute(
+        "SELECT name, sql FROM sqlite_master WHERE type = 'trigger'"
+    ).fetchall()
+    existing_trigger_sql = {
+        str(row[0]): str(row[1])
+        for row in trigger_rows
         if not str(row[0]).startswith("sqlite_")
     }
+    existing_triggers = set(existing_trigger_sql)
     missing_triggers = EXPECTED_TRIGGERS - existing_triggers
     if missing_triggers:
         missing = ", ".join(sorted(missing_triggers))
@@ -213,6 +209,13 @@ def validate_database_contract(
     if unexpected_triggers:
         unexpected = ", ".join(sorted(unexpected_triggers))
         raise RuntimeError(f"{subject} schema has unexpected triggers: {unexpected}")
+
+    for trigger_name, expected_sql in COMPLETION_TRIGGER_SQL.items():
+        actual_sql = existing_trigger_sql[trigger_name]
+        if _normalize_schema_sql(actual_sql) != _normalize_schema_sql(expected_sql):
+            raise RuntimeError(
+                f"{subject} trigger {trigger_name} has an invalid definition"
+            )
 
     for table_name, expected_columns in EXPECTED_COLUMNS.items():
         table_info = database.execute(
