@@ -36,6 +36,16 @@ GORKY_PARK_SOURCE = PlaceSource(
     url="https://www.parkperm.ru/about-park/",
     checked_at=SOURCE_CHECKED_AT,
 )
+DIORAMA_SOURCE = PlaceSource(
+    name="Пермский краеведческий музей — Музей-диорама",
+    url="https://museumperm.ru/branch/diorama",
+    checked_at=SOURCE_CHECKED_AT,
+)
+SLAVYANOV_SOURCE = PlaceSource(
+    name="Пермский краеведческий музей — Дом-музей Николая Славянова",
+    url="https://museumperm.ru/branch/domslavyanova",
+    checked_at=SOURCE_CHECKED_AT,
+)
 THEATRE_SOURCE = PlaceSource(
     name="Пермский академический Театр-Театр",
     url="https://teatr-teatr.com/about/teatr-segodnya/",
@@ -231,6 +241,34 @@ PLACES: tuple[Place, ...] = (
         tags=("музей", "искусство", "деревянная скульптура"),
     ),
     Place(
+        slug="perm-diorama",
+        title="Музей-диорама",
+        category="museums",
+        summary="Музей на горе Вышка об истории Мотовилихи, заводского поселения и событиях 1905 года.",
+        emoji="🏭",
+        district="Мотовилихинский район",
+        visit_minutes=90,
+        is_free=False,
+        latitude=58.0411,
+        longitude=56.3206,
+        source=DIORAMA_SOURCE,
+        tags=("музей", "история", "промышленность", "мотовилиха"),
+    ),
+    Place(
+        slug="slavyanov-house",
+        title="Дом-музей Н. Г. Славянова",
+        category="museums",
+        summary="Мемориальный музей инженера Николая Славянова, связанный с историей электродуговой сварки и Мотовилихи.",
+        emoji="⚙️",
+        district="Мотовилихинский район",
+        visit_minutes=75,
+        is_free=False,
+        latitude=58.0348,
+        longitude=56.3089,
+        source=SLAVYANOV_SOURCE,
+        tags=("музей", "инженерия", "промышленность", "история"),
+    ),
+    Place(
         slug="razgulyai-perm",
         title="Разгуляй",
         category="sights",
@@ -285,6 +323,14 @@ ROUTES: tuple[RoutePlan, ...] = (
         duration_minutes=270,
         distance_km=3.0,
         place_slugs=("razgulyai-perm", "meshkov-house", "kama-embankment-perm"),
+    ),
+    RoutePlan(
+        slug="perm-motovilikha",
+        title="Инженерная Мотовилиха",
+        summary="Промышленная история Перми через музей инженера Славянова и музей-диораму на горе Вышка.",
+        duration_minutes=240,
+        distance_km=2.0,
+        place_slugs=("slavyanov-house", "perm-diorama"),
     ),
     RoutePlan(
         slug="perm-art-city",
