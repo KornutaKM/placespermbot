@@ -24,6 +24,18 @@ def table_names(database_path) -> set[str]:
     return {str(row[0]) for row in rows}
 
 
+def trigger_names(database_path) -> set[str]:
+    with sqlite3.connect(database_path) as database:
+        rows = database.execute(
+            """
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'trigger'
+            """
+        ).fetchall()
+    return {str(row[0]) for row in rows}
+
+
 def test_fresh_database_reaches_latest_schema(tmp_path) -> None:
     async def scenario() -> None:
         database_path = tmp_path / "places.db"
@@ -31,7 +43,9 @@ def test_fresh_database_reaches_latest_schema(tmp_path) -> None:
         version = await migrate_database(database_path)
 
         assert version == LATEST_SCHEMA_VERSION
-        assert await get_applied_migration_versions(database_path) == (1, 2, 3, 4, 5, 6, 7, 8, 9)
+        assert await get_applied_migration_versions(database_path) == tuple(
+            range(1, LATEST_SCHEMA_VERSION + 1)
+        )
         assert {
             "schema_migrations",
             "favorites",
@@ -43,6 +57,15 @@ def test_fresh_database_reaches_latest_schema(tmp_path) -> None:
             "completed_routes",
             "completed_route_snapshots",
         } <= table_names(database_path)
+        assert trigger_names(database_path) == {
+            "completed_snapshot_requires_marker_insert",
+            "completed_snapshot_requires_marker_update",
+            "completed_snapshot_timestamp_insert",
+            "completed_snapshot_timestamp_update",
+            "completed_marker_identity_update_guard",
+            "completed_marker_timestamp_update_guard",
+            "completed_marker_delete_guard",
+        }
 
     asyncio.run(scenario())
 
@@ -105,7 +128,9 @@ def test_legacy_rows_survive_migration(tmp_path) -> None:
 
         assert favorite == (42, "saint-petersburg", "hermitage")
         assert interest == (42, "saint-petersburg", "museums")
-        assert await get_applied_migration_versions(database_path) == (1, 2, 3, 4, 5, 6, 7, 8, 9)
+        assert await get_applied_migration_versions(database_path) == tuple(
+            range(1, LATEST_SCHEMA_VERSION + 1)
+        )
 
     asyncio.run(scenario())
 
@@ -119,14 +144,16 @@ def test_migration_is_idempotent(tmp_path) -> None:
 
         assert first == LATEST_SCHEMA_VERSION
         assert second == LATEST_SCHEMA_VERSION
-        assert await get_applied_migration_versions(database_path) == (1, 2, 3, 4, 5, 6, 7, 8, 9)
+        assert await get_applied_migration_versions(database_path) == tuple(
+            range(1, LATEST_SCHEMA_VERSION + 1)
+        )
 
         with sqlite3.connect(database_path) as database:
             count = database.execute(
                 "SELECT COUNT(*) FROM schema_migrations"
             ).fetchone()
 
-        assert count == (9,)
+        assert count == (LATEST_SCHEMA_VERSION,)
 
     asyncio.run(scenario())
 
@@ -312,7 +339,10 @@ def test_migration_rejects_known_version_with_wrong_name_before_applying_more(tm
             database.execute(
                 "UPDATE schema_migrations SET name = 'tampered' WHERE version = 5"
             )
-            database.execute("DELETE FROM schema_migrations WHERE version = 9")
+            database.execute(
+                "DELETE FROM schema_migrations WHERE version = ?",
+                (LATEST_SCHEMA_VERSION,),
+            )
             database.commit()
 
         with pytest.raises(RuntimeError, match="migration metadata is inconsistent"):
@@ -322,6 +352,69 @@ def test_migration_rejects_known_version_with_wrong_name_before_applying_more(tm
             versions = database.execute(
                 "SELECT version FROM schema_migrations ORDER BY version"
             ).fetchall()
-        assert versions == [(1,), (2,), (3,), (4,), (5,), (6,), (7,), (8,)]
+        assert versions == [
+            (version,) for version in range(1, LATEST_SCHEMA_VERSION)
+        ]
 
     asyncio.run(scenario())
+
+def test_completion_triggers_prevent_relational_corruption(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = tmp_path / "places.db"
+        await migrate_database(database_path)
+
+        with sqlite3.connect(database_path) as database:
+            with pytest.raises(sqlite3.IntegrityError, match="requires marker"):
+                database.execute(
+                    """
+                    INSERT INTO completed_route_snapshots (
+                        user_id, city_slug, route_id, interest,
+                        budget_minutes, place_slugs_json, completed_at
+                    )
+                    VALUES (1, 'perm', 'route', 'classic', 120, '["a"]',
+                            '2026-01-01 10:00:00')
+                    """
+                )
+
+            database.execute(
+                """
+                INSERT INTO completed_routes (
+                    user_id, city_slug, route_id, completed_at
+                )
+                VALUES (1, 'perm', 'route', '2026-01-01 10:00:00')
+                """
+            )
+
+            with pytest.raises(sqlite3.IntegrityError, match="timestamp mismatch"):
+                database.execute(
+                    """
+                    INSERT INTO completed_route_snapshots (
+                        user_id, city_slug, route_id, interest,
+                        budget_minutes, place_slugs_json, completed_at
+                    )
+                    VALUES (1, 'perm', 'route', 'classic', 120, '["a"]',
+                            '2026-01-01 10:00:01')
+                    """
+                )
+
+            database.execute(
+                """
+                INSERT INTO completed_route_snapshots (
+                    user_id, city_slug, route_id, interest,
+                    budget_minutes, place_slugs_json, completed_at
+                )
+                VALUES (1, 'perm', 'route', 'classic', 120, '["a"]',
+                        '2026-01-01 10:00:00')
+                """
+            )
+
+            with pytest.raises(sqlite3.IntegrityError, match="marker has snapshot"):
+                database.execute(
+                    """
+                    DELETE FROM completed_routes
+                    WHERE user_id = 1 AND city_slug = 'perm' AND route_id = 'route'
+                    """
+                )
+
+    asyncio.run(scenario())
+

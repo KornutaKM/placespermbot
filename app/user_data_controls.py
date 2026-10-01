@@ -13,8 +13,8 @@ _DATA_TABLES = (
     ("visited_places", "visited"),
     ("saved_routes", "saved_routes"),
     ("dismissed_places", "dismissed"),
-    ("completed_routes", "completed_routes"),
     ("completed_route_snapshots", "completed_route_snapshots"),
+    ("completed_routes", "completed_routes"),
 )
 
 

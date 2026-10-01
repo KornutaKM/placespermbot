@@ -213,15 +213,28 @@ def test_completed_snapshot_fails_closed_on_corrupt_persisted_payload(
         with sqlite3.connect(database_path) as database:
             database.execute(
                 """
+                INSERT INTO completed_routes (
+                    user_id,
+                    city_slug,
+                    route_id,
+                    completed_at
+                )
+                VALUES (?, ?, ?, ?)
+                """,
+                (606, CITY_SLUG, "corrupt-completed", "2026-01-03 04:05:06"),
+            )
+            database.execute(
+                """
                 INSERT INTO completed_route_snapshots (
                     user_id,
                     city_slug,
                     route_id,
                     interest,
                     budget_minutes,
-                    place_slugs_json
+                    place_slugs_json,
+                    completed_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     606,
@@ -230,6 +243,7 @@ def test_completed_snapshot_fails_closed_on_corrupt_persisted_payload(
                     "classic",
                     120,
                     '["hermitage","hermitage"]',
+                    "2026-01-03 04:05:06",
                 ),
             )
             database.commit()
@@ -240,7 +254,7 @@ def test_completed_snapshot_fails_closed_on_corrupt_persisted_payload(
     asyncio.run(scenario())
 
 
-def test_completed_snapshot_rejects_route_id_tampering(tmp_path) -> None:
+def test_completed_snapshot_identity_tampering_is_rejected_by_database(tmp_path) -> None:
     async def scenario() -> None:
         database_path = str(tmp_path / "bot.sqlite3")
         saved_routes = SavedRoutesRepository(database_path)
@@ -251,7 +265,10 @@ def test_completed_snapshot_rejects_route_id_tampering(tmp_path) -> None:
         saved = await saved_routes.save(707, CITY_SLUG, "classic", 120, slugs)
         await completed.complete_route(707, saved, set(slugs))
 
-        with sqlite3.connect(database_path) as database:
+        with (
+            sqlite3.connect(database_path) as database,
+            pytest.raises(sqlite3.IntegrityError, match="requires marker"),
+        ):
             database.execute(
                 """
                 UPDATE completed_route_snapshots
@@ -260,10 +277,6 @@ def test_completed_snapshot_rejects_route_id_tampering(tmp_path) -> None:
                 """,
                 (707, CITY_SLUG, saved.route_id),
             )
-            database.commit()
-
-        with pytest.raises(RuntimeError, match="id does not match"):
-            await completed.list_snapshots(707, CITY_SLUG)
 
     asyncio.run(scenario())
 

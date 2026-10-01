@@ -588,28 +588,36 @@ class CompletedRoutesRepository:
                         ),
                     )
 
-                await database.execute(
+                cursor = await database.execute(
                     """
-                    INSERT OR IGNORE INTO completed_routes (
+                    INSERT INTO completed_routes (
                         user_id,
                         city_slug,
                         route_id
                     )
                     VALUES (?, ?, ?)
+                    RETURNING completed_at
                     """,
                     (user_id, route.city_slug, route.route_id),
                 )
+                completed_at_row = await cursor.fetchone()
+                await cursor.close()
+                if completed_at_row is None:
+                    raise RuntimeError("completed route marker was not persisted")
+                completed_at = str(completed_at_row[0])
+
                 await database.execute(
                     """
-                    INSERT OR IGNORE INTO completed_route_snapshots (
+                    INSERT INTO completed_route_snapshots (
                         user_id,
                         city_slug,
                         route_id,
                         interest,
                         budget_minutes,
-                        place_slugs_json
+                        place_slugs_json,
+                        completed_at
                     )
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         user_id,
@@ -618,6 +626,7 @@ class CompletedRoutesRepository:
                         route.interest,
                         route.budget_minutes,
                         payload,
+                        completed_at,
                     ),
                 )
                 await database.commit()

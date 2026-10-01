@@ -21,6 +21,18 @@ EXPECTED_TABLES = frozenset(
     }
 )
 
+EXPECTED_TRIGGERS = frozenset(
+    {
+        "completed_snapshot_requires_marker_insert",
+        "completed_snapshot_requires_marker_update",
+        "completed_snapshot_timestamp_insert",
+        "completed_snapshot_timestamp_update",
+        "completed_marker_identity_update_guard",
+        "completed_marker_timestamp_update_guard",
+        "completed_marker_delete_guard",
+    }
+)
+
 EXPECTED_COLUMNS: dict[str, frozenset[str]] = {
     "schema_migrations": frozenset({"version", "name", "applied_at"}),
     "favorites": frozenset({"user_id", "city_slug", "place_slug", "created_at"}),
@@ -184,6 +196,23 @@ def validate_database_contract(
     if unexpected_tables:
         unexpected = ", ".join(sorted(unexpected_tables))
         raise RuntimeError(f"{subject} schema has unexpected tables: {unexpected}")
+
+    existing_triggers = {
+        str(row[0])
+        for row in database.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'trigger'"
+        ).fetchall()
+        if not str(row[0]).startswith("sqlite_")
+    }
+    missing_triggers = EXPECTED_TRIGGERS - existing_triggers
+    if missing_triggers:
+        missing = ", ".join(sorted(missing_triggers))
+        raise RuntimeError(f"{subject} schema is missing triggers: {missing}")
+
+    unexpected_triggers = existing_triggers - EXPECTED_TRIGGERS
+    if unexpected_triggers:
+        unexpected = ", ".join(sorted(unexpected_triggers))
+        raise RuntimeError(f"{subject} schema has unexpected triggers: {unexpected}")
 
     for table_name, expected_columns in EXPECTED_COLUMNS.items():
         table_info = database.execute(
