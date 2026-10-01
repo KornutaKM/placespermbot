@@ -64,3 +64,32 @@ def test_backup_rejects_missing_source(tmp_path) -> None:
             )
 
     asyncio.run(scenario())
+
+
+def test_backup_atomically_replaces_previous_snapshot(tmp_path) -> None:
+    async def scenario() -> None:
+        source = tmp_path / "live.db"
+        destination = tmp_path / "snapshot.db"
+        await migrate_database(source)
+        favorites = FavoritesRepository(str(source))
+
+        await favorites.add(1, "moscow", "red-square")
+        await create_database_backup(source, destination)
+
+        await favorites.add(2, "kazan", "kazan-kremlin")
+        await create_database_backup(source, destination)
+
+        with sqlite3.connect(destination) as database:
+            rows = database.execute(
+                "SELECT user_id, city_slug, place_slug FROM favorites ORDER BY user_id"
+            ).fetchall()
+            integrity = database.execute("PRAGMA integrity_check").fetchone()
+
+        assert rows == [
+            (1, "moscow", "red-square"),
+            (2, "kazan", "kazan-kremlin"),
+        ]
+        assert integrity == ("ok",)
+        assert list(tmp_path.glob(".snapshot.db.backup-*.tmp")) == []
+
+    asyncio.run(scenario())
