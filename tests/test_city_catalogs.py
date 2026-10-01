@@ -95,3 +95,13 @@ def test_perm_and_kaliningrad_have_deeper_district_discovery() -> None:
         assert len(catalog.routes) >= 5
         assert len({place.district for place in catalog.places}) >= 3
         assert sum(place.category == "museums" for place in catalog.places) >= 4
+
+
+def test_novosibirsk_and_nizhny_have_deeper_discovery() -> None:
+    for city_slug in ("novosibirsk", "nizhny-novgorod"):
+        catalog = get_catalog(city_slug)
+
+        assert len(catalog.places) >= 14
+        assert len(catalog.routes) >= 5
+        assert len({place.district for place in catalog.places}) >= 3
+        assert sum(place.category == "museums" for place in catalog.places) >= 3
