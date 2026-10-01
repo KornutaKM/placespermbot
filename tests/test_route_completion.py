@@ -194,3 +194,41 @@ def test_atomic_completion_rolls_back_visited_and_marker_on_snapshot_failure(
         assert await completed.get_snapshot(505, CITY_SLUG, saved.route_id) is None
 
     asyncio.run(scenario())
+
+
+def test_completed_snapshot_fails_closed_on_corrupt_persisted_payload(
+    tmp_path,
+) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "bot.sqlite3")
+        completed = CompletedRoutesRepository(database_path)
+        await completed.initialize()
+
+        with sqlite3.connect(database_path) as database:
+            database.execute(
+                """
+                INSERT INTO completed_route_snapshots (
+                    user_id,
+                    city_slug,
+                    route_id,
+                    interest,
+                    budget_minutes,
+                    place_slugs_json
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    606,
+                    CITY_SLUG,
+                    "corrupt-completed",
+                    "classic",
+                    120,
+                    '["hermitage","hermitage"]',
+                ),
+            )
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="invalid place payload"):
+            await completed.list_snapshots(606, CITY_SLUG)
+
+    asyncio.run(scenario())
