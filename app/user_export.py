@@ -15,7 +15,7 @@ from app.storage import (
     VisitedRepository,
 )
 
-EXPORT_SCHEMA_VERSION = 4
+EXPORT_SCHEMA_VERSION = 5
 
 
 async def build_user_export(
@@ -118,8 +118,7 @@ async def build_account_export(
     *,
     database_path: str,
 ) -> dict[str, Any]:
-    snapshots = await UserDataSnapshotRepository(database_path).load_all(user_id)
-    cities: list[dict[str, Any]] = []
+    account = await UserDataSnapshotRepository(database_path).load_account(user_id)\n    snapshots = account.cities\n    cities: list[dict[str, Any]] = []
     for city_slug, snapshot in snapshots.items():
         catalog = get_catalog(city_slug) if has_catalog(city_slug) else None
 
@@ -192,9 +191,25 @@ async def build_account_export(
             }
         )
 
+    selected_catalog = (
+        get_catalog(account.selected_city_slug)
+        if account.selected_city_slug is not None
+        and has_catalog(account.selected_city_slug)
+        else None
+    )
+    selected_city = (
+        {
+            "slug": account.selected_city_slug,
+            "name": selected_catalog.name if selected_catalog is not None else None,
+        }
+        if account.selected_city_slug is not None
+        else None
+    )
+
     return {
         "schema_version": EXPORT_SCHEMA_VERSION,
         "scope": "account",
+        "selected_city": selected_city,
         "cities": cities,
     }
 
