@@ -121,3 +121,45 @@ def test_restore_rejects_tampered_migration_name(tmp_path) -> None:
         assert await favorites.list_place_slugs(11, "perm") == ("esplanade",)
 
     asyncio.run(scenario())
+
+
+def test_restore_rejects_missing_table_without_touching_live_database(tmp_path) -> None:
+    async def scenario() -> None:
+        backup = tmp_path / "missing-table.db"
+        await migrate_database(backup)
+        with sqlite3.connect(backup) as database:
+            database.execute("DROP TABLE completed_route_snapshots")
+            database.commit()
+
+        destination = tmp_path / "live.db"
+        await migrate_database(destination)
+        favorites = FavoritesRepository(str(destination))
+        await favorites.add(12, "moscow", "red-square")
+
+        with pytest.raises(RuntimeError, match="Backup schema is incomplete"):
+            await restore_database_backup(backup, destination)
+
+        assert await favorites.list_place_slugs(12, "moscow") == ("red-square",)
+
+    asyncio.run(scenario())
+
+
+def test_restore_rejects_missing_column_without_touching_live_database(tmp_path) -> None:
+    async def scenario() -> None:
+        backup = tmp_path / "missing-column.db"
+        await migrate_database(backup)
+        with sqlite3.connect(backup) as database:
+            database.execute("ALTER TABLE saved_routes DROP COLUMN created_at")
+            database.commit()
+
+        destination = tmp_path / "live.db"
+        await migrate_database(destination)
+        favorites = FavoritesRepository(str(destination))
+        await favorites.add(13, "perm", "esplanade")
+
+        with pytest.raises(RuntimeError, match="saved_routes is incomplete"):
+            await restore_database_backup(backup, destination)
+
+        assert await favorites.list_place_slugs(13, "perm") == ("esplanade",)
+
+    asyncio.run(scenario())
