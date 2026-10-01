@@ -253,6 +253,7 @@ def test_completed_snapshot_fails_closed_on_corrupt_persisted_payload(
 
     asyncio.run(scenario())
 
+
 def test_completed_snapshot_identity_tampering_is_rejected_by_database(tmp_path) -> None:
     async def scenario() -> None:
         database_path = str(tmp_path / "bot.sqlite3")
@@ -276,6 +277,7 @@ def test_completed_snapshot_identity_tampering_is_rejected_by_database(tmp_path)
                 )
 
     asyncio.run(scenario())
+
 
 def test_repeated_completion_repairs_missing_snapshot_and_preserves_timestamp(
     tmp_path,
