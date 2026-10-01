@@ -275,7 +275,8 @@ CI дополнительно собирает реальный Docker image и 
 5. `create_saved_routes`;
 6. `create_dismissed_places`;
 7. `create_completed_routes`;
-8. `create_completed_route_snapshots`.
+8. `create_completed_route_snapshots`;
+9. `backfill_completed_route_snapshots` — восстанавливает snapshots старых завершений, если соответствующий сохранённый маршрут ещё доступен.
 
 Переход со старой БД безопасен: migrations используют существующие таблицы и не удаляют
 сохранённые строки. Повторный запуск idempotent. Если volume содержит неизвестную более новую
