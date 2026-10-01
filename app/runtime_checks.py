@@ -2,11 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import aiosqlite
-
 from app.catalog import get_catalog
 from app.config import Settings
-from app.database import KNOWN_SCHEMA_VERSIONS, get_applied_migration_versions
+from app.database import (\n    KNOWN_SCHEMA_VERSIONS,\n    connect_database,\n    get_applied_migration_versions,\n)
 
 EXPECTED_TABLES = frozenset(
     {
@@ -80,7 +78,7 @@ async def validate_health(settings: Settings) -> None:
     if not database_path.is_file():
         raise RuntimeError("Database is not initialized")
 
-    async with aiosqlite.connect(database_path) as database:
+    async with connect_database(database_path) as database:
         cursor = await database.execute(
             """
             SELECT name
@@ -97,7 +95,7 @@ async def validate_health(settings: Settings) -> None:
         missing = ", ".join(sorted(missing_tables))
         raise RuntimeError(f"Database schema is incomplete: {missing}")
 
-    async with aiosqlite.connect(database_path) as database:
+    async with connect_database(database_path) as database:
         for table_name, expected_columns in EXPECTED_COLUMNS.items():
             cursor = await database.execute(f"PRAGMA table_info({table_name})")
             column_rows = await cursor.fetchall()
