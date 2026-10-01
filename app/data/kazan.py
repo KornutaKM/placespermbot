@@ -21,6 +21,16 @@ KUL_SHARIF_SOURCE = PlaceSource(
     url="https://visit-tatarstan.com/places/attractions/kul-sharif/",
     checked_at=SOURCE_CHECKED_AT,
 )
+CHAK_CHAK_SOURCE = PlaceSource(
+    name="Visit Tatarstan — Музей чак-чака",
+    url="https://visit-tatarstan.com/places/cultural/muzej_chak-chaka/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+URITSKY_SOURCE = PlaceSource(
+    name="Visit Tatarstan — парк Урицкого",
+    url="https://visit-tatarstan.com/places/parki-i-mesta-dlya-progulok/park_urickogo/",
+    checked_at=SOURCE_CHECKED_AT,
+)
 EMBANKMENT_SOURCE = PlaceSource(
     name="Visit Tatarstan — Кремлёвская набережная",
     url="https://www.visit-tatarstan.com/en/places/attractions/kremlevskaya_naberezhnaya/",
@@ -48,6 +58,8 @@ PLACES = (
     Place("farmers-palace-kazan", "Дворец земледельцев", "sights", "Монументальный современный дворец рядом с Казанским Кремлём и Казанкой.", "🏛", "Вахитовский район", 35, True, 55.8007, 49.1114, VISIT_TATARSTAN, ("архитектура", "центр", "прогулка", "бесплатно")),
     Place("national-museum-tatarstan", "Национальный музей Татарстана", "museums", "Крупный музей истории и культуры Татарстана напротив Казанского Кремля.", "🖼", "Вахитовский район", 120, False, 55.7955, 49.1081, VISIT_TATARSTAN, ("музей", "история", "культура")),
     Place("black-lake-kazan", "Парк «Чёрное озеро»", "parks", "Центральный городской парк для короткой прогулки между Кремлём и университетским кварталом.", "🌳", "Вахитовский район", 60, True, 55.7930, 49.1210, VISIT_TATARSTAN, ("парк", "прогулка", "центр", "бесплатно")),
+    Place("chak-chak-museum-kazan", "Музей чак-чака", "museums", "Интерактивный музей в Старо-Татарской слободе о татарском быте, традициях и национальном десерте.", "🍯", "Вахитовский район", 90, False, 55.7811, 49.1165, CHAK_CHAK_SOURCE, ("музей", "татарская культура", "гастрономия", "традиции")),
+    Place("uritsky-park-kazan", "Парк Урицкого", "parks", "Большой районный парк с озером, прогулочными дорожками, спортивными зонами и современной детской площадкой.", "🦆", "Московский район", 120, True, 55.8410, 49.0590, URITSKY_SOURCE, ("парк", "с детьми", "прогулка", "спорт", "бесплатно")),
     Place("peter-paul-cathedral-kazan", "Петропавловский собор", "sights", "Исторический православный собор XVIII века в центре Казани.", "⛪", "Вахитовский район", 40, True, 55.7934, 49.1151, VISIT_TATARSTAN, ("архитектура", "история", "религия", "бесплатно"))
 )
 
@@ -55,5 +67,7 @@ ROUTES = (
     RoutePlan("kazan-first-walk", "Первое знакомство с Казанью", "Кремль, Кул Шариф и главная пешеходная улица города.", 240, 2.2, ("kazan-kremlin", "kul-sharif", "suyumbike-tower", "bauman-street")),
     RoutePlan("kazan-kremlin-and-river", "Кремль и Казанка", "Исторический ансамбль Кремля с продолжением прогулки по набережной.", 210, 2.0, ("kazan-kremlin", "kul-sharif", "kremlin-embankment-kazan")),
     RoutePlan("kazan-tatar-quarter", "Татарская Казань", "Старо-Татарская слобода, озеро Кабан и центральные городские пространства.", 240, 3.2, ("old-tatar-quarter", "kaban-embankment", "bauman-street")),
-    RoutePlan("kazan-museum-center", "История в центре", "Кремль, Национальный музей и архитектурные достопримечательности рядом.", 300, 2.0, ("kazan-kremlin", "national-museum-tatarstan", "peter-paul-cathedral-kazan", "black-lake-kazan"))
+    RoutePlan("kazan-museum-center", "История в центре", "Кремль, Национальный музей и архитектурные достопримечательности рядом.", 300, 2.0, ("kazan-kremlin", "national-museum-tatarstan", "peter-paul-cathedral-kazan", "black-lake-kazan")),
+    RoutePlan("kazan-tatar-taste", "Татарская культура и вкус", "Старо-Татарская слобода, музей традиционного десерта и прогулка у озера Кабан.", 270, 2.0, ("old-tatar-quarter", "chak-chak-museum-kazan", "kaban-embankment")),
+    RoutePlan("kazan-family-north", "Семейная Казань вне центра", "Спокойный районный сценарий с озером, детской площадкой и прогулочными дорожками парка Урицкого.", 150, 2.0, ("uritsky-park-kazan",)),
 )
