@@ -166,6 +166,35 @@ def test_restore_rejects_missing_column_without_touching_live_database(tmp_path)
     asyncio.run(scenario())
 
 
+def test_restore_rejects_invalid_storage_type_without_touching_live_database(
+    tmp_path,
+) -> None:
+    async def scenario() -> None:
+        backup = tmp_path / "invalid-type.db"
+        await migrate_database(backup)
+        with sqlite3.connect(backup) as database:
+            database.execute(
+                """
+                INSERT INTO favorites (user_id, city_slug, place_slug)
+                VALUES (?, ?, ?)
+                """,
+                ("not-an-integer", "perm", "esplanade"),
+            )
+            database.commit()
+
+        destination = tmp_path / "live.db"
+        await migrate_database(destination)
+        favorites = FavoritesRepository(str(destination))
+        await favorites.add(15, "moscow", "red-square")
+
+        with pytest.raises(RuntimeError, match="values with invalid storage types"):
+            await restore_database_backup(backup, destination)
+
+        assert await favorites.list_place_slugs(15, "moscow") == ("red-square",)
+
+    asyncio.run(scenario())
+
+
 def test_restore_rejects_tampered_route_snapshot_without_touching_live_database(
     tmp_path,
 ) -> None:

@@ -231,6 +231,19 @@ def validate_database_contract(
                 f"{subject} table {table_name} has an invalid primary key"
             )
 
+        storage_type_predicates = " OR ".join(
+            f"typeof({column_name}) != '{expected.declared_type.lower()}'"
+            for column_name, expected in EXPECTED_COLUMN_CONTRACTS[table_name].items()
+        )
+        invalid_storage_type = database.execute(
+            f"SELECT 1 FROM {table_name} "
+            f"WHERE {storage_type_predicates} LIMIT 1"
+        ).fetchone()
+        if invalid_storage_type is not None:
+            raise RuntimeError(
+                f"{subject} table {table_name} contains values with invalid storage types"
+            )
+
     migration_rows = database.execute(
         "SELECT version, name FROM schema_migrations ORDER BY version"
     ).fetchall()

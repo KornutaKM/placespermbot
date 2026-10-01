@@ -418,3 +418,23 @@ def test_health_allows_sqlite_internal_tables(tmp_path) -> None:
 
     asyncio.run(scenario())
 
+def test_health_rejects_invalid_persisted_storage_type(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+
+        with sqlite3.connect(config.database_path) as database:
+            database.execute(
+                """
+                INSERT INTO favorites (user_id, city_slug, place_slug)
+                VALUES (?, ?, ?)
+                """,
+                ("not-an-integer", "perm", "esplanade"),
+            )
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="values with invalid storage types"):
+            await validate_health(config)
+
+    asyncio.run(scenario())
+
