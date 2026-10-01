@@ -36,7 +36,10 @@ def _backup_database(source: Path, destination: Path) -> None:
         with temporary_path.open("rb") as backup_file:
             os.fsync(backup_file.fileno())
 
-        os.replace(temporary_path, destination)\n        fsync_directory(destination.parent)\n        temporary_path = None\n    finally:
+        os.replace(temporary_path, destination)
+        fsync_directory(destination.parent)
+        temporary_path = None
+    finally:
         if temporary_path is not None:
             temporary_path.unlink(missing_ok=True)
 
