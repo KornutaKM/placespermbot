@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from dataclasses import dataclass
 
 from app.catalog import CityCatalog
@@ -11,6 +10,7 @@ from app.storage import (
     FavoritesRepository,
     InterestsRepository,
     SavedRoutesRepository,
+    UserDataSnapshotRepository,
     VisitedRepository,
 )
 
@@ -52,24 +52,30 @@ async def build_profile_summary(
     saved_routes_repo: SavedRoutesRepository,
     completed_routes_repo: CompletedRoutesRepository | None = None,
 ) -> ProfileSummary:
-    (
-        interests,
-        dismissed_slugs,
-        favorite_slugs,
-        visited_slugs,
-        saved_routes,
-        completed_routes,
-    ) = await asyncio.gather(
-        interests_repo.list_interests(user_id, catalog.slug),
-        dismissed_repo.list_place_slugs(user_id, catalog.slug),
-        favorites_repo.list_place_slugs(user_id, catalog.slug),
-        visited_repo.list_place_slugs(user_id, catalog.slug),
-        saved_routes_repo.list_routes(user_id, catalog.slug),
-        (
-            completed_routes_repo.list_snapshots(user_id, catalog.slug)
-            if completed_routes_repo is not None
-            else _empty_completed_routes()
-        ),
+    repositories = (
+        dismissed_repo,
+        favorites_repo,
+        interests_repo,
+        visited_repo,
+        saved_routes_repo,
+    )
+    if completed_routes_repo is not None:
+        repositories += (completed_routes_repo,)
+    database_paths = {repo.database_path.resolve() for repo in repositories}
+    if len(database_paths) != 1:
+        raise ValueError("Profile repositories must use the same database")
+
+    snapshot = await UserDataSnapshotRepository(database_paths.pop()).load(
+        user_id,
+        catalog.slug,
+    )
+    interests = snapshot.interests
+    dismissed_slugs = snapshot.dismissed_slugs
+    favorite_slugs = snapshot.favorite_slugs
+    visited_slugs = snapshot.visited_slugs
+    saved_routes = snapshot.saved_routes
+    completed_routes = (
+        snapshot.completed_routes if completed_routes_repo is not None else ()
     )
 
     available_slugs = {place.slug for place in catalog.places}
@@ -134,6 +140,3 @@ def profile_text(summary: ProfileSummary) -> str:
         "на ваших явных действиях в боте."
     )
 
-
-async def _empty_completed_routes() -> tuple[object, ...]:
-    return ()
