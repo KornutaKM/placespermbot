@@ -8,6 +8,36 @@ from app.database import connect_database, migrate_database
 from app.saved_routes import SavedRoute, route_id_for
 
 
+def validate_persisted_route_row(
+    row: tuple[object, ...],
+    *,
+    kind: str,
+) -> None:
+    route_id = str(row[0])
+    city_slug = str(row[1])
+    interest = str(row[2])
+    budget_minutes = int(row[3])
+    place_slugs = _decode_route_place_slugs(row[4], kind=kind)
+    try:
+        _validate_route_values(
+            city_slug=city_slug,
+            interest=interest,
+            budget_minutes=budget_minutes,
+            place_slugs=place_slugs,
+        )
+    except ValueError as exc:
+        raise RuntimeError(f"{kind} contains invalid metadata") from exc
+
+    expected_route_id = route_id_for(
+        city_slug,
+        interest,
+        budget_minutes,
+        place_slugs,
+    )
+    if route_id != expected_route_id:
+        raise RuntimeError(f"{kind} id does not match persisted snapshot")
+
+
 class FavoritesRepository:
     def __init__(self, database_path: str) -> None:
         self.database_path = Path(database_path)
