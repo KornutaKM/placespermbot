@@ -5,6 +5,7 @@ from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
 from app.database import migrate_database
 from app.storage import (
+    CompletedRoutesRepository,
     DismissedRepository,
     FavoritesRepository,
     InterestsRepository,
@@ -28,6 +29,7 @@ def test_export_is_user_and_city_scoped_and_preserves_route_order(tmp_path) -> N
         interests = InterestsRepository(database_path)
         visited = VisitedRepository(database_path)
         saved_routes = SavedRoutesRepository(database_path)
+        completed_routes = CompletedRoutesRepository(database_path)
 
         await dismissed.add(1, CITY_SLUG, "new-holland")
         await dismissed.add(1, CITY_SLUG, "stale-dismissed")
@@ -68,6 +70,10 @@ def test_export_is_user_and_city_scoped_and_preserves_route_order(tmp_path) -> N
             ("russian-museum",),
         )
 
+        await completed_routes.add(1, CITY_SLUG, route.route_id)
+        await completed_routes.add(1, "another-city", "other-completed")
+        await completed_routes.add(2, CITY_SLUG, "foreign-completed")
+
         data = await build_user_export(
             1,
             get_catalog(CITY_SLUG),
@@ -76,6 +82,7 @@ def test_export_is_user_and_city_scoped_and_preserves_route_order(tmp_path) -> N
             interests_repo=interests,
             visited_repo=visited,
             saved_routes_repo=saved_routes,
+            completed_routes_repo=completed_routes,
         )
 
         assert data["schema_version"] == EXPORT_SCHEMA_VERSION
@@ -112,6 +119,7 @@ def test_export_is_user_and_city_scoped_and_preserves_route_order(tmp_path) -> N
             }
         ]
 
+        assert data["completed_routes"] == [route.route_id]
         assert len(data["saved_routes"]) == 1
         exported_route = data["saved_routes"][0]
         assert exported_route["route_id"] == route.route_id
@@ -139,6 +147,7 @@ def test_serialized_export_is_utf8_deterministic_and_has_no_location_data(tmp_pa
             interests_repo=InterestsRepository(database_path),
             visited_repo=VisitedRepository(database_path),
             saved_routes_repo=SavedRoutesRepository(database_path),
+            completed_routes_repo=CompletedRoutesRepository(database_path),
         )
 
         first = serialize_user_export(data)
