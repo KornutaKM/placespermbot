@@ -84,6 +84,7 @@ def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
             INTEREST_LABELS["museums"],
             INTEREST_LABELS["walks"],
         )
+        assert "🏁 Первый маршрут" in summary.achievement_labels
 
     asyncio.run(scenario())
 
@@ -144,5 +145,30 @@ def test_profile_progress_ignores_stale_visited_places(tmp_path) -> None:
         assert summary.visited_count == 1
         assert summary.progress_percent == round(100 / len(catalog.places))
         assert summary.achievement_labels == ("🏅 Первое открытие",)
+
+    asyncio.run(scenario())
+
+
+def test_profile_awards_route_explorer_after_three_completed_routes(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "places.db")
+        await migrate_database(database_path)
+        completed = CompletedRoutesRepository(database_path)
+        for index in range(3):
+            await completed.add(77, CITY_SLUG, f"route-{index}")
+
+        summary = await build_profile_summary(
+            77,
+            get_catalog(CITY_SLUG),
+            dismissed_repo=DismissedRepository(database_path),
+            favorites_repo=FavoritesRepository(database_path),
+            interests_repo=InterestsRepository(database_path),
+            visited_repo=VisitedRepository(database_path),
+            saved_routes_repo=SavedRoutesRepository(database_path),
+            completed_routes_repo=completed,
+        )
+
+        assert "🏁 Первый маршрут" in summary.achievement_labels
+        assert "🥾 Маршрутный исследователь" in summary.achievement_labels
 
     asyncio.run(scenario())
