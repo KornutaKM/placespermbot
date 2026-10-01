@@ -809,6 +809,12 @@ class DismissedRepository:
 
 
 @dataclass(frozen=True, slots=True)
+class AccountDataSnapshot:
+    selected_city_slug: str | None
+    cities: dict[str, "UserDataSnapshot"]
+
+
+@dataclass(frozen=True, slots=True)
 class UserDataSnapshot:
     interests: tuple[str, ...]
     dismissed_slugs: tuple[str, ...]
@@ -840,9 +846,27 @@ class UserDataSnapshotRepository:
         return snapshot
 
     async def load_all(self, user_id: int) -> dict[str, UserDataSnapshot]:
+        return (await self.load_account(user_id)).cities
+
+    async def load_account(self, user_id: int) -> AccountDataSnapshot:
         async with connect_database(self.database_path) as database:
             await database.execute("BEGIN")
             try:
+                cursor = await database.execute(
+                    """
+                    SELECT city_slug
+                    FROM user_city_preferences
+                    WHERE user_id = ?
+                    LIMIT 1
+                    """,
+                    (user_id,),
+                )
+                preference_row = await cursor.fetchone()
+                await cursor.close()
+                selected_city_slug = (
+                    str(preference_row[0]) if preference_row is not None else None
+                )
+
                 city_slugs: set[str] = set()
                 for table_name in (
                     "favorites",
@@ -872,7 +896,11 @@ class UserDataSnapshotRepository:
             except Exception:
                 await database.rollback()
                 raise
-        return snapshots
+
+        return AccountDataSnapshot(
+            selected_city_slug=selected_city_slug,
+            cities=snapshots,
+        )
 
 
 async def _load_user_data_snapshot(
