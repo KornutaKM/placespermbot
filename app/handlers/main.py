@@ -91,6 +91,8 @@ from app.user_data_controls import (
     bound_city_slug,
 )
 from app.user_export import (
+    account_export_filename,
+    build_account_export,
     build_user_export,
     export_filename,
     serialize_user_export,
@@ -420,6 +422,30 @@ async def delete_city_user_data(
         reply_markup=profile_keyboard(),
     )
     await callback.answer("Данные удалены")
+
+
+@router.callback_query(F.data == "profile:data:export-all")
+async def export_all_user_data(
+    callback: CallbackQuery,
+    data_controls_repo: UserDataControlsRepository,
+) -> None:
+    data = await build_account_export(
+        callback.from_user.id,
+        database_path=str(data_controls_repo.database_path),
+    )
+    document = BufferedInputFile(
+        serialize_user_export(data),
+        filename=account_export_filename(),
+    )
+    await callback.message.answer_document(
+        document,
+        caption=(
+            "📦 Экспорт данных всех городов\n\n"
+            "Файл не содержит user_id, геопозицию, историю просмотров "
+            "или секреты бота."
+        ),
+    )
+    await callback.answer("Полный экспорт подготовлен")
 
 
 @router.callback_query(F.data == "profile:data:confirm-all")
