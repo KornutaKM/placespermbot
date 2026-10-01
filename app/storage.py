@@ -509,16 +509,51 @@ class CompletedRoutesRepository:
                 await database.execute("BEGIN IMMEDIATE")
                 cursor = await database.execute(
                     """
-                    SELECT 1
+                    SELECT completed_at
                     FROM completed_routes
                     WHERE user_id = ? AND city_slug = ? AND route_id = ?
                     LIMIT 1
                     """,
                     (user_id, route.city_slug, route.route_id),
                 )
-                already_completed = await cursor.fetchone() is not None
+                completed_row = await cursor.fetchone()
                 await cursor.close()
-                if already_completed:
+                if completed_row is not None:
+                    cursor = await database.execute(
+                        """
+                        SELECT 1
+                        FROM completed_route_snapshots
+                        WHERE user_id = ? AND city_slug = ? AND route_id = ?
+                        LIMIT 1
+                        """,
+                        (user_id, route.city_slug, route.route_id),
+                    )
+                    has_snapshot = await cursor.fetchone() is not None
+                    await cursor.close()
+                    if not has_snapshot:
+                        await database.execute(
+                            """
+                            INSERT INTO completed_route_snapshots (
+                                user_id,
+                                city_slug,
+                                route_id,
+                                interest,
+                                budget_minutes,
+                                place_slugs_json,
+                                completed_at
+                            )
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            """,
+                            (
+                                user_id,
+                                route.city_slug,
+                                route.route_id,
+                                route.interest,
+                                route.budget_minutes,
+                                payload,
+                                str(completed_row[0]),
+                            ),
+                        )
                     await database.commit()
                     return 0, 0, unavailable, True
 
