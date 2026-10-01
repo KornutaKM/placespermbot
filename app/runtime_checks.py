@@ -4,7 +4,11 @@ from pathlib import Path
 
 from app.catalog import get_catalog
 from app.config import Settings
-from app.database import (\n    KNOWN_SCHEMA_VERSIONS,\n    connect_database,\n    get_applied_migration_versions,\n)
+from app.database import (
+    KNOWN_SCHEMA_VERSIONS,
+    connect_database,
+    get_applied_migration_versions,
+)
 
 EXPECTED_TABLES = frozenset(
     {
