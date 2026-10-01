@@ -177,3 +177,62 @@ def test_health_rejects_tampered_saved_route_snapshot(tmp_path) -> None:
             await validate_health(config)
 
     asyncio.run(scenario())
+
+
+def test_health_rejects_completed_snapshot_without_marker(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+        saved_routes = SavedRoutesRepository(config.database_path)
+        route = await saved_routes.save(
+            22,
+            "saint-petersburg",
+            "classic",
+            120,
+            ("hermitage", "russian-museum"),
+        )
+
+        with sqlite3.connect(config.database_path) as database:
+            database.execute(
+                """
+                INSERT INTO completed_route_snapshots (
+                    user_id, city_slug, route_id, interest,
+                    budget_minutes, place_slugs_json
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    22,
+                    route.city_slug,
+                    route.route_id,
+                    route.interest,
+                    route.budget_minutes,
+                    '["hermitage","russian-museum"]',
+                ),
+            )
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="snapshot without its marker"):
+            await validate_health(config)
+
+    asyncio.run(scenario())
+
+
+def test_health_allows_legacy_completion_marker_without_snapshot(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+
+        with sqlite3.connect(config.database_path) as database:
+            database.execute(
+                """
+                INSERT INTO completed_routes (user_id, city_slug, route_id)
+                VALUES (?, ?, ?)
+                """,
+                (23, "saint-petersburg", "legacy-unrecoverable"),
+            )
+            database.commit()
+
+        await validate_health(config)
+
+    asyncio.run(scenario())
