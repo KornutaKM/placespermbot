@@ -88,7 +88,8 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
         assert result.visited == 1
         assert result.saved_routes == 1
         assert result.completed_routes == 1
-        assert result.total == 6
+        assert result.completed_route_snapshots == 1
+        assert result.total == 7
 
         assert await dismissed.list_place_slugs(1, CITY_SLUG) == ()
         assert await favorites.list_place_slugs(1, CITY_SLUG) == ()
