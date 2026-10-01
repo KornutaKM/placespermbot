@@ -157,3 +157,29 @@ def test_personal_route_uses_visited_history_for_unseen_affinity() -> None:
         for item in ranked
         for reason in item.reasons
     )
+
+
+def test_personal_route_excludes_completed_stops_but_uses_their_affinity() -> None:
+    city = catalog()
+    route = build_personal_route(
+        city,
+        ("museums",),
+        budget_minutes=240,
+        completed_route_place_slugs={"hermitage"},
+    )
+    ranked = recommend_personalized(
+        city,
+        ("museums",),
+        limit=len(city.places),
+        completed_route_place_slugs={"hermitage"},
+        exclude_slugs={"hermitage"},
+    )
+
+    assert route is not None
+    assert "hermitage" not in {place.slug for place in route.places}
+    assert route.places[0].slug == ranked[0].place.slug
+    assert any(
+        reason.startswith("похоже на пройденный маршрут:")
+        for item in ranked
+        for reason in item.reasons
+    )

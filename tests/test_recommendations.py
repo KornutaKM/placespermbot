@@ -400,3 +400,49 @@ def test_service_tags_do_not_create_false_visited_affinity() -> None:
         reason.startswith("похоже на посещённое:")
         for reason in history_field.reasons
     )
+
+
+def test_completed_route_affinity_boosts_similar_new_place() -> None:
+    baseline = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+    )
+    with_route_history = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+        completed_route_place_slugs={"hermitage"},
+        exclude_slugs={"hermitage"},
+    )
+
+    baseline_russian = _recommendation_by_slug(baseline, "russian-museum")
+    history_russian = _recommendation_by_slug(
+        with_route_history,
+        "russian-museum",
+    )
+
+    assert history_russian.score == baseline_russian.score + 2
+    assert "похоже на пройденный маршрут: искусство, музей" in (
+        history_russian.reasons
+    )
+    assert "hermitage" not in {
+        item.place.slug
+        for item in with_route_history
+    }
+
+
+def test_foreign_completed_route_place_has_no_affinity_effect() -> None:
+    baseline = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+    )
+    with_foreign_history = recommend_personalized(
+        catalog(),
+        ("museums",),
+        limit=50,
+        completed_route_place_slugs={"perm-bear"},
+    )
+
+    assert with_foreign_history == baseline

@@ -16,17 +16,23 @@ def build_personal_route(
     budget_minutes: int,
     favorite_slugs: Collection[str] = (),
     visited_slugs: Collection[str] = (),
+    completed_route_place_slugs: Collection[str] = (),
     dismissed_slugs: Collection[str] = (),
     start_latitude: float | None = None,
     start_longitude: float | None = None,
 ) -> GeneratedRoute | None:
-    excluded = set(visited_slugs) | set(dismissed_slugs)
+    excluded = (
+        set(visited_slugs)
+        | set(completed_route_place_slugs)
+        | set(dismissed_slugs)
+    )
     recommendations = recommend_personalized(
         catalog,
         interests,
         limit=len(catalog.places),
         favorite_slugs=favorite_slugs,
         visited_slugs=visited_slugs,
+        completed_route_place_slugs=completed_route_place_slugs,
         exclude_slugs=excluded,
     )
     candidates = tuple(item.place for item in recommendations)
