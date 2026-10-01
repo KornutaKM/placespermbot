@@ -400,6 +400,7 @@ def test_data_controls_keyboard_binds_active_city() -> None:
     assert callbacks == {
         "profile:export",
         f"profile:data:confirm:{CITY_SLUG}",
+        "profile:data:confirm-all",
         "menu:profile",
     }
 
