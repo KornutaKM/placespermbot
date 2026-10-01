@@ -49,7 +49,7 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
             ("palace-square", "hermitage"),
         )
         await completed_routes.complete_route(
-            1, own_route, {"palace-square", "hermitage"}
+            1, own_route, set()
         )
 
         await dismissed.add(1, "another-city", "other-place")
@@ -63,7 +63,7 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
             120,
             ("other-place",),
         )
-        await completed_routes.complete_route(1, other_city_route, {"other-place"})
+        await completed_routes.complete_route(1, other_city_route, set())
 
         await dismissed.add(2, CITY_SLUG, "summer-garden")
         await favorites.add(2, CITY_SLUG, "palace-square")
@@ -77,7 +77,7 @@ def test_delete_city_data_is_scoped_transactional_and_preserves_city_preference(
             ("russian-museum",),
         )
         await completed_routes.complete_route(
-            2, other_user_route, {"russian-museum"}
+            2, other_user_route, set()
         )
 
         result = await controls.delete_city_data(1, CITY_SLUG)
