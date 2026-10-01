@@ -149,6 +149,12 @@ def data_controls_keyboard(city_slug: str) -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
+                    text="🗑 Удалить все мои данные",
+                    callback_data="profile:data:confirm-all",
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text="← Мой гид",
                     callback_data="menu:profile",
                 )
@@ -175,6 +181,25 @@ def data_delete_confirm_keyboard(city_slug: str) -> InlineKeyboardMarkup:
         ]
     )
 
+
+
+def data_delete_all_confirm_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🔴 Да, удалить всё",
+                    callback_data="profile:data:delete-all",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="Отмена",
+                    callback_data="profile:data",
+                )
+            ],
+        ]
+    )
 
 def cities_keyboard(
     catalogs: tuple[CityCatalog, ...],

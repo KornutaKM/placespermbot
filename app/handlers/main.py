@@ -17,6 +17,7 @@ from app.keyboards import (
     completed_route_details_keyboard,
     completed_routes_keyboard,
     data_controls_keyboard,
+    data_delete_all_confirm_keyboard,
     data_delete_confirm_keyboard,
     event_providers_keyboard,
     excursion_providers_keyboard,
@@ -419,6 +420,34 @@ async def delete_city_user_data(
         reply_markup=profile_keyboard(),
     )
     await callback.answer("Данные удалены")
+
+
+@router.callback_query(F.data == "profile:data:confirm-all")
+async def data_delete_all_confirm(callback: CallbackQuery) -> None:
+    await callback.message.edit_text(
+        "⚠️ <b>Удалить все ваши данные?</b>\n\n"
+        "Будут безвозвратно удалены данные всех городов: интересы, "
+        "избранное, посещения, скрытые рекомендации, сохранённые и "
+        "пройденные маршруты, а также выбор активного города.\n\n"
+        "После этого бот начнёт как для нового пользователя.",
+        reply_markup=data_delete_all_confirm_keyboard(),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "profile:data:delete-all")
+async def delete_all_user_data(
+    callback: CallbackQuery,
+    data_controls_repo: UserDataControlsRepository,
+) -> None:
+    result = await data_controls_repo.delete_all_data(callback.from_user.id)
+    await callback.message.edit_text(
+        "🧹 <b>Все ваши данные удалены</b>\n\n"
+        f"Удалено записей: <b>{result.total}</b>.\n"
+        "Выбор активного города также удалён. Используйте /start, "
+        "чтобы начать заново.",
+    )
+    await callback.answer("Все данные удалены")
 
 
 @router.message(Command("city"))
