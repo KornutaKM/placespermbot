@@ -1,4 +1,5 @@
 import asyncio
+import sqlite3
 from dataclasses import replace
 
 import pytest
@@ -185,3 +186,67 @@ def test_place_route_snapshot_round_trip() -> None:
         place.slug for place in route.places
     )
     assert route_interest_label(PLACE_ROUTE_INTEREST) == PLACE_ROUTE_LABEL
+
+
+def test_saved_route_rejects_duplicate_places_and_nonpositive_budget(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "places.db")
+        await migrate_database(database_path)
+        repository = SavedRoutesRepository(database_path)
+
+        with pytest.raises(ValueError, match="unique"):
+            await repository.save(
+                42,
+                CITY_SLUG,
+                "classic",
+                120,
+                ("hermitage", "hermitage"),
+            )
+        with pytest.raises(ValueError, match="positive"):
+            await repository.save(
+                42,
+                CITY_SLUG,
+                "classic",
+                0,
+                ("hermitage",),
+            )
+
+        assert await repository.list_routes(42, CITY_SLUG) == ()
+
+    asyncio.run(scenario())
+
+
+def test_saved_route_fails_closed_on_corrupt_persisted_payload(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = str(tmp_path / "places.db")
+        await migrate_database(database_path)
+        repository = SavedRoutesRepository(database_path)
+
+        with sqlite3.connect(database_path) as database:
+            database.execute(
+                """
+                INSERT INTO saved_routes (
+                    user_id,
+                    city_slug,
+                    route_id,
+                    interest,
+                    budget_minutes,
+                    place_slugs_json
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    42,
+                    CITY_SLUG,
+                    "corrupt-route",
+                    "classic",
+                    120,
+                    '["hermitage","hermitage"]',
+                ),
+            )
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="invalid place payload"):
+            await repository.get(42, CITY_SLUG, "corrupt-route")
+
+    asyncio.run(scenario())
