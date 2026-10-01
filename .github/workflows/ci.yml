@@ -16,8 +16,14 @@ jobs:
           cache: "pip"
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev]"
-      - run: ruff check .
-      - run: pytest -q
+      - name: Compile Python sources
+        run: python -m compileall -q app tests
+      - name: Ruff
+        run: ruff check .
+      - name: Catalog quality gate
+        run: pytest -q tests/test_catalog_validation.py tests/test_city_catalogs.py
+      - name: Full test suite
+        run: pytest -q
 
   docker-smoke:
     needs: test
