@@ -7,6 +7,7 @@ from typing import Any
 from app.catalog import CityCatalog
 from app.planner import INTEREST_LABELS
 from app.storage import (
+    CompletedRoutesRepository,
     DismissedRepository,
     FavoritesRepository,
     InterestsRepository,
@@ -14,7 +15,7 @@ from app.storage import (
     VisitedRepository,
 )
 
-EXPORT_SCHEMA_VERSION = 2
+EXPORT_SCHEMA_VERSION = 3
 
 
 async def build_user_export(
@@ -26,6 +27,7 @@ async def build_user_export(
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
     saved_routes_repo: SavedRoutesRepository,
+    completed_routes_repo: CompletedRoutesRepository,
 ) -> dict[str, Any]:
     (
         interests,
@@ -33,12 +35,14 @@ async def build_user_export(
         favorite_slugs,
         visited_slugs,
         saved_routes,
+        completed_route_ids,
     ) = await asyncio.gather(
         interests_repo.list_interests(user_id, catalog.slug),
         dismissed_repo.list_place_slugs(user_id, catalog.slug),
         favorites_repo.list_place_slugs(user_id, catalog.slug),
         visited_repo.list_place_slugs(user_id, catalog.slug),
         saved_routes_repo.list_routes(user_id, catalog.slug),
+        completed_routes_repo.list_route_ids(user_id, catalog.slug),
     )
 
     return {
@@ -66,6 +70,7 @@ async def build_user_export(
             _place_reference(catalog, slug)
             for slug in visited_slugs
         ],
+        "completed_routes": list(completed_route_ids),
         "saved_routes": [
             {
                 "route_id": route.route_id,
