@@ -4,6 +4,8 @@ from pathlib import Path
 
 from app.catalog import get_catalog
 from app.config import Settings
+from app.storage import validate_persisted_route_row
+
 from app.database import (
     connect_database,
     validate_migration_ledger,
@@ -124,3 +126,20 @@ async def validate_health(settings: Settings) -> None:
         subject="Database",
         require_complete=True,
     )
+
+    async with connect_database(database_path) as database:
+        for table_name, kind in (
+            ("saved_routes", "saved route"),
+            ("completed_route_snapshots", "completed route"),
+        ):
+            cursor = await database.execute(
+                f"""
+                SELECT route_id, city_slug, interest, budget_minutes,
+                       place_slugs_json, NULL
+                FROM {table_name}
+                """
+            )
+            route_rows = await cursor.fetchall()
+            await cursor.close()
+            for row in route_rows:
+                validate_persisted_route_row(tuple(row), kind=kind)
