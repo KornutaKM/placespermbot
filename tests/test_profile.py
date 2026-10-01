@@ -8,6 +8,7 @@ from app.data.spb import CITY_SLUG
 from app.database import migrate_database
 from app.planner import INTEREST_LABELS
 from app.profile import build_profile_summary, profile_text
+from app.saved_routes import route_id_for
 from app.storage import (
     CompletedRoutesRepository,
     DismissedRepository,
@@ -56,7 +57,7 @@ def test_profile_summary_is_scoped_by_user_and_city(tmp_path) -> None:
             ("hermitage", "russian-museum"),
         )
         completed_route = SavedRoute(
-            route_id="completed-route",
+            route_id=route_id_for(CITY_SLUG, "museums", 120, ("hermitage",)),
             city_slug=CITY_SLUG,
             interest="museums",
             budget_minutes=120,
@@ -164,13 +165,15 @@ def test_profile_awards_route_explorer_after_three_completed_routes(tmp_path) ->
         database_path = str(tmp_path / "places.db")
         await migrate_database(database_path)
         completed = CompletedRoutesRepository(database_path)
-        for index in range(3):
+        catalog = get_catalog(CITY_SLUG)
+        for place in catalog.places[:3]:
+            place_slugs = (place.slug,)
             route = SavedRoute(
-                route_id=f"route-{index}",
+                route_id=route_id_for(CITY_SLUG, "classic", 120, place_slugs),
                 city_slug=CITY_SLUG,
                 interest="classic",
                 budget_minutes=120,
-                place_slugs=("palace-square",),
+                place_slugs=place_slugs,
                 created_at="2026-10-01 00:00:00",
             )
             await completed.complete_route(77, route, set())
