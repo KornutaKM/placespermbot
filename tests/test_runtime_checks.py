@@ -130,3 +130,19 @@ def test_health_rejects_table_with_missing_required_columns(tmp_path) -> None:
             await validate_health(config)
 
     asyncio.run(scenario())
+
+
+def test_health_rejects_tampered_migration_name(tmp_path) -> None:
+    async def scenario() -> None:
+        config = settings(tmp_path)
+        await migrate_database(config.database_path)
+        with sqlite3.connect(config.database_path) as database:
+            database.execute(
+                "UPDATE schema_migrations SET name = 'tampered' WHERE version = 4"
+            )
+            database.commit()
+
+        with pytest.raises(RuntimeError, match="migration metadata is inconsistent"):
+            await validate_health(config)
+
+    asyncio.run(scenario())
