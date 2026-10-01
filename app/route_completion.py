@@ -11,6 +11,7 @@ class RouteCompletionResult:
     added: int
     already_visited: int
     unavailable: int
+    already_completed: bool = False
 
 
 async def complete_saved_route(
@@ -35,15 +36,18 @@ async def complete_saved_route(
 
     available = {place.slug for place in catalog.places}
     if completed_routes is not None:
-        added, already_visited, unavailable = await completed_routes.complete_route(
-            user_id,
-            route,
-            available,
+        added, already_visited, unavailable, already_completed = (
+            await completed_routes.complete_route(
+                user_id,
+                route,
+                available,
+            )
         )
         return RouteCompletionResult(
             added=added,
             already_visited=already_visited,
             unavailable=unavailable,
+            already_completed=already_completed,
         )
 
     added = 0

@@ -438,7 +438,7 @@ class CompletedRoutesRepository:
         user_id: int,
         route: SavedRoute,
         available_place_slugs: set[str],
-    ) -> tuple[int, int, int]:
+    ) -> tuple[int, int, int, bool]:
         _validate_route_values(
             city_slug=route.city_slug,
             interest=route.interest,
@@ -458,6 +458,21 @@ class CompletedRoutesRepository:
         async with connect_database(self.database_path) as database:
             try:
                 await database.execute("BEGIN IMMEDIATE")
+                cursor = await database.execute(
+                    """
+                    SELECT 1
+                    FROM completed_routes
+                    WHERE user_id = ? AND city_slug = ? AND route_id = ?
+                    LIMIT 1
+                    """,
+                    (user_id, route.city_slug, route.route_id),
+                )
+                already_completed = await cursor.fetchone() is not None
+                await cursor.close()
+                if already_completed:
+                    await database.commit()
+                    return 0, 0, unavailable, True
+
                 already_visited = 0
                 if available:
                     placeholders = ",".join("?" for _ in available)
@@ -526,7 +541,7 @@ class CompletedRoutesRepository:
                 await database.rollback()
                 raise
 
-        return len(available) - already_visited, already_visited, unavailable
+        return len(available) - already_visited, already_visited, unavailable, False
 
     async def list_snapshots(
         self,

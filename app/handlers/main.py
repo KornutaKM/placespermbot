@@ -1787,6 +1787,13 @@ async def complete_saved_route_callback(
         )
         return
 
+    if result.already_completed:
+        await callback.answer(
+            "Этот маршрут уже отмечен как пройденный.",
+            show_alert=True,
+        )
+        return
+
     await callback.answer(
         "Маршрут отмечен как пройденный. "
         f"Новых мест: {result.added}; "
