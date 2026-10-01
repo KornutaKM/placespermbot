@@ -59,7 +59,7 @@ from app.navigation import (
     similar_child_context,
 )
 from app.pagination import Page, paginate
-from app.personal_route import build_personal_route
+from app.personal_route import build_explained_personal_route
 from app.personalization_context import load_personalization_context
 from app.place_route import build_place_route
 from app.planner import INTEREST_LABELS, build_route
@@ -1267,7 +1267,7 @@ async def personal_route_duration(
         )
         return
 
-    route = build_personal_route(
+    result = build_explained_personal_route(
         catalog,
         interests,
         budget_minutes=budget_minutes,
@@ -1289,7 +1289,7 @@ async def personal_route_duration(
     location_used = start_latitude is not None and start_longitude is not None
     await state.clear()
 
-    if route is None:
+    if result is None:
         await callback.message.edit_text(
             "🎯 Не удалось собрать персональный маршрут под эти условия. "
             "Если использовалась геопозиция, текущая точка могла оказаться "
@@ -1299,9 +1299,14 @@ async def personal_route_duration(
         await callback.answer()
         return
 
+    route = result.route
     stops = "\n".join(
-        f"{index}. {place.emoji} {place.title} — ~{place.visit_minutes} мин"
+        (
+            f"{index}. {place.emoji} {place.title} — ~{place.visit_minutes} мин\n"
+            f"   ↳ {recommendation_reason_text(recommendation)}"
+        )
         for index, place in enumerate(route.places, start=1)
+        if (recommendation := result.recommendation_for(place.slug)) is not None
     )
     hours, minutes = divmod(route.estimated_minutes, 60)
 

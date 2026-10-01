@@ -1,6 +1,9 @@
 from app.catalog import get_catalog
 from app.data.spb import CITY_SLUG
-from app.personal_route import build_personal_route
+from app.personal_route import (
+    build_explained_personal_route,
+    build_personal_route,
+)
 from app.planner import build_ranked_route
 from app.recommendations import recommend_personalized
 from app.saved_routes import PERSONAL_ROUTE_INTEREST
@@ -183,3 +186,47 @@ def test_personal_route_excludes_completed_stops_but_uses_their_affinity() -> No
         for item in ranked
         for reason in item.reasons
     )
+
+
+def test_explained_personal_route_keeps_reasons_for_selected_stops() -> None:
+    result = build_explained_personal_route(
+        catalog(),
+        ("museums",),
+        budget_minutes=240,
+        completed_route_place_slugs={"hermitage"},
+    )
+
+    assert result is not None
+    assert result.recommendations
+    assert {item.place.slug for item in result.recommendations} == {
+        place.slug for place in result.route.places
+    }
+    assert all(
+        item.reasons and item.reasons[0] == "интерес: 🖼 Музеи"
+        for item in result.recommendations
+    )
+    assert "hermitage" not in {
+        place.slug for place in result.route.places
+    }
+
+
+def test_explained_personal_route_matches_compatibility_wrapper() -> None:
+    kwargs = {
+        "budget_minutes": 240,
+        "favorite_slugs": {"new-holland"},
+        "visited_slugs": {"summer-garden"},
+        "dismissed_slugs": {"palace-square"},
+    }
+    explained = build_explained_personal_route(
+        catalog(),
+        ("walks", "free"),
+        **kwargs,
+    )
+    route = build_personal_route(
+        catalog(),
+        ("walks", "free"),
+        **kwargs,
+    )
+
+    assert explained is not None
+    assert explained.route == route
