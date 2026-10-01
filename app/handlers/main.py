@@ -972,6 +972,7 @@ async def show_personal_page(
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
+    completed_routes_repo: CompletedRoutesRepository,
     page_index: int,
 ) -> None:
     catalog = current_catalog()
@@ -1001,13 +1002,27 @@ async def show_personal_page(
         callback.from_user.id,
         catalog.slug,
     )
+    completed_snapshots = await completed_routes_repo.list_snapshots(
+        callback.from_user.id,
+        catalog.slug,
+    )
+    completed_route_place_slugs = {
+        slug
+        for snapshot in completed_snapshots
+        for slug in snapshot.place_slugs
+    }
     recommendations = recommend_personalized(
         catalog,
         interests,
         limit=len(catalog.places),
         favorite_slugs=favorite_slugs,
         visited_slugs=visited_slugs,
-        exclude_slugs=set(visited_slugs) | set(dismissed_slugs),
+        completed_route_place_slugs=completed_route_place_slugs,
+        exclude_slugs=(
+            set(visited_slugs)
+            | set(dismissed_slugs)
+            | completed_route_place_slugs
+        ),
     )
     page = paginate(recommendations, page_index)
     place_page = Page(
@@ -1027,11 +1042,15 @@ async def show_personal_page(
         details = (
             "<b>Почему эти места:</b>\n"
             f"{reason_lines}\n\n"
-            "Посещённые и отмеченные «Не интересно» места исключены. "
-            "Избранное и история посещений помогают ранжировать похожие места."
+            "Посещённые, уже пройденные в маршрутах и отмеченные "
+            "«Не интересно» места исключены. Избранное, история посещений "
+            "и пройденных маршрутов помогают ранжировать похожие новые места."
         )
     else:
-        details = "Все подходящие места уже отмечены как посещённые."
+        details = (
+            "Все подходящие места уже посещены, пройдены в маршрутах "
+            "или скрыты."
+        )
 
     await callback.message.edit_text(
         "🎯 <b>Для меня</b>\n\n"
@@ -1052,7 +1071,8 @@ async def personal_recommendations(
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
-) -> None:
+,
+    completed_routes_repo: CompletedRoutesRepository) -> None:
     previous_state = await state.get_state()
     await state.clear()
     if previous_state in LOCATION_REQUEST_STATES:
@@ -1067,6 +1087,7 @@ async def personal_recommendations(
         favorites_repo,
         interests_repo,
         visited_repo,
+        completed_routes_repo,
         0,
     )
 
@@ -1078,7 +1099,8 @@ async def personal_recommendations_page(
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
-) -> None:
+,
+    completed_routes_repo: CompletedRoutesRepository) -> None:
     try:
         page_index = int(callback.data.rsplit(":", 1)[1])
     except (ValueError, AttributeError):
@@ -1091,6 +1113,7 @@ async def personal_recommendations_page(
         favorites_repo,
         interests_repo,
         visited_repo,
+        completed_routes_repo,
         page_index,
     )
 
@@ -1210,7 +1233,8 @@ async def personal_route_duration(
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
-) -> None:
+,
+    completed_routes_repo: CompletedRoutesRepository) -> None:
     try:
         budget_minutes = int(callback.data.rsplit(":", 1)[1])
     except (ValueError, AttributeError):
@@ -1267,12 +1291,22 @@ async def personal_route_duration(
         callback.from_user.id,
         catalog.slug,
     )
+    completed_snapshots = await completed_routes_repo.list_snapshots(
+        callback.from_user.id,
+        catalog.slug,
+    )
+    completed_route_place_slugs = {
+        slug
+        for snapshot in completed_snapshots
+        for slug in snapshot.place_slugs
+    }
     route = build_personal_route(
         catalog,
         interests,
         budget_minutes=budget_minutes,
         favorite_slugs=favorite_slugs,
         visited_slugs=visited_slugs,
+        completed_route_place_slugs=completed_route_place_slugs,
         dismissed_slugs=dismissed_slugs,
         start_latitude=(
             float(start_latitude)
@@ -1312,8 +1346,9 @@ async def personal_route_duration(
         f"Пешком по расчёту: ~{route.distance_km:g} км\n"
         f"Точек: {len(route.places)}\n\n"
         f"<b>Маршрут:</b>\n{stops}\n\n"
-        "Использованы текущие интересы, избранное и история посещений; "
-        "сами посещённые и отмеченные «Не интересно» места исключены. "
+        "Использованы текущие интересы, избранное, история посещений "
+        "и пройденных маршрутов; уже посещённые, пройденные и отмеченные "
+        "«Не интересно» места исключены. "
         "Геопозиция после расчёта не сохраняется.",
         reply_markup=generated_route_keyboard(
             route.places,
@@ -1384,7 +1419,8 @@ async def finish_interests(
     favorites_repo: FavoritesRepository,
     interests_repo: InterestsRepository,
     visited_repo: VisitedRepository,
-) -> None:
+,
+    completed_routes_repo: CompletedRoutesRepository) -> None:
     catalog = current_catalog()
     interests = await interests_repo.list_interests(
         callback.from_user.id,
@@ -1400,6 +1436,7 @@ async def finish_interests(
         favorites_repo,
         interests_repo,
         visited_repo,
+        completed_routes_repo,
         0,
     )
 
