@@ -36,7 +36,7 @@ class CatalogQualityProfile:
 CITY_QUALITY = {
     "kaliningrad": CatalogQualityProfile(14, 5, 3, 3, 5, 2, 4),
     "kazan": CatalogQualityProfile(14, 5, 3, 3, 5, 4, 2),
-    "krasnoyarsk": CatalogQualityProfile(20, 7, 9, 5, 13, 10, 5),
+    "krasnoyarsk": CatalogQualityProfile(21, 7, 9, 5, 13, 10, 6),
     "moscow": CatalogQualityProfile(18, 8, 8, 4, 8, 5, 3),
     "nizhny-novgorod": CatalogQualityProfile(15, 6, 3, 3, 8, 2, 3),
     "novosibirsk": CatalogQualityProfile(14, 6, 6, 4, 7, 4, 4),
