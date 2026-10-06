@@ -10,6 +10,7 @@ from app.data import (
     moscow,
     nizhny_novgorod,
     novosibirsk,
+    omsk,
     perm,
     rostov_on_don,
     samara,
@@ -182,6 +183,13 @@ _CATALOGS: dict[str, CityCatalog] = {
         category_labels=novosibirsk.CATEGORY_LABELS,
         places=novosibirsk.PLACES,
         routes=novosibirsk.ROUTES,
+    ),
+    omsk.CITY_SLUG: CityCatalog(
+        slug=omsk.CITY_SLUG,
+        name=omsk.CITY_NAME,
+        category_labels=omsk.CATEGORY_LABELS,
+        places=omsk.PLACES,
+        routes=omsk.ROUTES,
     ),
     moscow.CITY_SLUG: CityCatalog(
         slug=moscow.CITY_SLUG,
