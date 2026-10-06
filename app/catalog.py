@@ -6,6 +6,7 @@ from math import asin, cos, radians, sin, sqrt
 from app.data import (
     kaliningrad,
     kazan,
+    krasnodar,
     krasnoyarsk,
     moscow,
     nizhny_novgorod,
@@ -203,6 +204,13 @@ _CATALOGS: dict[str, CityCatalog] = {
         category_labels=kazan.CATEGORY_LABELS,
         places=kazan.PLACES,
         routes=kazan.ROUTES,
+    ),
+    krasnodar.CITY_SLUG: CityCatalog(
+        slug=krasnodar.CITY_SLUG,
+        name=krasnodar.CITY_NAME,
+        category_labels=krasnodar.CATEGORY_LABELS,
+        places=krasnodar.PLACES,
+        routes=krasnodar.ROUTES,
     ),
     krasnoyarsk.CITY_SLUG: CityCatalog(
         slug=krasnoyarsk.CITY_SLUG,
