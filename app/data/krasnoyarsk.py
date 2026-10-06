@@ -23,7 +23,7 @@ KRASNOYARSK_CITY = PlaceSource(
 )
 STOLBY = PlaceSource(
     name="Национальный парк «Красноярские Столбы»",
-    url="https://zapovednik-stolby.ru/",
+    url="https://kras-stolby.ru/",
     checked_at=SOURCE_CHECKED_AT,
 )
 LOCAL_HISTORY_MUSEUM = PlaceSource(
@@ -34,6 +34,11 @@ LOCAL_HISTORY_MUSEUM = PlaceSource(
 SURIKOV_MUSEUM = PlaceSource(
     name="Красноярский художественный музей имени В.И. Сурикова",
     url="https://surikov-museum.ru/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+MIRA_MUSEUM = PlaceSource(
+    name="Музейный центр «Площадь Мира»",
+    url="https://mira1.ru/",
     checked_at=SOURCE_CHECKED_AT,
 )
 ROEV_RUCHEY = PlaceSource(
@@ -226,6 +231,20 @@ PLACES = (
         ("музей", "искусство", "Суриков", "культура", "с детьми"),
     ),
     Place(
+        "mira-museum-center",
+        "Музейный центр «Площадь Мира»",
+        "museums",
+        "Крупная сибирская площадка современного искусства на Стрелке у Енисея.",
+        "🖼",
+        "Стрелка",
+        120,
+        False,
+        56.0139,
+        92.8947,
+        MIRA_MUSEUM,
+        ("музей", "современное искусство", "выставки", "культура", "с детьми"),
+    ),
+    Place(
         "roev-ruchey",
         "Парк флоры и фауны «Роев ручей»",
         "family",
@@ -376,6 +395,7 @@ ROUTES = (
             "krasnoyarsk-local-history-museum",
             "astafyev-literature-museum",
             "surikov-art-museum-mira",
+            "mira-museum-center",
         ),
     ),
     RoutePlan(
