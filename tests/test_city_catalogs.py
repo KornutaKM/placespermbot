@@ -6,6 +6,7 @@ from app.catalog_validation import validate_catalogs
 EXPECTED_CITIES = {
     "kaliningrad": "Калининград",
     "kazan": "Казань",
+    "krasnodar": "Краснодар",
     "krasnoyarsk": "Красноярск",
     "moscow": "Москва",
     "nizhny-novgorod": "Нижний Новгород",
@@ -37,6 +38,7 @@ class CatalogQualityProfile:
 CITY_QUALITY = {
     "kaliningrad": CatalogQualityProfile(14, 5, 3, 3, 5, 2, 4),
     "kazan": CatalogQualityProfile(14, 5, 3, 3, 5, 4, 2),
+    "krasnodar": CatalogQualityProfile(22, 7, 8, 5, 17, 13, 4),
     "krasnoyarsk": CatalogQualityProfile(21, 7, 9, 5, 13, 10, 6),
     "moscow": CatalogQualityProfile(18, 8, 8, 4, 8, 5, 3),
     "nizhny-novgorod": CatalogQualityProfile(15, 6, 3, 3, 8, 2, 3),
