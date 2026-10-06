@@ -42,7 +42,7 @@ CITY_QUALITY = {
     "nizhny-novgorod": CatalogQualityProfile(15, 6, 3, 3, 8, 2, 3),
     "novosibirsk": CatalogQualityProfile(14, 6, 6, 4, 7, 4, 4),
     "perm": CatalogQualityProfile(19, 7, 5, 5, 8, 5, 6),
-    "rostov-on-don": CatalogQualityProfile(21, 7, 9, 5, 14, 12, 5),
+    "rostov-on-don": CatalogQualityProfile(22, 7, 10, 5, 14, 12, 6),
     "saint-petersburg": CatalogQualityProfile(20, 6, 5, 4, 7, 4, 7),
     "samara": CatalogQualityProfile(19, 7, 7, 5, 12, 9, 6),
     "sochi": CatalogQualityProfile(14, 5, 3, 4, 6, 4, 2),
