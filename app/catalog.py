@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from math import asin, cos, radians, sin, sqrt
 
 from app.data import (
+    chelyabinsk,
     kaliningrad,
     kazan,
-    chelyabinsk,
     krasnodar,
     krasnoyarsk,
     moscow,
