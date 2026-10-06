@@ -21,6 +21,7 @@ from app.data import (
     ufa,
     vladivostok,
     volgograd,
+    voronezh,
     yaroslavl,
     yekaterinburg,
 )
@@ -290,6 +291,13 @@ _CATALOGS: dict[str, CityCatalog] = {
         category_labels=volgograd.CATEGORY_LABELS,
         places=volgograd.PLACES,
         routes=volgograd.ROUTES,
+    ),
+    voronezh.CITY_SLUG: CityCatalog(
+        slug=voronezh.CITY_SLUG,
+        name=voronezh.CITY_NAME,
+        category_labels=voronezh.CATEGORY_LABELS,
+        places=voronezh.PLACES,
+        routes=voronezh.ROUTES,
     ),
 }
 
