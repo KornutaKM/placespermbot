@@ -21,6 +21,11 @@ ROSTOV_MUSEUM = PlaceSource(
     url="https://www.rostovmuseum.ru/",
     checked_at=SOURCE_CHECKED_AT,
 )
+CITY_HISTORY_MUSEUM = PlaceSource(
+    name="Музей истории города Ростова-на-Дону",
+    url="https://museum-rostov.ru/",
+    checked_at=SOURCE_CHECKED_AT,
+)
 ROSTOV_ART = PlaceSource(
     name="Ростовский областной музей изобразительных искусств",
     url="https://www.romii.ru/",
@@ -33,7 +38,7 @@ ROSTOV_ZOO = PlaceSource(
 )
 SFEDU_BOTANICAL = PlaceSource(
     name="Ботанический сад Южного федерального университета",
-    url="https://bg.sfedu.ru/",
+    url="https://sfedu.ru/press-center/news/80878",
     checked_at=SOURCE_CHECKED_AT,
 )
 
@@ -202,18 +207,32 @@ PLACES = (
         ("парк", "аттракционы", "с детьми", "прогулка", "бесплатно"),
     ),
     Place(
-        "paramonov-warehouses",
-        "Парамоновские склады",
+        "rostov-underpass-mosaics",
+        "Мозаики в подземных переходах Ростова",
         "unusual",
-        "Руины исторических зерновых складов на склоне к Дону — заметный памятник промышленного Ростова.",
-        "🧱",
-        "Набережная",
-        45,
+        "Серия советских мозаичных панно в центральных переходах — характерная часть городской визуальной культуры.",
+        "🧩",
+        "Исторический центр",
+        75,
         True,
-        47.2182,
-        39.7252,
+        47.2224,
+        39.7130,
         ROSTOV_TOURISM,
-        ("индустриальное наследие", "история", "необычное", "бесплатно"),
+        ("мозаика", "советское искусство", "необычное", "прогулка", "бесплатно"),
+    ),
+    Place(
+        "rostov-city-history-museum",
+        "Музей истории города Ростова-на-Дону",
+        "museums",
+        "Муниципальный музей с экспозицией о развитии Ростова от уездного города до современного областного центра.",
+        "🏙",
+        "Исторический центр",
+        110,
+        False,
+        47.2202,
+        39.7162,
+        CITY_HISTORY_MUSEUM,
+        ("музей", "история города", "краеведение", "с детьми"),
     ),
     Place(
         "rostov-local-history-museum",
@@ -259,15 +278,15 @@ PLACES = (
     ),
     Place(
         "rostov-fine-arts-museum",
-        "Ростовский областной музей изобразительных искусств",
+        "Музей изобразительных искусств — Чехова, 60",
         "museums",
-        "Художественный музей с русским, западноевропейским и восточным искусством.",
+        "Действующая площадка областного художественного музея с русским, западноевропейским и восточным искусством.",
         "🖼",
-        "Центр",
+        "Кировский район",
         120,
         False,
-        47.2251,
-        39.7120,
+        47.2288,
+        39.7270,
         ROSTOV_ART,
         ("музей", "искусство", "культура", "с детьми"),
     ),
@@ -358,7 +377,7 @@ ROUTES = (
         "Набережная, промышленное наследие Парамоновских складов и современный левый берег.",
         300,
         6.0,
-        ("don-embankment-rostov", "paramonov-warehouses", "rostov-arena", "levoberezhny-park-rostov"),
+        ("don-embankment-rostov", "rostov-arena", "levoberezhny-park-rostov"),
     ),
     RoutePlan(
         "rostov-museums",
@@ -366,7 +385,7 @@ ROUTES = (
         "Краеведение, купеческий особняк и художественные коллекции в центральных кварталах.",
         390,
         3.5,
-        ("rostov-local-history-museum", "solodov-mansion-rostov", "rostov-fine-arts-museum"),
+        ("rostov-city-history-museum", "rostov-local-history-museum", "solodov-mansion-rostov", "rostov-fine-arts-museum"),
     ),
     RoutePlan(
         "rostov-nakhichevan",
