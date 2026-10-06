@@ -213,6 +213,13 @@ _CATALOGS: dict[str, CityCatalog] = {
         places=kazan.PLACES,
         routes=kazan.ROUTES,
     ),
+    chelyabinsk.CITY_SLUG: CityCatalog(
+        slug=chelyabinsk.CITY_SLUG,
+        name=chelyabinsk.CITY_NAME,
+        category_labels=chelyabinsk.CATEGORY_LABELS,
+        places=chelyabinsk.PLACES,
+        routes=chelyabinsk.ROUTES,
+    ),
     krasnodar.CITY_SLUG: CityCatalog(
         slug=krasnodar.CITY_SLUG,
         name=krasnodar.CITY_NAME,
