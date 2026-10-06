@@ -21,6 +21,7 @@ EXPECTED_CITIES = {
     "ufa": "Уфа",
     "vladivostok": "Владивосток",
     "volgograd": "Волгоград",
+    "voronezh": "Воронеж",
     "yaroslavl": "Ярославль",
     "yekaterinburg": "Екатеринбург",
 }
@@ -55,6 +56,7 @@ CITY_QUALITY = {
     "ufa": CatalogQualityProfile(20, 7, 8, 5, 12, 10, 5),
     "vladivostok": CatalogQualityProfile(18, 7, 6, 5, 10, 6, 5),
     "volgograd": CatalogQualityProfile(19, 7, 5, 5, 12, 8, 5),
+    "voronezh": CatalogQualityProfile(23, 7, 10, 5, 16, 21, 6),
     "yaroslavl": CatalogQualityProfile(14, 5, 2, 3, 7, 3, 4),
     "yekaterinburg": CatalogQualityProfile(15, 7, 4, 5, 7, 2, 5),
 }
