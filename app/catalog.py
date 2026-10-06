@@ -13,6 +13,7 @@ from app.data import (
     samara,
     sochi,
     spb,
+    ufa,
     vladivostok,
     volgograd,
     yaroslavl,
@@ -228,6 +229,13 @@ _CATALOGS: dict[str, CityCatalog] = {
         category_labels=spb.CATEGORY_LABELS,
         places=spb.PLACES,
         routes=spb.ROUTES,
+    ),
+    ufa.CITY_SLUG: CityCatalog(
+        slug=ufa.CITY_SLUG,
+        name=ufa.CITY_NAME,
+        category_labels=ufa.CATEGORY_LABELS,
+        places=ufa.PLACES,
+        routes=ufa.ROUTES,
     ),
     vladivostok.CITY_SLUG: CityCatalog(
         slug=vladivostok.CITY_SLUG,
