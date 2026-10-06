@@ -210,13 +210,6 @@ _CATALOGS: dict[str, CityCatalog] = {
         places=krasnoyarsk.PLACES,
         routes=krasnoyarsk.ROUTES,
     ),
-    krasnoyarsk.CITY_SLUG: CityCatalog(
-        slug=krasnoyarsk.CITY_SLUG,
-        name=krasnoyarsk.CITY_NAME,
-        category_labels=krasnoyarsk.CATEGORY_LABELS,
-        places=krasnoyarsk.PLACES,
-        routes=krasnoyarsk.ROUTES,
-    ),
     nizhny_novgorod.CITY_SLUG: CityCatalog(
         slug=nizhny_novgorod.CITY_SLUG,
         name=nizhny_novgorod.CITY_NAME,
