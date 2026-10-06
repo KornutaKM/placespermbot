@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from math import asin, cos, radians, sin, sqrt
 
 from app.data import (
+    chelyabinsk,
     kaliningrad,
     kazan,
     krasnodar,
@@ -212,6 +213,13 @@ _CATALOGS: dict[str, CityCatalog] = {
         category_labels=kazan.CATEGORY_LABELS,
         places=kazan.PLACES,
         routes=kazan.ROUTES,
+    ),
+    chelyabinsk.CITY_SLUG: CityCatalog(
+        slug=chelyabinsk.CITY_SLUG,
+        name=chelyabinsk.CITY_NAME,
+        category_labels=chelyabinsk.CATEGORY_LABELS,
+        places=chelyabinsk.PLACES,
+        routes=chelyabinsk.ROUTES,
     ),
     krasnodar.CITY_SLUG: CityCatalog(
         slug=krasnodar.CITY_SLUG,
