@@ -6,6 +6,7 @@ from math import asin, cos, radians, sin, sqrt
 from app.data import (
     kaliningrad,
     kazan,
+    chelyabinsk,
     krasnodar,
     krasnoyarsk,
     moscow,
