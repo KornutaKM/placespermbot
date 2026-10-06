@@ -12,6 +12,7 @@ EXPECTED_CITIES = {
     "perm": "Пермь",
     "saint-petersburg": "Санкт-Петербург",
     "sochi": "Сочи",
+    "vladivostok": "Владивосток",
     "yaroslavl": "Ярославль",
     "yekaterinburg": "Екатеринбург",
 }
@@ -37,6 +38,7 @@ CITY_QUALITY = {
     "perm": CatalogQualityProfile(19, 7, 5, 5, 8, 5, 6),
     "saint-petersburg": CatalogQualityProfile(20, 6, 5, 4, 7, 4, 7),
     "sochi": CatalogQualityProfile(14, 5, 3, 4, 6, 4, 2),
+    "vladivostok": CatalogQualityProfile(18, 7, 6, 5, 10, 6, 5),
     "yaroslavl": CatalogQualityProfile(14, 5, 2, 3, 7, 3, 4),
     "yekaterinburg": CatalogQualityProfile(15, 7, 4, 5, 7, 2, 5),
 }
