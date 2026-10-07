@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile, CityDefinition
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "saint-petersburg"
@@ -428,5 +429,23 @@ ROUTES: tuple[RoutePlan, ...] = (
         duration_minutes=300,
         distance_km=2.5,
         place_slugs=("new-holland", "yusupov-palace", "mariinsky-theatre"),
+    ),
+)
+
+
+CITY = CityDefinition(
+    slug=CITY_SLUG,
+    name=CITY_NAME,
+    category_labels=CATEGORY_LABELS,
+    places=PLACES,
+    routes=ROUTES,
+    quality=CatalogQualityProfile(
+        min_places=20,
+        min_routes=6,
+        min_districts=5,
+        min_categories=4,
+        min_free_places=7,
+        min_family_places=4,
+        min_museums=7,
     ),
 )
