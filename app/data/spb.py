@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "saint-petersburg"
@@ -429,4 +430,15 @@ ROUTES: tuple[RoutePlan, ...] = (
         distance_km=2.5,
         place_slugs=("new-holland", "yusupov-palace", "mariinsky-theatre"),
     ),
+)
+
+
+QUALITY_PROFILE = CatalogQualityProfile(
+    min_places=20,
+    min_routes=6,
+    min_districts=5,
+    min_categories=4,
+    min_free_places=7,
+    min_family_places=4,
+    min_museums=7,
 )
