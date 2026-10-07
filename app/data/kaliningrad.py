@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "kaliningrad"
@@ -65,4 +66,15 @@ ROUTES = (
     RoutePlan("kaliningrad-villas", "Виллы и Верхнее озеро", "Архитектура Амалиенау и зелёные прогулочные пространства северо-запада центра.", 270, 4.5, ("amalienau", "upper-pond-kaliningrad", "amber-museum")),
     RoutePlan("kaliningrad-family", "Семейный Калининград", "Зоопарк и прогулка через центральные районы к Верхнему озеру.", 300, 3.0, ("kaliningrad-zoo", "upper-pond-kaliningrad")),
     RoutePlan("kaliningrad-war-history", "Кёнигсберг 1945", "Военная история города через подземный командный пункт и южное фортификационное кольцо.", 240, 3.5, ("bunker-museum-kaliningrad", "friedland-gate")),
+)
+
+
+QUALITY_PROFILE = CatalogQualityProfile(
+    min_places=14,
+    min_routes=5,
+    min_districts=3,
+    min_categories=3,
+    min_free_places=5,
+    min_family_places=2,
+    min_museums=4,
 )
