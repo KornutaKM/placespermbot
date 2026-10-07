@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile, CityDefinition
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "sochi"
@@ -51,4 +52,22 @@ ROUTES = (
     RoutePlan("sochi-nature", "Горы и водопады", "Природный день в Сочинском национальном парке.", 420, 6.0, ("agura-waterfalls", "eagle-rocks-sochi")),
     RoutePlan("sochi-family", "Сочи с семьёй", "Парк Ривьера, морская прогулочная зона и городской порт.", 300, 3.5, ("riviera-park-sochi", "marine-station-sochi", "primorskaya-embankment-sochi")),
     RoutePlan("sochi-matsesta-nature", "Мацеста и водопады", "Курортная история Старой Мацесты и природная тропа Змейковских водопадов.", 270, 7.0, ("matsesta-sochi", "zmeykovskie-waterfalls")),
+)
+
+
+CITY = CityDefinition(
+    slug=CITY_SLUG,
+    name=CITY_NAME,
+    category_labels=CATEGORY_LABELS,
+    places=PLACES,
+    routes=ROUTES,
+    quality=CatalogQualityProfile(
+        min_places=14,
+        min_routes=5,
+        min_districts=3,
+        min_categories=4,
+        min_free_places=6,
+        min_family_places=4,
+        min_museums=2,
+    ),
 )
