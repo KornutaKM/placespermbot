@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "samara"
@@ -402,4 +403,15 @@ ROUTES = (
         20.0,
         ("ladya-monument", "helicopter-viewpoint-samara"),
     ),
+)
+
+
+QUALITY_PROFILE = CatalogQualityProfile(
+    min_places=19,
+    min_routes=7,
+    min_districts=7,
+    min_categories=5,
+    min_free_places=12,
+    min_family_places=9,
+    min_museums=6,
 )
