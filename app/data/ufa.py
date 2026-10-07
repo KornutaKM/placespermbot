@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "ufa"
@@ -411,4 +412,15 @@ ROUTES = (
         6.0,
         ("yakutov-park-ufa", "ufa-history-museum", "ufa-arena"),
     ),
+)
+
+
+QUALITY_PROFILE = CatalogQualityProfile(
+    min_places=20,
+    min_routes=7,
+    min_districts=8,
+    min_categories=5,
+    min_free_places=12,
+    min_family_places=10,
+    min_museums=5,
 )
