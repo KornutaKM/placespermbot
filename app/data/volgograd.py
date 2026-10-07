@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "volgograd"
@@ -402,4 +403,15 @@ ROUTES = (
             "stalingrad-battle-panorama",
         ),
     ),
+)
+
+
+QUALITY_PROFILE = CatalogQualityProfile(
+    min_places=19,
+    min_routes=7,
+    min_districts=5,
+    min_categories=5,
+    min_free_places=12,
+    min_family_places=8,
+    min_museums=5,
 )
