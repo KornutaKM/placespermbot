@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile, CityDefinition
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "nizhny-novgorod"
@@ -51,4 +52,22 @@ ROUTES = (
     RoutePlan("nizhny-art-history", "Искусство и история", "Кремль, современное искусство и купеческая Рождественская улица.", 300, 3.0, ("nizhny-kremlin", "nizhny-art-museum-russian", "arsenal-nn", "rozhdestvenskaya-street")),
     RoutePlan("nizhny-upper-volga", "Верхне-Волжская прогулка", "Купеческая усадьба, волжские панорамы и спуск к большой реке.", 270, 3.0, ("rukavishnikov-estate-nn", "chkalov-stairs", "lower-volga-embankment")),
     RoutePlan("nizhny-family-green", "Зелёный Нижний", "Отдельный семейный сценарий вне исторического ядра — большая прогулка по парку «Швейцария».", 180, 2.5, ("switzerland-park-nn",)),
+)
+
+
+CITY = CityDefinition(
+    slug=CITY_SLUG,
+    name=CITY_NAME,
+    category_labels=CATEGORY_LABELS,
+    places=PLACES,
+    routes=ROUTES,
+    quality=CatalogQualityProfile(
+        min_places=15,
+        min_routes=6,
+        min_districts=3,
+        min_categories=3,
+        min_free_places=8,
+        min_family_places=2,
+        min_museums=3,
+    ),
 )
