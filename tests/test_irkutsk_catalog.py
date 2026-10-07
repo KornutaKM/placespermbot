@@ -86,3 +86,14 @@ def test_irkutsk_seed_marks_children_railway_as_seasonal() -> None:
     assert place is not None
     assert "сезон" in place.summary.casefold()
     assert "проверять" in place.summary.casefold()
+
+def test_irkutsk_city_museum_seed_tracks_temporary_closure() -> None:
+    city = catalog()
+    museum = city.place_by_slug("irkutsk-city-history-museum")
+    route = city.route_by_slug("irkutsk-decembrists")
+
+    assert museum is not None
+    assert "закрыт" in museum.summary.casefold()
+    assert "1 декабря 2026" in museum.summary
+    assert route is not None
+    assert "irkutsk-city-history-museum" not in route.place_slugs
