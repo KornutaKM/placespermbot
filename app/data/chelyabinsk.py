@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile, CityDefinition
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "chelyabinsk"
@@ -433,5 +434,23 @@ ROUTES = (
         180,
         2.0,
         ("zero-verst-chelyabinsk", "kirovka-chelyabinsk", "chelyabinsk-city-tower"),
+    ),
+)
+
+
+CITY = CityDefinition(
+    slug=CITY_SLUG,
+    name=CITY_NAME,
+    category_labels=CATEGORY_LABELS,
+    places=PLACES,
+    routes=ROUTES,
+    quality=CatalogQualityProfile(
+        min_places=22,
+        min_routes=7,
+        min_districts=9,
+        min_categories=5,
+        min_free_places=14,
+        min_family_places=19,
+        min_museums=5,
     ),
 )
