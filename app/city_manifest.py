@@ -1,0 +1,86 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from types import ModuleType
+
+from app.data import (
+    chelyabinsk,
+    kaliningrad,
+    kazan,
+    krasnodar,
+    krasnoyarsk,
+    moscow,
+    nizhny_novgorod,
+    novosibirsk,
+    omsk,
+    perm,
+    rostov_on_don,
+    samara,
+    sochi,
+    spb,
+    ufa,
+    vladivostok,
+    volgograd,
+    yaroslavl,
+    yekaterinburg,
+)
+from app.domain import Place, RoutePlan
+
+
+@dataclass(frozen=True, slots=True)
+class CatalogQualityProfile:
+    min_places: int
+    min_routes: int
+    min_districts: int
+    min_categories: int
+    min_free_places: int
+    min_family_places: int
+    min_museums: int
+
+
+@dataclass(frozen=True, slots=True)
+class CityManifest:
+    slug: str
+    name: str
+    category_labels: dict[str, str]
+    places: tuple[Place, ...]
+    routes: tuple[RoutePlan, ...]
+    quality: CatalogQualityProfile
+
+
+def _city(module: ModuleType, quality: CatalogQualityProfile) -> CityManifest:
+    return CityManifest(
+        slug=module.CITY_SLUG,
+        name=module.CITY_NAME,
+        category_labels=module.CATEGORY_LABELS,
+        places=module.PLACES,
+        routes=module.ROUTES,
+        quality=quality,
+    )
+
+
+CITY_MANIFESTS = (
+    _city(chelyabinsk, CatalogQualityProfile(22, 7, 9, 5, 14, 19, 5)),
+    _city(kaliningrad, CatalogQualityProfile(14, 5, 3, 3, 5, 2, 4)),
+    _city(kazan, CatalogQualityProfile(14, 5, 3, 3, 5, 4, 2)),
+    _city(krasnodar, CatalogQualityProfile(22, 7, 8, 5, 17, 13, 4)),
+    _city(krasnoyarsk, CatalogQualityProfile(21, 7, 9, 5, 13, 10, 6)),
+    _city(moscow, CatalogQualityProfile(18, 8, 8, 4, 8, 5, 3)),
+    _city(nizhny_novgorod, CatalogQualityProfile(15, 6, 3, 3, 8, 2, 3)),
+    _city(novosibirsk, CatalogQualityProfile(14, 6, 6, 4, 7, 4, 4)),
+    _city(omsk, CatalogQualityProfile(21, 7, 10, 5, 16, 15, 4)),
+    _city(perm, CatalogQualityProfile(19, 7, 5, 5, 8, 5, 6)),
+    _city(rostov_on_don, CatalogQualityProfile(22, 7, 10, 5, 14, 12, 6)),
+    _city(spb, CatalogQualityProfile(20, 6, 5, 4, 7, 4, 7)),
+    _city(samara, CatalogQualityProfile(19, 7, 7, 5, 12, 9, 6)),
+    _city(sochi, CatalogQualityProfile(14, 5, 3, 4, 6, 4, 2)),
+    _city(ufa, CatalogQualityProfile(20, 7, 8, 5, 12, 10, 5)),
+    _city(vladivostok, CatalogQualityProfile(18, 7, 6, 5, 10, 6, 5)),
+    _city(volgograd, CatalogQualityProfile(19, 7, 5, 5, 12, 8, 5)),
+    _city(yaroslavl, CatalogQualityProfile(14, 5, 2, 3, 7, 3, 4)),
+    _city(yekaterinburg, CatalogQualityProfile(15, 7, 4, 5, 7, 2, 5)),
+)
+
+
+def list_city_manifests() -> tuple[CityManifest, ...]:
+    return CITY_MANIFESTS
