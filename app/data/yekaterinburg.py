@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile, CityDefinition
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "yekaterinburg"
@@ -72,4 +73,22 @@ ROUTES = (
     RoutePlan("ekb-culture", "Культурный Екатеринбург", "Театр, литературный квартал и геологические коллекции города.", 300, 4.2, ("opera-ekb", "literary-quarter", "ural-geology-museum")),
     RoutePlan("ekb-city-story", "Как появился Екатеринбург", "Промышленное ядро Плотинки, историческая водонапорная башня и городской музей.", 240, 2.0, ("plotinka", "water-tower-plotinka", "ekb-city-history-museum")),
     RoutePlan("ekb-family-day", "Семейный день в центре", "Зоопарк, городская история и прогулка в Харитоновском саду — спокойный маршрут для дня с детьми.", 390, 2.8, ("yekaterinburg-zoo", "ekb-city-history-museum", "kharitonovsky-garden")),
+)
+
+
+CITY = CityDefinition(
+    slug=CITY_SLUG,
+    name=CITY_NAME,
+    category_labels=CATEGORY_LABELS,
+    places=PLACES,
+    routes=ROUTES,
+    quality=CatalogQualityProfile(
+        min_places=15,
+        min_routes=7,
+        min_districts=4,
+        min_categories=5,
+        min_free_places=7,
+        min_family_places=2,
+        min_museums=5,
+    ),
 )
