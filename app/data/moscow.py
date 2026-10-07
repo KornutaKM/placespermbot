@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile, CityDefinition
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "moscow"
@@ -77,4 +78,22 @@ ROUTES = (
     RoutePlan("moscow-south-estates", "Юг Москвы: дворцы и природа", "Большой дворцово-парковый день вне центра в Царицыне и Коломенском.", 480, 15.0, ("tsaritsyno", "kolomenskoye")),
     RoutePlan("moscow-family-science", "Наука с детьми", "Естественная история в Дарвиновском музее и панорамная прогулка на Воробьёвых горах.", 300, 6.0, ("darwin-museum", "sparrow-hills")),
     RoutePlan("moscow-contemporary-art", "Современное искусство Москвы", "Индустриальные галереи Винзавода и небоскрёбы делового центра как два слоя современной Москвы.", 300, 10.0, ("winzavod", "moscow-city")),
+)
+
+
+CITY = CityDefinition(
+    slug=CITY_SLUG,
+    name=CITY_NAME,
+    category_labels=CATEGORY_LABELS,
+    places=PLACES,
+    routes=ROUTES,
+    quality=CatalogQualityProfile(
+        min_places=18,
+        min_routes=8,
+        min_districts=8,
+        min_categories=4,
+        min_free_places=8,
+        min_family_places=5,
+        min_museums=3,
+    ),
 )
