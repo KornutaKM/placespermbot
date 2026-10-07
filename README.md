@@ -33,7 +33,7 @@ Telegram-гид по городам России с единым multi-city cata
 - реальные внешние каталоги экскурсий Sputnik8 и Tripster с provenance/freshness для поддерживаемого города;
 - live-афиша Петербурга через Яндекс Афишу и KudaGo; неподдерживаемые города fail-closed без fake data;
 - Docker с persistent volume и healthcheck;
-- CI с compile check, Ruff, отдельным catalog quality gate, полным pytest и Docker image smoke.
+- CI с compile check, Ruff, `catalog_audit`, полным pytest и Docker image smoke.
 
 ## Города
 
@@ -104,6 +104,17 @@ provider для города не зарегистрирован, соответ
     PLACES_SPUTNIK8_PERM_AFFILIATE_URL=
     PLACES_TRIPSTER_PERM_AFFILIATE_URL=
     PLACES_YANDEX_AFISHA_PERM_URL=
+
+## Аудит каталогов
+
+Перед добавлением или обновлением городов можно запустить единый fail-closed аудит:
+
+    python -m app.catalog_audit
+
+Он выводит по каждому городу количество мест, маршрутов, районов, категорий, бесплатных,
+семейных и музейных точек, число доменов-источников и диапазон дат проверки provenance.
+Команда завершается с ненулевым кодом, если нарушен runtime catalog contract или
+city-specific quality profile. Тот же аудит выполняется в CI.
 
 ## Данные
 
