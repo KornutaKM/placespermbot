@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "kazan"
@@ -70,4 +71,15 @@ ROUTES = (
     RoutePlan("kazan-museum-center", "История в центре", "Кремль, Национальный музей и архитектурные достопримечательности рядом.", 300, 2.0, ("kazan-kremlin", "national-museum-tatarstan", "peter-paul-cathedral-kazan", "black-lake-kazan")),
     RoutePlan("kazan-tatar-taste", "Татарская культура и вкус", "Старо-Татарская слобода, музей традиционного десерта и прогулка у озера Кабан.", 270, 2.0, ("old-tatar-quarter", "chak-chak-museum-kazan", "kaban-embankment")),
     RoutePlan("kazan-family-north", "Семейная Казань вне центра", "Спокойный районный сценарий с озером, детской площадкой и прогулочными дорожками парка Урицкого.", 150, 2.0, ("uritsky-park-kazan",)),
+)
+
+
+QUALITY_PROFILE = CatalogQualityProfile(
+    min_places=14,
+    min_routes=5,
+    min_districts=3,
+    min_categories=3,
+    min_free_places=5,
+    min_family_places=4,
+    min_museums=2,
 )
