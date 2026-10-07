@@ -4,7 +4,8 @@ import asyncio
 import sqlite3
 from pathlib import Path
 
-from app.catalog import get_catalog
+from app.catalog import get_catalog, list_catalogs
+from app.catalog_validation import validate_catalogs
 from app.config import Settings
 from app.database_contract import validate_database_contract, validate_database_integrity
 
@@ -12,9 +13,15 @@ from app.database_contract import validate_database_contract, validate_database_
 def validate_static_runtime(settings: Settings) -> None:
     settings.require_bot_token()
 
-    catalog = get_catalog(settings.city_slug)
-    if not catalog.places:
-        raise RuntimeError("Active city catalog is empty")
+    get_catalog(settings.city_slug)
+
+    issues = validate_catalogs(list_catalogs())
+    if issues:
+        rendered = "; ".join(
+            f"{issue.code}: {issue.message}"
+            for issue in issues[:5]
+        )
+        raise RuntimeError(f"Catalog contract is invalid: {rendered}")
 
 
 async def validate_health(settings: Settings) -> None:
