@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile, CityDefinition
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "perm"
@@ -520,5 +521,23 @@ ROUTES: tuple[RoutePlan, ...] = (
             "permm",
             "perm-opera",
         ),
+    ),
+)
+
+
+CITY = CityDefinition(
+    slug=CITY_SLUG,
+    name=CITY_NAME,
+    category_labels=CATEGORY_LABELS,
+    places=PLACES,
+    routes=ROUTES,
+    quality=CatalogQualityProfile(
+        min_places=19,
+        min_routes=7,
+        min_districts=5,
+        min_categories=5,
+        min_free_places=8,
+        min_family_places=5,
+        min_museums=6,
     ),
 )
