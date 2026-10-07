@@ -3,6 +3,7 @@ from pkgutil import iter_modules
 
 from app import data as data_package
 from app.catalog import get_catalog, list_catalogs
+from app.catalog_quality import validate_catalog_quality
 from app.catalog_validation import validate_catalogs
 from app.city_manifest import list_city_manifests
 
@@ -35,30 +36,8 @@ def test_all_manifest_cities_are_registered() -> None:
 def test_catalogs_meet_manifest_quality_profiles() -> None:
     for manifest in list_city_manifests():
         catalog = get_catalog(manifest.slug)
-        profile = manifest.quality
 
-        assert len(catalog.places) >= profile.min_places, manifest.slug
-        assert len(catalog.routes) >= profile.min_routes, manifest.slug
-        assert (
-            len({place.district for place in catalog.places})
-            >= profile.min_districts
-        ), manifest.slug
-        assert (
-            len({place.category for place in catalog.places})
-            >= profile.min_categories
-        ), manifest.slug
-        assert (
-            sum(place.is_free for place in catalog.places)
-            >= profile.min_free_places
-        ), manifest.slug
-        assert (
-            sum("с детьми" in place.tags for place in catalog.places)
-            >= profile.min_family_places
-        ), manifest.slug
-        assert (
-            sum(place.category == "museums" for place in catalog.places)
-            >= profile.min_museums
-        ), manifest.slug
+        assert validate_catalog_quality(catalog, manifest.quality) == ()
 
 
 def test_routes_are_valid_and_use_unique_places() -> None:
