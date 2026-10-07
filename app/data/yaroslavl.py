@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile, CityDefinition
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "yaroslavl"
@@ -51,4 +52,22 @@ ROUTES = (
     RoutePlan("yar-museums", "Музейный Ярославль", "История города, музыка и художественные коллекции.", 360, 3.5, ("yaroslavl-museum-reserve", "sobinov-house-yar", "governors-house-yar")),
     RoutePlan("yar-family", "Семейная прогулка", "Городской символ, пешеходный центр и зелёный Даманский остров.", 210, 2.5, ("bear-monument-yar", "kirova-street-yar", "damansky-island-yar")),
     RoutePlan("yar-history-depth", "Ярославль: история глубже", "Два разных слоя городской истории — военная память и развитие Ярославля от основания до современности.", 300, 6.5, ("military-glory-yar", "city-history-yar", "volga-embankment-yar")),
+)
+
+
+CITY = CityDefinition(
+    slug=CITY_SLUG,
+    name=CITY_NAME,
+    category_labels=CATEGORY_LABELS,
+    places=PLACES,
+    routes=ROUTES,
+    quality=CatalogQualityProfile(
+        min_places=14,
+        min_routes=5,
+        min_districts=2,
+        min_categories=3,
+        min_free_places=7,
+        min_family_places=3,
+        min_museums=4,
+    ),
 )
