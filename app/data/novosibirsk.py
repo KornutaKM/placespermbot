@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.city_manifest import CatalogQualityProfile, CityDefinition
 from app.domain import Place, PlaceSource, RoutePlan
 
 CITY_SLUG = "novosibirsk"
@@ -60,4 +61,22 @@ ROUTES = (
     RoutePlan("nsk-science", "Научный Новосибирск", "Академгородок и техническая история железной дороги.", 360, 8.0, ("akademgorodok-nsk", "railway-museum-nsk")),
     RoutePlan("nsk-parks-center", "Зелёный центр", "Площадь Ленина, НОВАТ и спокойная прогулка по Центральному парку.", 180, 2.0, ("lenin-square-nsk", "novat", "central-park-nsk")),
     RoutePlan("nsk-art-river", "Искусство и Обь", "Художественная коллекция центра, история города у реки и прогулка по Михайловской набережной.", 300, 3.5, ("art-museum-nsk", "museum-embankment-nsk", "mikhailovskaya-embankment")),
+)
+
+
+CITY = CityDefinition(
+    slug=CITY_SLUG,
+    name=CITY_NAME,
+    category_labels=CATEGORY_LABELS,
+    places=PLACES,
+    routes=ROUTES,
+    quality=CatalogQualityProfile(
+        min_places=14,
+        min_routes=6,
+        min_districts=6,
+        min_categories=4,
+        min_free_places=7,
+        min_family_places=4,
+        min_museums=4,
+    ),
 )
