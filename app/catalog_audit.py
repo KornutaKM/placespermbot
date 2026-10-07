@@ -44,6 +44,12 @@ def collect_catalog_audits() -> tuple[CatalogAudit, ...]:
             validate_catalog(catalog)
             + validate_catalog_quality(catalog, manifest.quality)
         )
+        oldest_source_checked_at = (
+            min(source_dates).isoformat() if source_dates else ""
+        )
+        newest_source_checked_at = (
+            max(source_dates).isoformat() if source_dates else ""
+        )
         audits.append(
             CatalogAudit(
                 slug=catalog.slug,
@@ -60,8 +66,8 @@ def collect_catalog_audits() -> tuple[CatalogAudit, ...]:
                     place.category == "museums" for place in catalog.places
                 ),
                 source_domains=source_domains,
-                oldest_source_checked_at=min(source_dates).isoformat(),
-                newest_source_checked_at=max(source_dates).isoformat(),
+                oldest_source_checked_at=oldest_source_checked_at,
+                newest_source_checked_at=newest_source_checked_at,
                 issues=issues,
             )
         )
