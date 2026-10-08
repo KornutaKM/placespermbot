@@ -12,6 +12,12 @@ TUR = PlaceSource(
     checked_at=SOURCE_CHECKED_AT,
 )
 
+PRILUKI = PlaceSource(
+    name="Спасо-Прилуцкий Димитриев монастырь — официальный сайт",
+    url="https://www.spas-priluki.ru/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+
 TOUR_MUSEUMS = PlaceSource(
     name="Туристско-информационный центр — музеи Вологды",
     url="https://turvologda.ru/museums-and-display-facilities/31/",
@@ -233,9 +239,9 @@ PLACES = (
         "Прилуки",
         110,
         True,
-        59.25,
-        39.903,
-        TOUR_CHURCH,
+        59.262737,
+        39.887862,
+        PRILUKI,
         ("монастырь", "история", "архитектура", "бесплатно"),
     ),
     Place(
@@ -457,8 +463,8 @@ PLACES = (
         "Исторический центр",
         90,
         False,
-        59.2222,
-        39.8917,
+        59.225816,
+        39.877419,
         TOUR_MUSEUMS,
         ("музей", "детство", "игрушки", "с детьми"),
     ),
