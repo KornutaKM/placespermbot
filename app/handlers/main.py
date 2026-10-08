@@ -68,6 +68,7 @@ from app.planner import INTEREST_LABELS, build_route
 from app.profile import ProfileSummary, build_profile_summary, profile_text
 from app.recommendations import recommend_personalized, recommendation_reason_text
 from app.route_completion import complete_saved_route
+from app.route_safety import route_access_warnings
 from app.saved_routes import (
     PERSONAL_ROUTE_INTEREST,
     PLACE_ROUTE_INTEREST,
@@ -2056,14 +2057,20 @@ async def route_card(callback: CallbackQuery) -> None:
         f"{index}. {place.title}"
         for index, place in enumerate(route_places, start=1)
     )
+    warnings = route_access_warnings(route_places)
+    warning_text = (
+        "\n\n⚠️ <b>Перед поездкой:</b>\n" + "\n".join(warnings)
+        if warnings else ""
+    )
 
     await callback.message.edit_text(
         f"🧭 <b>{route.title}</b>\n\n"
         f"{route.summary}\n\n"
         f"⏱ ~{route.duration_minutes // 60} ч {route.duration_minutes % 60:02d} мин\n"
         f"🚶 ~{route.distance_km:g} км\n\n"
-        f"<b>Точки:</b>\n{stops}\n\n"
-        "Ниже можно открыть пешеходный маршрут в Google Maps. "
+        f"<b>Точки:</b>\n{stops}"
+        f"{warning_text}\n\n"
+        "Ниже можно открыть маршрут для проверки переходов в Google Maps. "
         "Длинные прогулки разбиваются на несколько последовательных частей.",
         reply_markup=route_details_keyboard(route_places),
     )

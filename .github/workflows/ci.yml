@@ -31,6 +31,15 @@ jobs:
         with:
           name: catalog-coverage
           path: catalog-coverage.json
+      - name: Route geography review
+        run: |
+          python -m app.route_review --format json > route-review.json
+          python -m app.route_review --format markdown >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload route geography review
+        uses: actions/upload-artifact@v4
+        with:
+          name: route-geography-review
+          path: route-review.json
       - name: Full test suite
         run: pytest -q
 
