@@ -34,6 +34,7 @@ Telegram-гид по городам России с единым multi-city cata
 - live-афиша Петербурга через Яндекс Афишу и KudaGo; неподдерживаемые города fail-closed без fake data;
 - Docker с persistent volume и healthcheck;
 - CI с compile check, Ruff, `catalog_audit`, полным pytest и Docker image smoke.
+- read-only preflight перед production-развёртыванием (`python -m app.deployment_preflight --backup ...`) с проверкой SQLite contract, свежести backup, production-конфигурации, числа городов; инструкция оператора — [docs/production-deployment.md](docs/production-deployment.md).
 - CI сохраняет advisory JSON-отчёт по всем готовым маршрутам (`route-geography-review`): разрывы более 8 км по прямой, заявленные дистанции короче геодезического минимума и длительности меньше суммы времени осмотра; карточки длинных прогулок предупреждают о вероятном транспорте.
 - сквозная аналитика покрытия 32 городов: доля мест в маршрутах, разнообразие категорий, семейных объектов, независимых доменов источников и длинные переходы; JSON-артефакт и Markdown-отчёт в GitHub Actions, диагностические сигналы не блокируют сборку.
 
