@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from urllib.parse import urlparse
 
 from app.catalog import CityCatalog
+from app.route_safety import is_route_stop_available
 
 MAX_SOURCE_AGE_DAYS = 366
 KNOWN_IRRELEVANT_SOURCE_PATHS = (
@@ -139,6 +140,10 @@ def validate_catalog(catalog: CityCatalog) -> tuple[CatalogIssue, ...]:
         if any(path in parsed.path for path in KNOWN_IRRELEVANT_SOURCE_PATHS):
             issues.append(CatalogIssue("place.source.irrelevant", f"{place.slug}: source URL is known to be unrelated"))
 
+    unavailable_slugs = {
+        place.slug for place in catalog.places if not is_route_stop_available(place)
+    }
+
     for route in catalog.routes:
         if route.slug in route_slugs:
             issues.append(CatalogIssue("route.slug.duplicate", f"Duplicate route slug: {route.slug}"))
@@ -176,6 +181,14 @@ def validate_catalog(catalog: CityCatalog) -> tuple[CatalogIssue, ...]:
             )
         if len(route.place_slugs) != len(set(route.place_slugs)):
             issues.append(CatalogIssue("route.place.duplicate", f"{route.slug}: duplicate route stops"))
+        blocked = set(route.place_slugs) & unavailable_slugs
+        if blocked:
+            issues.append(
+                CatalogIssue(
+                    "route.place.unavailable",
+                    f"{route.slug}: unavailable stops: {', '.join(sorted(blocked))}",
+                )
+            )
 
     return tuple(issues)
 
