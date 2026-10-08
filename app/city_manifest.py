@@ -24,6 +24,7 @@ from app.data import (
     ufa,
     vladivostok,
     volgograd,
+    voronezh,
     yaroslavl,
     yekaterinburg,
 )
@@ -83,6 +84,7 @@ CITY_MANIFESTS = (
     _city(ufa, CatalogQualityProfile(20, 7, 8, 5, 12, 10, 5)),
     _city(vladivostok, CatalogQualityProfile(18, 7, 6, 5, 10, 6, 5)),
     _city(volgograd, CatalogQualityProfile(19, 7, 5, 5, 12, 8, 5)),
+    _city(voronezh, CatalogQualityProfile(23, 7, 9, 5, 16, 15, 6)),
     _city(yaroslavl, CatalogQualityProfile(14, 5, 2, 3, 7, 3, 4)),
     _city(yekaterinburg, CatalogQualityProfile(15, 7, 4, 5, 7, 2, 5)),
 )
