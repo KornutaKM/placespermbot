@@ -44,7 +44,7 @@ def test_murmansk_institution_provenance() -> None:
 def test_murmansk_search_and_family_free_categories() -> None:
     city = catalog()
     assert city.search_places("Атомный ледокол")[0].slug == "murmansk-icebreaker-lenin"
-    assert city.search_places("котy Семёну") == () or city.search_places("коту Семёну")[0].slug == "murmansk-cat-semyon"
+    assert city.search_places("коту Семёну")[0].slug == "murmansk-cat-semyon"
     family = {p.slug for p in city.places_for_category("family")}
     assert {
         "murmansk-cat-semyon", "murmansk-semenovskoye-attractions",
