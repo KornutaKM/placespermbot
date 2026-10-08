@@ -4,6 +4,7 @@ from math import ceil
 
 from app.catalog import CityCatalog, coordinates_distance_km, distance_km
 from app.domain import GeneratedRoute, Place
+from app.route_safety import is_route_stop_available
 
 WALKING_SPEED_KMH = 4.5
 
@@ -144,7 +145,7 @@ def _deduplicate_candidates(candidates: tuple[Place, ...]) -> list[Place]:
     seen: set[str] = set()
     ordered: list[Place] = []
     for place in candidates:
-        if place.slug in seen:
+        if not is_route_stop_available(place) or place.slug in seen:
             continue
         seen.add(place.slug)
         ordered.append(place)

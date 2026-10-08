@@ -3,6 +3,7 @@ from __future__ import annotations
 from app.catalog import CityCatalog
 from app.domain import GeneratedRoute, Place
 from app.planner import build_ranked_route
+from app.route_safety import is_route_stop_available
 from app.saved_routes import PLACE_ROUTE_INTEREST
 from app.similarity import find_similar_places
 
@@ -14,7 +15,7 @@ def build_place_route(
     budget_minutes: int,
 ) -> GeneratedRoute | None:
     origin = catalog.place_by_slug(origin_slug)
-    if origin is None:
+    if origin is None or not is_route_stop_available(origin):
         return None
 
     similar = find_similar_places(
