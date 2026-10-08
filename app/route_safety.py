@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import pairwise
 
 from app.catalog import distance_km
 from app.domain import Place
@@ -27,7 +28,7 @@ def route_geography(places: tuple[Place, ...]) -> RouteGeography:
     total = 0.0
     longest = 0.0
     flagged: list[tuple[str, str, float]] = []
-    for first, second in zip(places, places[1:]):
+    for first, second in pairwise(places):
         leg = distance_km(first, second)
         total += leg
         longest = max(longest, leg)
