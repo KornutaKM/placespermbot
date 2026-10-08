@@ -49,6 +49,12 @@ NN_LITERARY = PlaceSource(
     checked_at=EDITORIAL_CHECKED_AT,
 )
 
+NN_GAZ = PlaceSource(
+    name="Музей истории ГАЗ — официальный сайт и экскурсии по Соцгороду",
+    url="https://museum.gaz.ru/excursions/first-street-of-social-city/",
+    checked_at=EDITORIAL_CHECKED_AT,
+)
+
 NN_CITY_MUSEUMS = PlaceSource(
     name="Администрация Нижнего Новгорода — городские музеи",
     url="https://admgor.nnov.ru/Gorod/Napravleniya-raboty/Kultura-i-iskusstvo/Muzei-goroda",
@@ -219,7 +225,7 @@ PLACES = (
         False,
         56.2468,
         43.893,
-        NN_CITY_TRAVEL,
+        NN_GAZ,
         ("музей", "автомобили", "ГАЗ", "техника", "с детьми"),
     ),
     Place(
@@ -362,6 +368,20 @@ PLACES = (
         NN_LITERARY,
         ("музей", "Горький", "реставрация", "закрыто"),
     ),
+    Place(
+        "nn-avtozavodsky-park",
+        "Автозаводский парк",
+        "parks",
+        "Парк индустриального района: прогулка по общедоступным аллеям после посещения музея ГАЗ. Заход на территорию предприятия не предусмотрен.",
+        "🌳",
+        "Автозаводский район",
+        85,
+        True,
+        56.2401,
+        43.9025,
+        NN_GAZ,
+        ("парк", "соцгород", "индустриальная история", "с детьми", "бесплатно"),
+    ),
 )
 
 ROUTES = (
@@ -425,6 +445,6 @@ ROUTES = (
         "Самостоятельная поездка в Автозаводский район: музей Горьковского автозавода.",
         180,
         2.1,
-        ("nn-gaz-history-museum",),
+        ("nn-gaz-history-museum", "nn-avtozavodsky-park"),
     ),
 )
