@@ -43,7 +43,7 @@ def test_saratov_museums_have_independent_official_provenance() -> None:
 
 def test_saratov_search_and_virtual_family_free_categories() -> None:
     city = catalog()
-    assert city.search_places("Радищевский")[0].slug == "radishchev-art-museum"
+    assert city.search_places("Радищева")[0].slug == "radishchev-art-museum"
     assert city.search_places("Журавли")[0].slug == "cranes-memorial"
     family = {place.slug for place in city.places_for_category("family")}
     assert {
