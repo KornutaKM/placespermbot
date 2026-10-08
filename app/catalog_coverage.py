@@ -106,15 +106,16 @@ def collect_coverage() -> tuple[CityCoverage, ...]:
 
 
 def render_coverage_markdown(rows: tuple[CityCoverage, ...]) -> str:
+    columns = (
+        "City", "Places", "Routes", "Districts", "Categories", "Family",
+        "Source domains", "Route reach", "Longest leg km", "Signals",
+    )
     header = [
         "## City catalog coverage (advisory)",
         "",
         "Coverage and signals guide editorial work; they are not CI failures.",
         "",
-        "| " + " | ".join(
-            ("City", "Places", "Routes", "Districts", "Categories", "Family",
-             "Source domains", "Route reach", "Longest leg km", "Signals")
-        ) + " |",
+        f"| {' | '.join(columns)} |",
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|---|",
     ]
     for row in rows:
