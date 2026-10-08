@@ -12,7 +12,7 @@ def catalog():
 
 def test_pskov_full_city_catalog_and_sources() -> None:
     city = catalog()
-    assert len(city.places) >= 30
+    assert len(city.places) >= 35
     assert len(city.routes) >= 9
     assert len({p.district for p in city.places}) >= 9
     for place in city.places:
@@ -30,6 +30,7 @@ def test_pskov_official_museum_and_unesco_provenance() -> None:
         "prikaz-chambers": "museumpskov.ru",
         "pogankin-chambers": "museumpskov.ru",
         "postnikov-yard": "www.culture.ru",
+        "magic-hill-park": "magic-hill.ru",
         "mirozhsky-cathedral": "whc.unesco.org",
         "snetogorsk-monastery": "whc.unesco.org",
         "john-baptist-cathedral": "whc.unesco.org",
@@ -47,7 +48,7 @@ def test_pskov_family_free_and_search() -> None:
     assert city.search_places("Парк Куопио")[0].slug == "kuopio-park"
     assert {p.slug for p in city.places_for_category("family")} >= {
         "pskov-krom", "olga-chapel", "pskov-arboretum",
-        "kuopio-park", "postnikov-yard",
+        "kuopio-park", "postnikov-yard", "magic-hill-park",
     }
     free = city.places_for_category("free")
     assert len(free) >= 21

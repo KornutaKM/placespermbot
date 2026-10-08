@@ -90,6 +90,12 @@ MUSEUM_STATUS = PlaceSource(
     checked_at=SOURCE_CHECKED_AT,
 )
 
+MAGIC_HILL = PlaceSource(
+    name="Парк аттракционов «Волшебная гора» — официальный сайт",
+    url="https://magic-hill.ru/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+
 CATEGORY_LABELS = {
     "sights": "🏛 Достопримечательности",
     "unusual": "✨ Необычные места",
@@ -576,6 +582,34 @@ PLACES = (
         CITY_EVENT,
         ("мост", "панорама", "архитектура", "с детьми", "бесплатно"),
     ),
+    Place(
+        "magic-hill-park",
+        "Парк аттракционов «Волшебная гора»",
+        "family",
+        "Семейный парк на Завеличенской набережной, 2; аттракционы и входные условия зависят от сезона и расписания.",
+        "🎡",
+        "Завеличенская набережная",
+        120,
+        False,
+        57.8092,
+        28.3204,
+        MAGIC_HILL,
+        ("парк", "аттракционы", "семья", "с детьми"),
+    ),
+    Place(
+        "snetogorsk-river-view",
+        "Прогулка у стен Снетогорского монастыря",
+        "parks",
+        "Участок у монастырского ансамбля с видом на долину Великой; путь внутри действующей обители не предполагается.",
+        "🌳",
+        "Снятная гора",
+        70,
+        True,
+        57.8347,
+        28.2660,
+        UNESCO_GEO,
+        ("прогулка", "река", "монастырь", "с детьми", "бесплатно"),
+    ),
 )
 
 ROUTES = (
@@ -625,7 +659,7 @@ ROUTES = (
         "Набережные, старинные крепостные стены, видовые точки и парк.",
         280,
         4.8,
-        ("olginskaya-embankment", "olga-chapel", "olga-bridge-pskov", "pskov-krom", "river-confluence-view"),
+        ("olginskaya-embankment", "olga-chapel", "magic-hill-park", "olga-bridge-pskov", "pskov-krom", "river-confluence-view"),
     ),
     RoutePlan(
         "pskov-rivers",
@@ -649,6 +683,6 @@ ROUTES = (
         "Отдельная прогулка по северо-западной части Пскова у Снетогорского монастыря.",
         170,
         2.6,
-        ("snetogorsk-monastery",),
+        ("snetogorsk-monastery", "snetogorsk-river-view"),
     ),
 )

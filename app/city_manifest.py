@@ -82,7 +82,7 @@ CITY_MANIFESTS = (
     _city(novosibirsk, CatalogQualityProfile(14, 6, 6, 4, 7, 4, 4)),
     _city(omsk, CatalogQualityProfile(21, 7, 10, 5, 16, 15, 4)),
     _city(perm, CatalogQualityProfile(19, 7, 5, 5, 8, 5, 6)),
-    _city(pskov, CatalogQualityProfile(30, 9, 9, 4, 21, 13, 8)),
+    _city(pskov, CatalogQualityProfile(35, 9, 9, 5, 21, 14, 8)),
     _city(rostov_on_don, CatalogQualityProfile(22, 7, 10, 5, 14, 12, 6)),
     _city(spb, CatalogQualityProfile(20, 6, 5, 4, 7, 4, 7)),
     _city(samara, CatalogQualityProfile(19, 7, 7, 5, 12, 9, 6)),
