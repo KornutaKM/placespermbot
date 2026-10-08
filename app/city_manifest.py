@@ -6,9 +6,9 @@ from types import ModuleType
 from app.data import (
     chelyabinsk,
     irkutsk,
-    khabarovsk,
     kaliningrad,
     kazan,
+    khabarovsk,
     krasnodar,
     krasnoyarsk,
     moscow,
