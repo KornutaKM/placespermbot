@@ -16,7 +16,7 @@ def test_vologda_catalog_depth_and_geography() -> None:
     assert len(city.routes) >= 10
     assert len({p.district for p in city.places}) >= 10
     for place in city.places:
-        assert 59.19 <= place.latitude <= 59.26
+        assert 59.19 <= place.latitude <= 59.28
         assert 39.82 <= place.longitude <= 39.94
         assert place.source.checked_at == date(2026, 10, 8)
         parsed = urlparse(place.source.url)
@@ -35,6 +35,7 @@ def test_vologda_official_sources_and_local_provenance() -> None:
         "vologda-exile-museum": "www.culture.ru",
         "vologda-letter-o": "turvologda.ru",
         "vologda-petrushka-theatre": "turvologda.ru",
+        "spaso-prilutsky-monastery": "www.spas-priluki.ru",
     }
     for slug, host in hosts.items():
         place = city.place_by_slug(slug)
@@ -87,3 +88,8 @@ def test_vologda_heritage_conservation_and_visiting_not_guaranteed() -> None:
     assert "Архиерейского двора" in kremlin.summary
     assert "не обещается" in house.summary
     assert "только по фактическому режиму" in belfry.summary
+    monastery = city.place_by_slug("spaso-prilutsky-monastery")
+    childhood = city.place_by_slug("vologda-childhood-museum")
+    assert monastery is not None and childhood is not None
+    assert monastery.latitude > 59.26
+    assert childhood.longitude < 39.88
