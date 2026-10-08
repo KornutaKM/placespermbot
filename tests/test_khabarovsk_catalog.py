@@ -42,7 +42,7 @@ def test_khabarovsk_institution_specific_provenance() -> None:
 
 def test_khabarovsk_search_and_virtual_categories() -> None:
     city = catalog()
-    assert city.search_places("Гродековского")[0].slug == "child-museum-grodekov" or city.search_places("Гродековского")[0].slug == "archaeology-museum-khv"
+    assert city.search_places("археологии")[0].slug == "archaeology-museum-khv"
     assert city.search_places("Невельского")[0].slug == "nevelskoy-embankment"
     family = {p.slug for p in city.places_for_category("family")}
     assert {
