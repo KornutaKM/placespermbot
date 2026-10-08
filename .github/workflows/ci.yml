@@ -22,6 +22,15 @@ jobs:
         run: ruff check .
       - name: Catalog audit
         run: python -m app.catalog_audit
+      - name: Catalog coverage report
+        run: |
+          python -m app.catalog_coverage --format json > catalog-coverage.json
+          python -m app.catalog_coverage --format markdown >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload catalog coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-coverage
+          path: catalog-coverage.json
       - name: Full test suite
         run: pytest -q
 
