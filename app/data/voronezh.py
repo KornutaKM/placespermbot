@@ -32,6 +32,12 @@ VORONEZH_ZOO = PlaceSource(
     checked_at=SOURCE_CHECKED_AT,
 )
 
+VDV_MUSEUM = PlaceSource(
+    name="Музей ВДВ",
+    url="https://vdvvrn.ru/",
+    checked_at=SOURCE_CHECKED_AT,
+)
+
 CATEGORY_LABELS = {
     "sights": "🏛 Достопримечательности",
     "unusual": "✨ Необычные места",
@@ -233,8 +239,8 @@ PLACES = (
         "Левобережный район",
         210,
         False,
-        51.6377,
-        39.2485,
+        51.6423,
+        39.2416,
         VORONEZH_ZOO,
         ("зоопарк", "животные", "с детьми"),
     ),
@@ -286,11 +292,11 @@ PLACES = (
         "museums",
         "Мемориальный дом знаменитого циркового артиста и дрессировщика Анатолия Дурова.",
         "🏠",
-        "Ленинский район",
+        "Центральный район",
         90,
         False,
-        51.6470,
-        39.2110,
+        51.6778,
+        39.2259,
         REGIONAL_MUSEUM,
         ("музей", "цирк", "Дуров", "с детьми"),
     ),
@@ -305,7 +311,7 @@ PLACES = (
         False,
         51.7080,
         39.1720,
-        REGIONAL_MUSEUM,
+        VDV_MUSEUM,
         ("музей", "ВДВ", "военная история", "с детьми"),
     ),
     Place(

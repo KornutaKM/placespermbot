@@ -3,28 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import asin, cos, radians, sin, sqrt
 
-from app.data import (
-    chelyabinsk,
-    kaliningrad,
-    kazan,
-    krasnodar,
-    krasnoyarsk,
-    moscow,
-    nizhny_novgorod,
-    novosibirsk,
-    omsk,
-    perm,
-    rostov_on_don,
-    samara,
-    sochi,
-    spb,
-    ufa,
-    vladivostok,
-    volgograd,
-    voronezh,
-    yaroslavl,
-    yekaterinburg,
-)
+from app.city_manifest import list_city_manifests
 from app.domain import Place, RoutePlan
 
 
@@ -158,148 +137,22 @@ def distance_km(first: Place, second: Place) -> float:
     )
 
 
-_CATALOGS: dict[str, CityCatalog] = {
-    sochi.CITY_SLUG: CityCatalog(
-        slug=sochi.CITY_SLUG,
-        name=sochi.CITY_NAME,
-        category_labels=sochi.CATEGORY_LABELS,
-        places=sochi.PLACES,
-        routes=sochi.ROUTES,
-    ),
-    yaroslavl.CITY_SLUG: CityCatalog(
-        slug=yaroslavl.CITY_SLUG,
-        name=yaroslavl.CITY_NAME,
-        category_labels=yaroslavl.CATEGORY_LABELS,
-        places=yaroslavl.PLACES,
-        routes=yaroslavl.ROUTES,
-    ),
-    kaliningrad.CITY_SLUG: CityCatalog(
-        slug=kaliningrad.CITY_SLUG,
-        name=kaliningrad.CITY_NAME,
-        category_labels=kaliningrad.CATEGORY_LABELS,
-        places=kaliningrad.PLACES,
-        routes=kaliningrad.ROUTES,
-    ),
-    novosibirsk.CITY_SLUG: CityCatalog(
-        slug=novosibirsk.CITY_SLUG,
-        name=novosibirsk.CITY_NAME,
-        category_labels=novosibirsk.CATEGORY_LABELS,
-        places=novosibirsk.PLACES,
-        routes=novosibirsk.ROUTES,
-    ),
-    omsk.CITY_SLUG: CityCatalog(
-        slug=omsk.CITY_SLUG,
-        name=omsk.CITY_NAME,
-        category_labels=omsk.CATEGORY_LABELS,
-        places=omsk.PLACES,
-        routes=omsk.ROUTES,
-    ),
-    moscow.CITY_SLUG: CityCatalog(
-        slug=moscow.CITY_SLUG,
-        name=moscow.CITY_NAME,
-        category_labels=moscow.CATEGORY_LABELS,
-        places=moscow.PLACES,
-        routes=moscow.ROUTES,
-    ),
-    yekaterinburg.CITY_SLUG: CityCatalog(
-        slug=yekaterinburg.CITY_SLUG,
-        name=yekaterinburg.CITY_NAME,
-        category_labels=yekaterinburg.CATEGORY_LABELS,
-        places=yekaterinburg.PLACES,
-        routes=yekaterinburg.ROUTES,
-    ),
-    kazan.CITY_SLUG: CityCatalog(
-        slug=kazan.CITY_SLUG,
-        name=kazan.CITY_NAME,
-        category_labels=kazan.CATEGORY_LABELS,
-        places=kazan.PLACES,
-        routes=kazan.ROUTES,
-    ),
-    chelyabinsk.CITY_SLUG: CityCatalog(
-        slug=chelyabinsk.CITY_SLUG,
-        name=chelyabinsk.CITY_NAME,
-        category_labels=chelyabinsk.CATEGORY_LABELS,
-        places=chelyabinsk.PLACES,
-        routes=chelyabinsk.ROUTES,
-    ),
-    krasnodar.CITY_SLUG: CityCatalog(
-        slug=krasnodar.CITY_SLUG,
-        name=krasnodar.CITY_NAME,
-        category_labels=krasnodar.CATEGORY_LABELS,
-        places=krasnodar.PLACES,
-        routes=krasnodar.ROUTES,
-    ),
-    krasnoyarsk.CITY_SLUG: CityCatalog(
-        slug=krasnoyarsk.CITY_SLUG,
-        name=krasnoyarsk.CITY_NAME,
-        category_labels=krasnoyarsk.CATEGORY_LABELS,
-        places=krasnoyarsk.PLACES,
-        routes=krasnoyarsk.ROUTES,
-    ),
-    nizhny_novgorod.CITY_SLUG: CityCatalog(
-        slug=nizhny_novgorod.CITY_SLUG,
-        name=nizhny_novgorod.CITY_NAME,
-        category_labels=nizhny_novgorod.CATEGORY_LABELS,
-        places=nizhny_novgorod.PLACES,
-        routes=nizhny_novgorod.ROUTES,
-    ),
-    perm.CITY_SLUG: CityCatalog(
-        slug=perm.CITY_SLUG,
-        name=perm.CITY_NAME,
-        category_labels=perm.CATEGORY_LABELS,
-        places=perm.PLACES,
-        routes=perm.ROUTES,
-    ),
-    rostov_on_don.CITY_SLUG: CityCatalog(
-        slug=rostov_on_don.CITY_SLUG,
-        name=rostov_on_don.CITY_NAME,
-        category_labels=rostov_on_don.CATEGORY_LABELS,
-        places=rostov_on_don.PLACES,
-        routes=rostov_on_don.ROUTES,
-    ),
-    samara.CITY_SLUG: CityCatalog(
-        slug=samara.CITY_SLUG,
-        name=samara.CITY_NAME,
-        category_labels=samara.CATEGORY_LABELS,
-        places=samara.PLACES,
-        routes=samara.ROUTES,
-    ),
-    spb.CITY_SLUG: CityCatalog(
-        slug=spb.CITY_SLUG,
-        name=spb.CITY_NAME,
-        category_labels=spb.CATEGORY_LABELS,
-        places=spb.PLACES,
-        routes=spb.ROUTES,
-    ),
-    ufa.CITY_SLUG: CityCatalog(
-        slug=ufa.CITY_SLUG,
-        name=ufa.CITY_NAME,
-        category_labels=ufa.CATEGORY_LABELS,
-        places=ufa.PLACES,
-        routes=ufa.ROUTES,
-    ),
-    vladivostok.CITY_SLUG: CityCatalog(
-        slug=vladivostok.CITY_SLUG,
-        name=vladivostok.CITY_NAME,
-        category_labels=vladivostok.CATEGORY_LABELS,
-        places=vladivostok.PLACES,
-        routes=vladivostok.ROUTES,
-    ),
-    volgograd.CITY_SLUG: CityCatalog(
-        slug=volgograd.CITY_SLUG,
-        name=volgograd.CITY_NAME,
-        category_labels=volgograd.CATEGORY_LABELS,
-        places=volgograd.PLACES,
-        routes=volgograd.ROUTES,
-    ),
-    voronezh.CITY_SLUG: CityCatalog(
-        slug=voronezh.CITY_SLUG,
-        name=voronezh.CITY_NAME,
-        category_labels=voronezh.CATEGORY_LABELS,
-        places=voronezh.PLACES,
-        routes=voronezh.ROUTES,
-    ),
-}
+def _build_catalogs() -> dict[str, CityCatalog]:
+    catalogs: dict[str, CityCatalog] = {}
+    for manifest in list_city_manifests():
+        if manifest.slug in catalogs:
+            raise RuntimeError(f"Duplicate city manifest slug: {manifest.slug}")
+        catalogs[manifest.slug] = CityCatalog(
+            slug=manifest.slug,
+            name=manifest.name,
+            category_labels=manifest.category_labels,
+            places=manifest.places,
+            routes=manifest.routes,
+        )
+    return catalogs
+
+
+_CATALOGS = _build_catalogs()
 
 
 def get_catalog(city_slug: str) -> CityCatalog:

@@ -30,7 +30,7 @@ def test_voronezh_landmarks_use_specific_sources() -> None:
         "voronezh-regional-museum": "museum-vrn.ru",
         "arsenal-museum-vrn": "museum-vrn.ru",
         "durov-house-museum-vrn": "museum-vrn.ru",
-        "airborne-forces-museum-vrn": "museum-vrn.ru",
+        "airborne-forces-museum-vrn": "vdvvrn.ru",
         "kramskoy-museum": "mkram.ru",
         "voronezh-zoo": "zooparkvrn.ru",
     }
@@ -78,3 +78,14 @@ def test_voronezh_routes_cover_navy_museums_family_and_memory() -> None:
     assert "kramskoy-museum" in routes["vrn-museums"].place_slugs
     assert "voronezh-zoo" in routes["vrn-family"].place_slugs
     assert "airborne-forces-museum-vrn" in routes["vrn-war-memory"].place_slugs
+
+
+def test_voronezh_dedicated_museums_have_plausible_geopoints() -> None:
+    city = catalog()
+    durov = city.place_by_slug("durov-house-museum-vrn")
+    zoo = city.place_by_slug("voronezh-zoo")
+    assert durov is not None and zoo is not None
+    assert 51.675 <= durov.latitude <= 51.680
+    assert 39.220 <= durov.longitude <= 39.230
+    assert 51.640 <= zoo.latitude <= 51.645
+    assert 39.239 <= zoo.longitude <= 39.246
