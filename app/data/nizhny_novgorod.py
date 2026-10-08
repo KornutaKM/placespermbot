@@ -73,6 +73,12 @@ NN_TOUR = PlaceSource(
     checked_at=EDITORIAL_CHECKED_AT,
 )
 
+NN_PLANETARIUM = PlaceSource(
+    name="Нижегородский планетарий им. Г.М. Гречко — официальный сайт",
+    url="https://planetarium-nn.ru/planetariy/bilety/",
+    checked_at=EDITORIAL_CHECKED_AT,
+)
+
 NN_CABLE = PlaceSource(
     name="Нижегородские канатные дороги — действующий статус движения",
     url="https://nnkd.ru/",
@@ -382,11 +388,25 @@ PLACES = (
         NN_GAZ,
         ("парк", "соцгород", "индустриальная история", "с детьми", "бесплатно"),
     ),
+    Place(
+        "nn-grechko-planetarium",
+        "Нижегородский планетарий им. Г.М. Гречко",
+        "family",
+        "Научно-просветительская площадка на Революционной, 20 со звёздными сеансами. Даже самостоятельный осмотр экспозиции планетария требует билета.",
+        "🪐",
+        "Революционная, 20",
+        100,
+        False,
+        56.3287,
+        43.9479,
+        NN_PLANETARIUM,
+        ("планетарий", "космос", "наука", "с детьми"),
+    ),
 )
 
 ROUTES = (
     RoutePlan("nizhny-historic-center", "Исторический центр", "Прогулка от Большой Покровской через Кремль к волжским видам.", 240, 2.7, ("bolshaya-pokrovskaya", "nizhny-kremlin", "chkalov-stairs")),
-    RoutePlan("nizhny-strelka", "Стрелка и ярмарка", "Знакомство с историческим торговым районом и собором Александра Невского.", 180, 1.8, ("nizhny-fair", "alexander-nevsky-cathedral-nn")),
+    RoutePlan("nizhny-strelka", "Стрелка и ярмарка", "Знакомство с историческим торговым районом и собором Александра Невского.", 180, 1.8, ("nizhny-fair", "nn-grechko-planetarium", "alexander-nevsky-cathedral-nn")),
     RoutePlan("nizhny-river-view", "Волжские панорамы", "Чкаловская лестница, набережная и высокий берег Волги.", 240, 4.5, ("chkalov-stairs", "lower-volga-embankment", "pechersky-monastery")),
     RoutePlan("nizhny-art-history", "Искусство и история", "Кремль, современное искусство и купеческая Рождественская улица.", 300, 3.0, ("nizhny-kremlin", "nizhny-art-museum-russian", "arsenal-nn", "rozhdestvenskaya-street")),
     RoutePlan("nizhny-upper-volga", "Верхне-Волжская прогулка", "Купеческая усадьба, волжские панорамы и спуск к большой реке.", 270, 3.0, ("rukavishnikov-estate-nn", "chkalov-stairs", "lower-volga-embankment")),
