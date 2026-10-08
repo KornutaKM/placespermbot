@@ -359,7 +359,7 @@ ROUTES = (
     RoutePlan("kazan-tatar-quarter", "Татарская Казань", "Старо-Татарская слобода, озеро Кабан и центральные городские пространства.", 240, 3.2, ("old-tatar-quarter", "kaban-embankment", "bauman-street")),
     RoutePlan("kazan-museum-center", "История в центре", "Кремль, Национальный музей и архитектурные достопримечательности рядом.", 300, 2.0, ("kazan-kremlin", "national-museum-tatarstan", "peter-paul-cathedral-kazan", "black-lake-kazan")),
     RoutePlan("kazan-tatar-taste", "Татарская культура и вкус", "Старо-Татарская слобода, музей традиционного десерта и прогулка у озера Кабан.", 270, 2.0, ("old-tatar-quarter", "chak-chak-museum-kazan", "kaban-embankment")),
-    RoutePlan("kazan-family-north", "Семейная Казань вне центра", "Спокойный районный сценарий с озером, детской площадкой и прогулочными дорожками парка Урицкого.", 150, 2.0, ("uritsky-park-kazan", "kaz-victory-park", "kaz-white-flowers-boulevard")),,
+    RoutePlan("kazan-family-north", "Семейная Казань вне центра", "Спокойный районный сценарий с озером, детской площадкой и прогулочными дорожками парка Урицкого.", 150, 2.0, ("uritsky-park-kazan", "kaz-victory-park", "kaz-white-flowers-boulevard")),
     RoutePlan(
         "kaz-museum-heritage",
         "Музеи Казанского кремля",
