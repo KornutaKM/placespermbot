@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from types import ModuleType
 
 from app.data import (
+    arkhangelsk,
     chelyabinsk,
     irkutsk,
     kaliningrad,
@@ -71,6 +72,7 @@ def _city(module: ModuleType, quality: CatalogQualityProfile) -> CityManifest:
 
 
 CITY_MANIFESTS = (
+    _city(arkhangelsk, CatalogQualityProfile(30, 9, 10, 5, 16, 16, 10)),
     _city(chelyabinsk, CatalogQualityProfile(22, 7, 9, 5, 14, 19, 5)),
     _city(irkutsk, CatalogQualityProfile(23, 7, 10, 5, 12, 14, 9)),
     _city(khabarovsk, CatalogQualityProfile(28, 9, 10, 5, 18, 18, 6)),
