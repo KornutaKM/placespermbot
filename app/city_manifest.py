@@ -81,7 +81,7 @@ CITY_MANIFESTS = (
     _city(kazan, CatalogQualityProfile(28, 10, 9, 5, 18, 10, 8)),
     _city(krasnodar, CatalogQualityProfile(22, 7, 8, 5, 17, 13, 4)),
     _city(krasnoyarsk, CatalogQualityProfile(21, 7, 9, 5, 13, 10, 6)),
-    _city(moscow, CatalogQualityProfile(18, 8, 8, 4, 8, 5, 3)),
+    _city(moscow, CatalogQualityProfile(34, 16, 16, 5, 16, 17, 11)),
     _city(murmansk, CatalogQualityProfile(34, 10, 12, 5, 19, 20, 8)),
     _city(nizhny_novgorod, CatalogQualityProfile(31, 13, 10, 5, 15, 10, 10)),
     _city(novosibirsk, CatalogQualityProfile(33, 13, 12, 5, 18, 15, 9)),
@@ -104,7 +104,7 @@ CITY_MANIFESTS = (
     _city(vologda, CatalogQualityProfile(33, 10, 10, 5, 19, 19, 10)),
     _city(voronezh, CatalogQualityProfile(23, 7, 9, 5, 16, 15, 6)),
     _city(yaroslavl, CatalogQualityProfile(28, 10, 10, 5, 13, 10, 8)),
-    _city(yekaterinburg, CatalogQualityProfile(15, 7, 4, 5, 7, 2, 5)),
+    _city(yekaterinburg, CatalogQualityProfile(28, 13, 10, 5, 15, 12, 10)),
 )
 
 
