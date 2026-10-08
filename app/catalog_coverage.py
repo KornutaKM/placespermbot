@@ -111,8 +111,10 @@ def render_coverage_markdown(rows: tuple[CityCoverage, ...]) -> str:
         "",
         "Coverage and signals guide editorial work; they are not CI failures.",
         "",
-        "| City | Places | Routes | Districts | Categories | Family | Source domains "
-        "| Route reach | Longest leg km | Signals |",
+        "| " + " | ".join(
+            ("City", "Places", "Routes", "Districts", "Categories", "Family",
+             "Source domains", "Route reach", "Longest leg km", "Signals")
+        ) + " |",
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|---|",
     ]
     for row in rows:
