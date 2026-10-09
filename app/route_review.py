@@ -10,12 +10,6 @@ from app.catalog import CityCatalog, list_catalogs
 from app.route_safety import route_geography
 
 
-HARD_ROUTE_CODES = frozenset({
-    "distance_below_geodesic_minimum",
-    "duration_below_visit_time",
-})
-
-
 @dataclass(frozen=True, slots=True)
 class RouteFinding:
     city: str
@@ -25,6 +19,12 @@ class RouteFinding:
     next_stop: str
     measured_km: float
     declared_km: float
+
+
+HARD_ROUTE_CODES = frozenset({
+    "distance_below_geodesic_minimum",
+    "duration_below_visit_time",
+})
 
 
 def hard_route_findings(findings: tuple[RouteFinding, ...]) -> tuple[RouteFinding, ...]:
