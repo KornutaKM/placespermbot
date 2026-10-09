@@ -675,8 +675,7 @@ ROUTES: tuple[RoutePlan, ...] = (
         summary=(
             "Маршрут от музейного квартала к главным пространствам "
             "городской эспланады."
-        ),
-        duration_minutes=270,
+        ),duration_minutes=305,
         distance_km=2.4,
         place_slugs=(
             "meshkov-house",
@@ -688,8 +687,7 @@ ROUTES: tuple[RoutePlan, ...] = (
     RoutePlan(
         slug="perm-kama-walk",
         title="Пермь и Кама",
-        summary="Исторический центр, музейный квартал и прогулка к Каме.",
-        duration_minutes=270,
+        summary="Исторический центр, музейный квартал и прогулка к Каме.",duration_minutes=295,
         distance_km=3.0,
         place_slugs=("razgulyai-perm", "meshkov-house", "kama-embankment-perm"),
     ),
@@ -707,8 +705,7 @@ ROUTES: tuple[RoutePlan, ...] = (
         summary=(
             "Художественная галерея, городские арт-объекты и "
             "центральная эспланада."
-        ),
-        duration_minutes=300,
+        ),duration_minutes=310,
         distance_km=4.0,
         place_slugs=(
             "perm-art-gallery",
@@ -751,7 +748,7 @@ ROUTES: tuple[RoutePlan, ...] = (
         "perm-museum-printing",
         "История типографий и железной дороги",
         "Дом-музей подпольщиков и памятники заводского и железнодорожного города; между кварталами нужен транспорт.",
-        305,
+        315,
         8.1,
         ("perm-underground-printshop", "perm-river-perm1-square", "razgulyai-perm"),
     ),
@@ -767,7 +764,7 @@ ROUTES: tuple[RoutePlan, ...] = (
         "perm-art-walk",
         "Театральная и художественная Пермь",
         "Театр оперы, Театральный сквер и художественная коллекция.",
-        265,
+        285,
         2.6,
         ("perm-opera", "perm-theatre-square", "perm-art-gallery"),
     ),
@@ -775,7 +772,7 @@ ROUTES: tuple[RoutePlan, ...] = (
         "perm-motovilikha-lake",
         "Мотовилихинская прогулка",
         "Городские исторические кварталы и пруд Мотовилихи.",
-        215,
+        310,
         3,
         ("perm-motovilikha-history-square", "perm-motovilikha-pond", "perm-diorama"),
     ),
@@ -799,7 +796,7 @@ ROUTES: tuple[RoutePlan, ...] = (
         "perm-science-family",
         "Музей древностей с детьми",
         "Геологическая история, интерактивный семейный музей и пешеходный отдых у театра.",
-        280,
+        295,
         3.2,
         ("perm-antiquities-museum", "perm-museum-ancient-family", "perm-theatre-square"),
     ),

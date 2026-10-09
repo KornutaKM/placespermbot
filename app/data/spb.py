@@ -371,8 +371,7 @@ ROUTES: tuple[RoutePlan, ...] = (
     RoutePlan(
         slug="classic-center",
         title="Классический центр",
-        summary="Первая прогулка по главным городским пространствам без попытки охватить весь Петербург.",
-        duration_minutes=180,
+        summary="Первая прогулка по главным городским пространствам без попытки охватить весь Петербург.",duration_minutes=420,
         distance_km=5.0,
         place_slugs=(
             "palace-square",
@@ -387,8 +386,7 @@ ROUTES: tuple[RoutePlan, ...] = (
     RoutePlan(
         slug="water-and-islands",
         title="Вода и острова",
-        summary="Маршрут с акцентом на островную географию и пространства у воды.",
-        duration_minutes=210,
+        summary="Маршрут с акцентом на островную географию и пространства у воды.",duration_minutes=365,
         distance_km=6.5,
         place_slugs=(
             "vasilievsky-spit",

@@ -10,6 +10,17 @@ from app.catalog import CityCatalog, list_catalogs
 from app.route_safety import route_geography
 
 
+HARD_ROUTE_CODES = frozenset({
+    "distance_below_geodesic_minimum",
+    "duration_below_visit_time",
+})
+
+
+def hard_route_findings(findings: tuple["RouteFinding", ...]) -> tuple["RouteFinding", ...]:
+    """Leave long/transit legs advisory; fail on impossible advertised metrics."""
+    return tuple(item for item in findings if item.code in HARD_ROUTE_CODES)
+
+
 @dataclass(frozen=True, slots=True)
 class RouteFinding:
     city: str
@@ -90,12 +101,18 @@ def render_route_review(findings: tuple[RouteFinding, ...]) -> str:
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--format", choices=("json", "markdown"), default="markdown")
+    parser.add_argument(
+        "--check", action="store_true",
+        help="Fail only on impossible duration/distance metrics; long legs remain advisory",
+    )
     args = parser.parse_args(argv)
     findings = collect_route_findings()
     if args.format == "json":
         print(json.dumps([asdict(item) for item in findings], ensure_ascii=False, indent=2))
     else:
         print(render_route_review(findings))
+    if args.check and hard_route_findings(findings):
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

@@ -35,6 +35,8 @@ jobs:
         run: |
           python -m app.route_review --format json > route-review.json
           python -m app.route_review --format markdown >> "$GITHUB_STEP_SUMMARY"
+      - name: Reject impossible editorial route metrics
+        run: python -m app.route_review --check --format markdown
       - name: Upload route geography review
         uses: actions/upload-artifact@v4
         with:
