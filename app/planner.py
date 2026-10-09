@@ -7,6 +7,7 @@ from app.domain import GeneratedRoute, Place
 from app.route_safety import is_route_stop_available
 
 WALKING_SPEED_KMH = 4.5
+MAX_GENERATED_WALK_LEG_KM = 5.0
 
 INTEREST_LABELS: dict[str, str] = {
     "classic": "🏛 Главные места",
@@ -93,6 +94,8 @@ def build_ranked_route(
 
         for place in ranked:
             leg_distance = distance_km(current, place)
+            if leg_distance > MAX_GENERATED_WALK_LEG_KM:
+                continue
             walking_minutes = _walking_minutes(leg_distance)
             incremental_cost = walking_minutes + place.visit_minutes
 
@@ -189,6 +192,8 @@ def _choose_first(
             place.latitude,
             place.longitude,
         )
+        if start_distance > MAX_GENERATED_WALK_LEG_KM:
+            continue
         first_cost = _walking_minutes(start_distance) + place.visit_minutes
         if first_cost <= budget_minutes:
             return place, start_distance, first_cost
