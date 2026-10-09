@@ -120,3 +120,19 @@ def test_preflight_rejects_nonsensical_limits(tmp_path) -> None:
             await collect_deployment_readiness(config, "missing.db", min_cities=0)
 
     asyncio.run(scenario())
+
+
+def test_preflight_rejects_hardlinked_live_sqlite_database(tmp_path) -> None:
+    async def scenario() -> None:
+        source = tmp_path / "live.db"
+        linked = tmp_path / "unsafe-copy.db"
+        await migrate_database(source)
+        os.link(source, linked)
+        try:
+            with pytest.raises(ValueError, match="independent SQLite snapshot"):
+                await collect_deployment_readiness(settings(source), linked)
+        finally:
+            linked.unlink()
+        assert source.exists()
+
+    asyncio.run(scenario())
