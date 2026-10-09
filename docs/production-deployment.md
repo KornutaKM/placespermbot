@@ -54,7 +54,7 @@ docker compose run --rm --no-deps \
   --max-age-hours 24 --min-cities 32
 ```
 
-The preflight opens the live DB and backup **read-only**, checks the full
+The preflight also rejects hard links or aliases pointing at the live SQLite file: a filesystem link is not a WAL-consistent backup.\n\nThe preflight opens the live DB and backup **read-only**, checks the full
 database contract, source catalog validation, backup freshness and count of
 registered cities, and returns a small JSON status without secrets, user
 records or file paths. It **does not** restart containers, run migrations or

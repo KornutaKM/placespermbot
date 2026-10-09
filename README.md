@@ -275,7 +275,7 @@ Docker healthcheck не обращается к Telegram API. Он провер�
     docker inspect --format='{{json .State.Health}}' placespermbot-bot-1
 
 CI дополнительно собирает реальный Docker image и запускает внутри него network-free
-`python -m app.smoke`, чтобы ловить ошибки упаковки, отсутствующие модули, broken imports и загрузку реального `app.main`.
+`python -m app.smoke`, чтобы ловить ошибки упаковки, отсутствующие модули, broken imports и загрузку реального `app.main`. Smoke также в изолированном временном каталоге проверяет реальную миграцию SQLite, health-контракт, online backup и восстановление в другую базу; production-БД и Telegram API не используются.
 
 
 ## SQLite migrations

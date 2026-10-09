@@ -62,6 +62,8 @@ async def collect_deployment_readiness(
         raise RuntimeError("Backup file does not exist")
     if not db_path.is_file():
         raise RuntimeError("Live database is not initialized")
+    if backup.samefile(db_path):
+        raise ValueError("Backup must be an independent SQLite snapshot")
     if len(list_catalogs()) < min_cities:
         raise RuntimeError("Registered city catalog count is below release minimum")
 
