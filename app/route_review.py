@@ -16,11 +16,6 @@ HARD_ROUTE_CODES = frozenset({
 })
 
 
-def hard_route_findings(findings: tuple["RouteFinding", ...]) -> tuple["RouteFinding", ...]:
-    """Leave long/transit legs advisory; fail on impossible advertised metrics."""
-    return tuple(item for item in findings if item.code in HARD_ROUTE_CODES)
-
-
 @dataclass(frozen=True, slots=True)
 class RouteFinding:
     city: str
@@ -30,6 +25,11 @@ class RouteFinding:
     next_stop: str
     measured_km: float
     declared_km: float
+
+
+def hard_route_findings(findings: tuple[RouteFinding, ...]) -> tuple[RouteFinding, ...]:
+    """Leave long/transit legs advisory; fail on impossible advertised metrics."""
+    return tuple(item for item in findings if item.code in HARD_ROUTE_CODES)
 
 
 def inspect_routes(catalog: CityCatalog) -> tuple[RouteFinding, ...]:
