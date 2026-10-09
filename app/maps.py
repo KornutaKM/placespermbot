@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import pairwise
 from typing import Literal
 from urllib.parse import urlencode
 
@@ -39,7 +40,7 @@ def google_maps_route_links(places: tuple[Place, ...]) -> tuple[RouteMapLink, ..
 
     result: list[RouteMapLink] = []
     walking_group = [places[0]]
-    for first, second in zip(places, places[1:]):
+    for first, second in pairwise(places):
         if distance_km(first, second) > LONG_WALKING_LEG_KM:
             result.extend(_walking_links(tuple(walking_group)))
             result.append(
