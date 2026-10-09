@@ -11,7 +11,7 @@ from app.catalog import CityCatalog
 from app.domain import Place, RoutePlan
 from app.events import EventProvider
 from app.excursions import ExcursionProvider
-from app.maps import google_maps_directions_to_place_url, google_maps_route_urls
+from app.maps import google_maps_directions_to_place_url, google_maps_route_links
 from app.navigation import (
     DEFAULT_CONTEXT,
     back_target,
@@ -513,30 +513,30 @@ def route_details_keyboard(places: tuple[Place, ...]) -> InlineKeyboardMarkup:
 
 
 def _google_maps_rows(places: tuple[Place, ...]) -> list[list[InlineKeyboardButton]]:
-    urls = google_maps_route_urls(places)
-    if not urls:
+    links = google_maps_route_links(places)
+    if not links:
         return []
 
-    if len(urls) == 1:
-        return [
+    if len(links) == 1:
+        label = (
+            "🚌 Проверить транспорт в Google Maps"
+            if links[0].mode == "transit"
+            else "🗺 Открыть маршрут в Google Maps"
+        )
+        return [[InlineKeyboardButton(text=label, url=links[0].url)]]
+
+    rows = []
+    for index, link in enumerate(links, start=1):
+        mode_label = "🚌 Транспорт" if link.mode == "transit" else "🚶 Пешком"
+        rows.append(
             [
                 InlineKeyboardButton(
-                    text="🗺 Открыть маршрут в Google Maps",
-                    url=urls[0],
+                    text=f"{mode_label} · часть {index}/{len(links)}",
+                    url=link.url,
                 )
             ]
-        ]
-
-    return [
-        [
-            InlineKeyboardButton(
-                text=f"🗺 Google Maps · часть {index}/{len(urls)}",
-                url=url,
-            )
-        ]
-        for index, url in enumerate(urls, start=1)
-    ]
-
+        )
+    return rows
 
 def excursion_providers_keyboard(
     providers: tuple[ExcursionProvider, ...],

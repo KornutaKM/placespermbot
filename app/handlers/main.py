@@ -40,6 +40,7 @@ from app.keyboards import (
     saved_routes_keyboard,
     visited_places_keyboard,
 )
+from app.maps import google_maps_route_links
 from app.navigation import (
     category_context,
     dismissed_context,
@@ -2058,6 +2059,9 @@ async def route_card(callback: CallbackQuery) -> None:
         for index, place in enumerate(route_places, start=1)
     )
     warnings = route_access_warnings(route_places)
+    has_transit_leg = any(
+        link.mode == "transit" for link in google_maps_route_links(route_places)
+    )
     warning_text = (
         "\n\n⚠️ <b>Перед поездкой:</b>\n" + "\n".join(warnings)
         if warnings else ""
@@ -2067,11 +2071,16 @@ async def route_card(callback: CallbackQuery) -> None:
         f"🧭 <b>{route.title}</b>\n\n"
         f"{route.summary}\n\n"
         f"⏱ ~{route.duration_minutes // 60} ч {route.duration_minutes % 60:02d} мин\n"
-        f"🚶 ~{route.distance_km:g} км\n\n"
+        f"📏 ~{route.distance_km:g} км (плановая дистанция)\n\n"
         f"<b>Точки:</b>\n{stops}"
         f"{warning_text}\n\n"
-        "Ниже можно открыть маршрут для проверки переходов в Google Maps. "
-        "Длинные прогулки разбиваются на несколько последовательных частей.",
+        + (
+            "Дальние участки вынесены в отдельные ссылки для проверки "
+            "вариантов транспорта. Наличие рейсов не гарантируется."
+            if has_transit_leg
+            else "Пешеходный маршрут в Google Maps. "
+            "Длинные прогулки разбиваются на части."
+        ),
         reply_markup=route_details_keyboard(route_places),
     )
     await callback.answer()
