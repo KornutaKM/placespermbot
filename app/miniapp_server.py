@@ -14,7 +14,15 @@ from app.catalog_service import CatalogService
 from app.config import Settings, get_settings
 from app.maps import google_maps_place_url, google_maps_route_links
 from app.miniapp_auth import InvalidTelegramInitData, validate_init_data
-from app.storage import FavoritesRepository, UserCityRepository
+from app.miniapp_profile import my_guide_snapshot
+from app.route_completion import complete_saved_route
+from app.storage import (
+    CompletedRoutesRepository,
+    FavoritesRepository,
+    SavedRoutesRepository,
+    UserCityRepository,
+    VisitedRepository,
+)
 
 STATIC_DIR = Path(__file__).resolve().parent / "miniapp_static"
 
@@ -30,6 +38,9 @@ def create_miniapp(settings: Settings | None = None) -> FastAPI:
         user_city_repo=UserCityRepository(config.database_path),
     )
     favorites = FavoritesRepository(config.database_path)
+    visited = VisitedRepository(config.database_path)
+    saved_routes = SavedRoutesRepository(config.database_path)
+    completed_routes = CompletedRoutesRepository(config.database_path)
     app = FastAPI(
         title="Places Mini App",
         docs_url=None,
@@ -202,6 +213,91 @@ def create_miniapp(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="Place not found")
         await favorites.remove(user_id, catalog.slug, place_slug)
         return {"city_slug": catalog.slug, "place_slug": place_slug, "is_favorite": False}
+
+    @app.get("/api/me/guide/{city_slug}")
+    async def guide_dashboard(
+        city_slug: str,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        user_id = authenticated_user(x_telegram_init_data)
+        await require_active_city(user_id, city_slug)
+        return await my_guide_snapshot(
+            user_id,
+            get_catalog(city_slug),
+            favorites=favorites,
+            visited=visited,
+            saved_routes=saved_routes,
+            completed_routes=completed_routes,
+        )
+
+    @app.put("/api/me/visited/{city_slug}/{place_slug}")
+    async def mark_visited(
+        city_slug: str,
+        place_slug: str,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        user_id = authenticated_user(x_telegram_init_data)
+        catalog = await require_active_city(user_id, city_slug)
+        if catalog.place_by_slug(place_slug) is None:
+            raise HTTPException(status_code=404, detail="Place not found")
+        await visited.add(user_id, city_slug, place_slug)
+        return {"city_slug": city_slug, "place_slug": place_slug, "is_visited": True}
+
+    @app.delete("/api/me/visited/{city_slug}/{place_slug}")
+    async def unmark_visited(
+        city_slug: str,
+        place_slug: str,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        user_id = authenticated_user(x_telegram_init_data)
+        catalog = await require_active_city(user_id, city_slug)
+        if catalog.place_by_slug(place_slug) is None:
+            raise HTTPException(status_code=404, detail="Place not found")
+        await visited.remove(user_id, city_slug, place_slug)
+        return {"city_slug": city_slug, "place_slug": place_slug, "is_visited": False}
+
+    @app.delete("/api/me/saved-routes/{city_slug}/{route_id}")
+    async def remove_saved_route(
+        city_slug: str,
+        route_id: str,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        user_id = authenticated_user(x_telegram_init_data)
+        await require_active_city(user_id, city_slug)
+        route = await saved_routes.get(user_id, city_slug, route_id)
+        if route is None:
+            raise HTTPException(status_code=404, detail="Saved route not found")
+        await saved_routes.remove(user_id, city_slug, route_id)
+        # Completed history is intentionally retained by the existing storage model.
+        return {"city_slug": city_slug, "route_id": route_id, "deleted": True}
+
+    @app.put("/api/me/saved-routes/{city_slug}/{route_id}/complete")
+    async def mark_route_complete(
+        city_slug: str,
+        route_id: str,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        user_id = authenticated_user(x_telegram_init_data)
+        await require_active_city(user_id, city_slug)
+        result = await complete_saved_route(
+            user_id=user_id,
+            city_slug=city_slug,
+            route_id=route_id,
+            saved_routes=saved_routes,
+            visited=visited,
+            catalog=get_catalog(city_slug),
+            completed_routes=completed_routes,
+        )
+        if result is None:
+            raise HTTPException(status_code=404, detail="Saved route not found")
+        return {
+            "city_slug": city_slug,
+            "route_id": route_id,
+            "added": result.added,
+            "already_visited": result.already_visited,
+            "unavailable": result.unavailable,
+            "already_completed": result.already_completed,
+        }
 
     return app
 
