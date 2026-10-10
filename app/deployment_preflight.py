@@ -48,14 +48,19 @@ async def collect_deployment_readiness(
     expected_sha: str,
     max_age_hours: float = 24,
     min_cities: int = MINIMUM_CITY_COUNT,
+    required_environment: str = "production",
 ) -> DeploymentReadiness:
     """Never mutate the database, backup, container state or environment."""
     if max_age_hours <= 0:
         raise ValueError("max_age_hours must be positive")
     if min_cities <= 0:
         raise ValueError("min_cities must be positive")
-    if settings.environment != "production":
-        raise RuntimeError("Preflight requires PLACES_ENVIRONMENT=production")
+    if required_environment not in {"production", "development"}:
+        raise ValueError("unsupported preflight environment")
+    if settings.environment != required_environment:
+        raise RuntimeError(
+            f"Preflight requires PLACES_ENVIRONMENT={required_environment}"
+        )
     revision = require_build_revision(expected_sha, settings.build_sha)
 
     db_path = Path(settings.database_path).resolve()

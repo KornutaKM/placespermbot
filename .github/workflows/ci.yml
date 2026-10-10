@@ -44,6 +44,13 @@ jobs:
         with:
           name: route-geography-review
           path: route-review.json
+      - name: Parse Windows updater in PowerShell
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'scripts/update-local.ps1').Path, [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors) { throw ($parseErrors | Out-String) }
       - name: Full test suite
         run: pytest -q
 

@@ -34,6 +34,7 @@ Telegram-гид по городам России с единым multi-city cata
 - реальные внешние каталоги экскурсий Sputnik8 и Tripster с provenance/freshness для поддерживаемого города;
 - live-афиша Петербурга через Яндекс Афишу и KudaGo; неподдерживаемые города fail-closed без fake data;
 - Docker с persistent volume и healthcheck;
+- пакетное обновление локального Docker на Windows одной командой с онлайн-backup SQLite, проверкой SHA и development preflight — [инструкция](docs/local-windows-update.md). Никакого автоматического production-деплоя;
 - CI с compile check, Ruff, `catalog_audit`, полным pytest и Docker image smoke.
 - Docker-образы содержат OCI-метку с Git SHA; CI проверяет её совпадение с образцом, а production preflight требует SHA одобренного коммита и выводит его в диагностике;
 - read-only preflight перед production-развёртыванием (`python -m app.deployment_preflight --backup ...`) с проверкой SQLite contract, свежести backup, production-конфигурации, числа городов; инструкция оператора — [docs/production-deployment.md](docs/production-deployment.md).
