@@ -5,13 +5,16 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardMarkup,
+    WebAppInfo,
 )
 
 from app.catalog import CityCatalog
+from app.config import get_settings
 from app.domain import Place, RoutePlan
 from app.events import EventProvider
 from app.excursions import ExcursionProvider
 from app.maps import google_maps_directions_to_place_url, google_maps_route_links
+from app.miniapp_launch import miniapp_launch_url
 from app.navigation import (
     DEFAULT_CONTEXT,
     back_target,
@@ -73,8 +76,18 @@ def home_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="❓ Как пользоваться", callback_data="menu:help"),
         ],
     ]
+    url = miniapp_launch_url(get_settings().mini_app_url)
+    if url is not None:
+        rows.insert(
+            0,
+            [
+                InlineKeyboardButton(
+                    text="✨ Открыть красивый гид",
+                    web_app=WebAppInfo(url=url),
+                )
+            ],
+        )
     return InlineKeyboardMarkup(inline_keyboard=rows)
-
 
 
 def help_keyboard(*, city_selected: bool) -> InlineKeyboardMarkup:

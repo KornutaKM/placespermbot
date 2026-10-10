@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1426">
+  <meta name="description" content="Городской гид: интересные места и готовые маршруты">
+  <title>Город рядом · гид</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script defer src="/assets/app.js"></script>
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">↗</span><span>места<span class="brand-dot">.</span></span></div>
+      <button class="city-trigger" id="city-trigger" type="button" aria-label="Выбрать город"><span>⌖</span><span id="city-name">Загрузка…</span><span>⌄</span></button>
+    </header>
+    <main id="screen" class="screen" aria-live="polite">
+      <div class="loading"><span class="loading-orbit"></span>Загружаем город…</div>
+    </main>
+    <nav class="bottom-nav" aria-label="Разделы гида">
+      <button class="nav-tab active" type="button" data-tab="home" aria-current="page"><span>◈</span>Главная</button>
+      <button class="nav-tab" type="button" data-tab="places"><span>⌖</span>Места</button>
+      <button class="nav-tab" type="button" data-tab="routes"><span>〽</span>Маршруты</button>
+    </nav>
+  </div>
+  <div id="sheet-root"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

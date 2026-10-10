@@ -80,7 +80,7 @@ try {
     # Building and preflight never start another Telegram polling process.
     & git switch --detach $ApprovedSha
     Assert-ExitCode 'Switch to approved release'
-    & docker compose build --build-arg "PLACES_BUILD_SHA=$ApprovedSha" bot
+    & docker compose build --build-arg "PLACES_BUILD_SHA=$ApprovedSha" bot web
     Assert-ExitCode 'Build approved image'
     & docker compose run --rm --no-deps -v "${BackupDirectory}:/backups:ro" bot `
         python -m app.local_deployment_preflight --backup "/backups/$snapshot" `
@@ -88,7 +88,7 @@ try {
     Assert-ExitCode 'Development release preflight'
 
     # No volume deletion, manual WAL modifications, or speculative DB rollback.
-    & docker compose up -d --no-deps --no-build bot
+    & docker compose up -d --no-deps --no-build bot web
     Assert-ExitCode 'Start approved image'
     $healthy = $false
     for ($attempt = 0; $attempt -lt 15; $attempt++) {
@@ -108,8 +108,20 @@ try {
     if ($status.status -ne 'healthy' -or $status.build_sha -ne $ApprovedSha) {
         throw 'Updated container does not report the approved healthy build SHA.'
     }
+    $webHealthy = $false
+    for ($attempt = 0; $attempt -lt 15; $attempt++) {
+        & docker compose exec -T web python -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:8080/healthz", timeout=3).read().decode())'
+        if ($LASTEXITCODE -eq 0) {
+            $webHealthy = $true
+            break
+        }
+        Start-Sleep -Seconds 3
+    }
+    if (-not $webHealthy) {
+        throw 'Mini App web API did not become healthy. Inspect Docker logs.'
+    }
     & docker compose ps
-    Assert-ExitCode 'Inspect updated bot'
+    Assert-ExitCode 'Inspect updated bot and Mini App'
     Write-Host "Local Docker update verified: $ApprovedSha"
     Write-Host "Backup retained: $backupFile"
     Write-Host 'Check Telegram /start, /city, and a saved route manually.'

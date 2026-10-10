@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     city_slug: str = "saint-petersburg"
     database_path: str = "data/places.db"
     build_sha: str = ""
+    mini_app_url: str = ""
     sputnik8_affiliate_url: str = ""
     tripster_affiliate_url: str = ""
     yandex_afisha_url: str = ""

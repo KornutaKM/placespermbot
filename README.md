@@ -4,7 +4,8 @@ Telegram-гид по городам России с единым multi-city cata
 
 ## Что уже реализовано
 
-- /start, /help, /city, /profile, /export и главное меню города;
+- /start, /app, /help, /city, /profile, /export и главное меню города;
+- Telegram Mini App: отдельный FastAPI веб-сервис с визуальными карточками и фильтрами, доступный после настройки публичного HTTPS; [архитектура и развёртывание](docs/telegram-miniapp.md);
 - профиль «Мой гид» с city-scoped прогрессом, настройками и JSON-экспортом данных;
 - пользовательский активный город с сохранением в SQLite;
 - расширяемый multi-city catalog layer;
