@@ -70,6 +70,7 @@ from app.profile import ProfileSummary, build_profile_summary, profile_text
 from app.recommendations import recommend_personalized, recommendation_reason_text
 from app.route_completion import complete_saved_route
 from app.route_safety import route_access_warnings
+from app.route_transport import transfer_notes
 from app.saved_routes import (
     PERSONAL_ROUTE_INTEREST,
     PLACE_ROUTE_INTEREST,
@@ -2035,7 +2036,7 @@ async def menu_routes(callback: CallbackQuery) -> None:
     await callback.message.edit_text(
         "🗺 <b>Готовые маршруты</b>\n\n"
         f"Первый набор прогулок по городу {catalog.name}:",
-        reply_markup=routes_keyboard(catalog.routes),
+        reply_markup=routes_keyboard(catalog.routes, city_slug=catalog.slug),
     )
     await callback.answer()
 
@@ -2062,6 +2063,9 @@ async def route_card(callback: CallbackQuery) -> None:
     has_transit_leg = any(
         link.mode == "transit" for link in google_maps_route_links(route_places)
     )
+    notes = transfer_notes(catalog.slug, route.slug)
+    if notes:
+        warnings += notes
     warning_text = (
         "\n\n⚠️ <b>Перед поездкой:</b>\n" + "\n".join(warnings)
         if warnings else ""
