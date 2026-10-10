@@ -23,6 +23,7 @@ from app.keyboards import (
     excursion_providers_keyboard,
     generated_route_keyboard,
     home_keyboard,
+    help_keyboard,
     interests_keyboard,
     paginated_places_keyboard,
     personal_route_duration_keyboard,
@@ -142,6 +143,22 @@ def home_text(catalog: CityCatalog) -> str:
     )
 
 
+def help_text() -> str:
+    return (
+        "❓ <b>Как пользоваться городским гидом</b>\n\n"
+        "1. Выберите город через /city.\n"
+        "2. «Куда сходить» — категории и карточки мест; «Поиск» — по названию.\n"
+        "3. «Маршруты» — готовые прогулки; «Собрать маршрут» — "
+        "вариант на 2, 4 или 6 часов по интересам.\n"
+        "4. «Для меня» — рекомендации с учётом выбранных интересов.\n"
+        "5. «Мой гид» — избранное, посещения, сохранённые маршруты "
+        "и экспорт данных.\n\n"
+        "📍 Геопозиция используется по запросу и не сохраняется в SQLite.\n"
+        "ℹ️ Время и расстояния маршрутов ориентировочные; "
+        "перед поездкой уточняйте транспорт и доступность объектов."
+    )
+
+
 @router.message(CommandStart())
 async def start(
     message: Message,
@@ -176,6 +193,31 @@ async def start(
         + home_text(selected),
         reply_markup=home_keyboard(),
     )
+
+
+@router.message(Command("help"))
+async def help_command(
+    message: Message,
+    catalog_service: CatalogService,
+) -> None:
+    selected = await catalog_service.selected_for_user(message.from_user.id)
+    await message.answer(
+        help_text(),
+        reply_markup=help_keyboard(city_selected=selected is not None),
+    )
+
+
+@router.callback_query(F.data == "menu:help")
+async def menu_help(
+    callback: CallbackQuery,
+    catalog_service: CatalogService,
+) -> None:
+    selected = await catalog_service.selected_for_user(callback.from_user.id)
+    await callback.message.edit_text(
+        help_text(),
+        reply_markup=help_keyboard(city_selected=selected is not None),
+    )
+    await callback.answer()
 
 
 @router.callback_query(F.data == "menu:home")
