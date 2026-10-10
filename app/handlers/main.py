@@ -62,7 +62,7 @@ from app.navigation import (
     search_context,
     similar_child_context,
 )
-from app.pagination import Page, paginate
+from app.pagination import PAGE_SIZE, Page, paginate
 from app.personal_route import build_explained_personal_route
 from app.personal_route_ui import personal_route_result_text
 from app.personalization_context import load_personalization_context
@@ -2166,15 +2166,34 @@ async def completed_route_card(
     await callback.answer()
 
 
-@router.callback_query(F.data == "menu:routes")
-async def menu_routes(callback: CallbackQuery) -> None:
+async def show_routes_page(callback: CallbackQuery, page_index: int) -> None:
     catalog = current_catalog()
+    page = paginate(catalog.routes, page_index)
     await callback.message.edit_text(
         "🗺 <b>Готовые маршруты</b>\n\n"
-        f"Первый набор прогулок по городу {catalog.name}:",
-        reply_markup=routes_keyboard(catalog.routes, city_slug=catalog.slug),
+        f"Город: <b>{catalog.name}</b>. "
+        f"Маршрутов: {page.total_items} · страница {page.number}/{page.total_pages}.",
+        reply_markup=routes_keyboard(
+            catalog.routes,
+            city_slug=catalog.slug,
+            page_index=page.index,
+        ),
     )
     await callback.answer()
+
+
+@router.callback_query(F.data == "menu:routes")
+async def menu_routes(callback: CallbackQuery) -> None:
+    await show_routes_page(callback, 0)
+
+
+@router.callback_query(F.data.startswith("routes:page:"))
+async def editorial_routes_page(callback: CallbackQuery) -> None:
+    raw_page = callback.data.removeprefix("routes:page:")
+    if not raw_page.isascii() or not raw_page.isdecimal() or len(raw_page) > 6:
+        await callback.answer("Некорректная страница.", show_alert=True)
+        return
+    await show_routes_page(callback, int(raw_page))
 
 
 @router.callback_query(F.data.startswith("route:"))
@@ -2221,7 +2240,20 @@ async def route_card(callback: CallbackQuery) -> None:
             else "Пешеходный маршрут в Google Maps. "
             "Длинные прогулки разбиваются на части."
         ),
-        reply_markup=route_details_keyboard(route_places),
+        reply_markup=route_details_keyboard(
+            route_places,
+            back_callback=(
+                "routes:page:"
+                + str(
+                    next(
+                        index
+                        for index, available_route in enumerate(catalog.routes)
+                        if available_route.slug == route.slug
+                    )
+                    // PAGE_SIZE
+                )
+            ),
+        ),
     )
     await callback.answer()
 
