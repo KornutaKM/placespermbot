@@ -144,6 +144,80 @@ function renderPlaces() {
   drawPlaceResults();
 }
 
+function renderFavorites() {
+  const catalog = state.catalog;
+  const active = canEditFavorites();
+  const saved = active ? catalog.places.filter(place =>
+    state.favorites.has(place.slug)) : [];
+  const notice = active ? "" : (
+    !state.signed
+      ? '<div class="notice">Избранное доступно после открытия гида в Telegram. В браузере можно просматривать места без сохранения.</div>'
+      : state.savedCity !== catalog.slug
+        ? '<div class="notice">Выберите текущий город через Telegram, чтобы увидеть избранное.</div>'
+        : '<div class="notice">Не удалось загрузить избранное. Перезапустите Mini App и проверьте соединение.</div>'
+  );
+  screen.innerHTML = '<div class="page-heading"><div><h1>Избранное</h1>' +
+    '<p>Твои сохранённые места · ' + escapeText(catalog.name) +
+    '</p></div><span class="counter">' + saved.length + ' мест</span></div>' +
+    notice +
+    (active && saved.length === 0
+      ? '<div class="empty"><strong>Здесь пока пусто</strong>' +
+        'Сохрани понравившееся место, нажав ♡ на карточке.</div>' +
+        '<button type="button" class="primary" data-open="places">Найти интересные места ↗</button>'
+      : '<div class="places-list">' + saved.map(placeCard).join("") + '</div>');
+}
+
+async function loadFavorites(citySlug) {
+  state.favorites = new Set();
+  state.favoritesLoaded = false;
+  if (!state.signed || state.savedCity !== citySlug) return;
+  try {
+    const result = await api("/api/me/favorites/" + encodeURIComponent(citySlug));
+    if (result.city_slug !== citySlug || !Array.isArray(result.place_slugs)) {
+      throw new Error("Invalid favorites payload");
+    }
+    state.favorites = new Set(result.place_slugs);
+    state.favoritesLoaded = true;
+  } catch (_) {
+    notify("Не удалось загрузить избранное. Проверьте соединение.");
+  }
+}
+
+async function toggleFavorite(placeSlug) {
+  if (!canEditFavorites()) {
+    notify("Откройте гид в Telegram и выберите город.");
+    return;
+  }
+  const place = state.catalog.places.find(item => item.slug === placeSlug);
+  if (!place || state.favoritePending.has(placeSlug)) return;
+  const citySlug = state.catalog.slug;
+  const wasFavorite = state.favorites.has(placeSlug);
+  state.favoritePending.add(placeSlug);
+  try {
+    const result = await api(
+      "/api/me/favorites/" + encodeURIComponent(citySlug) + "/" +
+      encodeURIComponent(placeSlug),
+      { method: wasFavorite ? "DELETE" : "PUT" }
+    );
+    if (result.city_slug !== citySlug || result.place_slug !== placeSlug ||
+      result.is_favorite !== !wasFavorite) throw new Error("Invalid favorites response");
+    if (state.catalog.slug !== citySlug) return;
+    if (result.is_favorite) state.favorites.add(placeSlug);
+    else state.favorites.delete(placeSlug);
+    if (state.tab === "home") renderHome();
+    else if (state.tab === "places") drawPlaceResults();
+    else if (state.tab === "favorites") renderFavorites();
+    if (sheetRoot.querySelector('button[data-favorite="' + placeSlug + '"]')) {
+      openPlace(placeSlug);
+    }
+    notify(result.is_favorite ? "Добавлено в избранное" : "Удалено из избранного");
+  } catch (_) {
+    notify("Не удалось обновить избранное. Попробуйте ещё раз.");
+  } finally {
+    state.favoritePending.delete(placeSlug);
+  }
+}
+
 function routeCard(route, number) {
   return '<article class="route-card"><div class="route-number">МАРШРУТ / ' +
     String(number).padStart(2, "0") + '</div><h3>' +
