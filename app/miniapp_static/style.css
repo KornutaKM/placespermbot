@@ -45,5 +45,53 @@
 .map-match span:first-child{font-size:18px}
 .map-match span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .map-match span:last-child{color:var(--blue);font-weight:800}
+
+/* My Guide -- a compact personal dashboard with four scoped collections. */
+.guide-hero{border-radius:24px;background:linear-gradient(135deg,#182f5e,#1f4477 70%,#365e94);color:#fff;padding:23px 22px;min-height:150px;box-shadow:var(--shadow)}
+.guide-hero-eyebrow{font-size:10px;letter-spacing:1.9px;color:#9bdfd1;font-weight:850}
+.guide-hero h2{font-size:23px;letter-spacing:-.6px;line-height:1.15;margin:14px 0 7px;max-width:290px}
+.guide-hero p{font-size:12px;color:#cfdfec;line-height:1.6;margin:0}
+.guide-welcome{border-radius:24px;background:#fff;border:1px solid var(--line);text-align:center;padding:42px 24px;margin:15px 0}
+.guide-welcome>span{font-size:52px;color:var(--blue)}
+.guide-welcome h2{font-size:22px;line-height:1.24;letter-spacing:-.6px;margin:10px 0}
+.guide-welcome p{font-size:13px;color:var(--muted);line-height:1.7}
+.guide-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:13px}
+.guide-stat{background:white;border:1px solid var(--line);border-radius:15px;padding:13px 5px;text-align:center;min-width:0}
+.guide-stat strong{display:block;font-size:22px;letter-spacing:-.6px}
+.guide-stat span{display:block;color:var(--muted);font-size:10px;line-height:1.4;overflow-wrap:anywhere}
+.guide-progress{margin-top:13px;background:#fff;border:1px solid var(--line);border-radius:15px;padding:13px 15px}
+.guide-progress>div:first-child{display:flex;justify-content:space-between;gap:10px;font-size:11px}
+.guide-progress strong{font-weight:750}
+.guide-progress>div:first-child span{color:var(--muted)}
+.guide-progress-track{height:7px;background:#e6edf9;overflow:hidden;border-radius:8px;margin-top:11px}
+.guide-progress-track span{display:block;height:100%;background:var(--blue);border-radius:8px;transition:width .25s ease}
+.guide-segments{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding:20px 0 14px}
+.guide-segments button{border:1px solid #dfe6f0;background:#fff;color:#667893;flex:none;border-radius:13px;font-size:11px;font-weight:750;padding:11px 12px}
+.guide-segments button.active{border-color:var(--blue);background:var(--blue);color:#fff}
+.detail-visited{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:13px;padding:9px 12px;margin:10px 0 14px;font-size:12px;color:var(--muted)}
+.visited-toggle{border:1px solid #cae7d7;background:#eaf8ef;color:#1d7850;padding:8px 11px;border-radius:11px;white-space:nowrap;font-size:11px;font-weight:750}
+.visited-toggle.selected{background:#287b58;color:#fff;border-color:#287b58}
+.visited-toggle:disabled,.guide-unvisit:disabled{opacity:.5;cursor:not-allowed}
+.guide-visited-list,.guide-routes-list{display:grid;grid-template-columns:1fr;gap:12px}
+.guide-visited-item{display:flex;flex-direction:column;gap:0}
+.guide-visited-item .place-card{border-radius:19px 19px 0 0}
+.guide-unvisit{border:1px solid var(--line);background:#fff;color:#66758e;border-radius:0 0 13px 13px;padding:10px 13px;font-size:11px;text-align:right}
+.guide-route-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px 18px;box-shadow:0 7px 20px #17294f09}
+.guide-route-kicker{color:var(--blue);font-size:10px;font-weight:800;letter-spacing:.6px}
+.guide-route-card h3{font-size:17px;margin:10px 0 5px;letter-spacing:-.2px}
+.guide-route-card p{color:var(--muted);font-size:12px;line-height:1.55;margin:7px 0 12px}
+.guide-route-meta{display:flex;gap:6px;flex-wrap:wrap}
+.guide-route-meta span{font-size:10px;color:#52627a;background:#f1f4fa;border-radius:10px;padding:7px}
+.guide-route-open{background:#eef3ff;color:var(--blue);border:0;border-radius:11px;padding:10px 13px;font-weight:800;font-size:12px;margin-top:13px}
+.guide-route-actions{display:grid;gap:8px;margin-top:16px}
+.guide-route-actions>button{border:0;border-radius:12px;padding:12px;color:white;background:var(--blue);font-size:12px;font-weight:780}
+.guide-route-actions>.guide-delete-request{background:#fff0f1;color:#b54554}
+.guide-done{display:block;border-radius:10px;background:#e9f8f1;color:#14704c;text-align:center;padding:12px;font-weight:800;font-size:12px}
+.guide-confirm{background:#fff6f7;border:1px solid #ffdadf;border-radius:16px;padding:16px;margin-top:17px}
+.guide-confirm strong{font-size:14px}
+.guide-confirm p{font-size:12px;color:#7a6470;line-height:1.5}
+.guide-confirm button{width:100%;border:0;border-radius:11px;padding:12px;margin-top:8px;font-size:12px;font-weight:800}
+.guide-danger{background:#c73d51;color:#fff}
+.guide-cancel{background:#fff;color:#405473}
 @media(min-width:600px){.screen{padding:22px 30px 40px}.hero{min-height:275px}.quick-grid{grid-template-columns:repeat(4,1fr)}.quick-card{min-height:165px}.places-list,.routes-list{grid-template-columns:repeat(2,1fr)}.place-visual{flex-basis:120px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
