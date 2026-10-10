@@ -28,7 +28,7 @@ from app.navigation import (
     visited_callback,
     visited_context,
 )
-from app.pagination import Page
+from app.pagination import Page, paginate
 from app.planner import INTEREST_LABELS
 from app.route_transport import route_requires_transport
 from app.saved_routes import SavedRoute, route_interest_label
@@ -387,8 +387,12 @@ def paginated_places_keyboard(
 
 
 def routes_keyboard(
-    routes: tuple[RoutePlan, ...], *, city_slug: str | None = None,
+    routes: tuple[RoutePlan, ...],
+    *,
+    city_slug: str | None = None,
+    page_index: int = 0,
 ) -> InlineKeyboardMarkup:
+    page = paginate(routes, page_index)
     rows = [
         [
             InlineKeyboardButton(
@@ -400,8 +404,33 @@ def routes_keyboard(
                 callback_data=f"route:{route.slug}",
             )
         ]
-        for route in routes
+        for route in page.items
     ]
+
+    if page.total_pages > 1:
+        navigation: list[InlineKeyboardButton] = []
+        if page.index > 0:
+            navigation.append(
+                InlineKeyboardButton(
+                    text="←",
+                    callback_data=f"routes:page:{page.index - 1}",
+                )
+            )
+        navigation.append(
+            InlineKeyboardButton(
+                text=f"{page.number}/{page.total_pages}",
+                callback_data="noop",
+            )
+        )
+        if page.index + 1 < page.total_pages:
+            navigation.append(
+                InlineKeyboardButton(
+                    text="→",
+                    callback_data=f"routes:page:{page.index + 1}",
+                )
+            )
+        rows.append(navigation)
+
     rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -607,9 +636,15 @@ def saved_route_delete_confirmation_keyboard(route_id: str) -> InlineKeyboardMar
     )
 
 
-def route_details_keyboard(places: tuple[Place, ...]) -> InlineKeyboardMarkup:
+def route_details_keyboard(
+    places: tuple[Place, ...],
+    *,
+    back_callback: str = "menu:routes",
+) -> InlineKeyboardMarkup:
     rows = _google_maps_rows(places)
-    rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
+    rows.append(
+        [InlineKeyboardButton(text="← К маршрутам", callback_data=back_callback)]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
