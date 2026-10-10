@@ -8,6 +8,7 @@ from dataclasses import asdict, dataclass
 
 from app.catalog import CityCatalog, list_catalogs
 from app.route_safety import route_geography
+from app.route_transport import verify_registered_transfers
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,7 +104,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--format", choices=("json", "markdown"), default="markdown")
     parser.add_argument(
         "--check", action="store_true",
-        help="Fail only on impossible duration/distance metrics; long legs remain advisory",
+        help="Reject impossible metrics and unreviewed/stale long-leg contracts",
     )
     args = parser.parse_args(argv)
     findings = collect_route_findings()
@@ -111,8 +112,10 @@ def main(argv: list[str] | None = None) -> None:
         print(json.dumps([asdict(item) for item in findings], ensure_ascii=False, indent=2))
     else:
         print(render_route_review(findings))
-    if args.check and hard_route_findings(findings):
-        raise SystemExit(1)
+    if args.check:
+        verify_registered_transfers()
+        if hard_route_findings(findings):
+            raise SystemExit(1)
 
 
 if __name__ == "__main__":

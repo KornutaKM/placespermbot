@@ -8,6 +8,13 @@ from app.route_review import (
     main,
     render_route_review,
 )
+from app.route_transport import (
+    REVIEWED_TRANSFERS,
+    audit_reviewed_transfers,
+    detect_long_transfers,
+    route_requires_transport,
+    transfer_notes,
+)
 
 SOURCE = PlaceSource("Test source", "https://example.org/", date(2026, 10, 1))
 
@@ -72,3 +79,43 @@ def test_route_review_cli_outputs_json_and_markdown(capsys) -> None:
     assert capsys.readouterr().out.lstrip().startswith("[")
     main(["--format", "markdown"])
     assert "Potential issues to review:" in capsys.readouterr().out
+
+
+def test_all_long_transfers_are_explicitly_reviewed() -> None:
+    actual = detect_long_transfers(list_catalogs())
+    assert len(actual) == 9
+    assert actual == set(REVIEWED_TRANSFERS)
+    assert audit_reviewed_transfers(list_catalogs()) == ((), ())
+    assert route_requires_transport("moscow", "moscow-modern")
+    assert transfer_notes("sochi", "sochi-matsesta-nature")
+    assert not route_requires_transport("sochi", "sochi-first-walk")
+
+
+def test_long_transfer_registry_detects_new_and_obsolete_legs() -> None:
+    from app.catalog import get_catalog
+    from app.domain import RoutePlan
+
+    city = get_catalog("moscow")
+    changed_routes = tuple(
+        RoutePlan(
+            route.slug, route.title, route.summary, route.duration_minutes,
+            route.distance_km, ("red-square", "vdnh"),
+        ) if route.slug == "moscow-modern" else route
+        for route in city.routes
+    )
+    edited = CityCatalog(
+        city.slug, city.name, city.category_labels, city.places, changed_routes,
+    )
+    missing, obsolete = audit_reviewed_transfers(
+        catalog for catalog in list_catalogs() if catalog.slug != "moscow"
+    )
+    assert missing == ()
+    assert all(city_slug == "moscow" for city_slug, *_ in obsolete)
+    missing, obsolete = audit_reviewed_transfers(
+        (*(
+            catalog for catalog in list_catalogs()
+            if catalog.slug != "moscow"
+        ), edited),
+    )
+    assert missing
+    assert ("moscow", "moscow-modern", "vdnh", "moscow-city") in obsolete
