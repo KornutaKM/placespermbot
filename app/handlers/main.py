@@ -481,12 +481,12 @@ async def delete_all_user_data(
 
 def city_selector_text(selected: CityCatalog | None) -> str:
     selection = (
-        f"Сейчас выбран: <b>{selected.name}</b>.\\n"
+        f"Сейчас выбран: <b>{selected.name}</b>.\n"
         if selected is not None
-        else "Сначала выберите город.\\n"
+        else "Сначала выберите город.\n"
     )
     return (
-        "🌆 <b>Выбор города</b>\\n\\n"
+        "🌆 <b>Выбор города</b>\n\n"
         + selection
         + "Выберите город из доступных каталогов:"
     )
