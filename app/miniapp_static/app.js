@@ -101,7 +101,7 @@ function renderHome() {
     '<button class="quick-card" type="button" data-open="places"><span class="symbol">⌖</span><strong>Куда сходить ↗</strong><small>Места, которые стоит увидеть</small></button>' +
     '<button class="quick-card green" type="button" data-open="routes"><span class="symbol">〽</span><strong>Маршруты ↗</strong><small>Прогулки с готовыми точками</small></button>' +
     '<button class="quick-card peach" type="button" data-category="free"><span class="symbol">✳</span><strong>Бесплатно ↗</strong><small>Город без лишних расходов</small></button>' +
-    '<button class="quick-card purple" type="button" data-category="family"><span class="symbol">♡</span><strong>С детьми ↗</strong><small>Места для всей семьи</small></button>' +
+    '<button class="quick-card purple" type="button" data-open="guide"><span class="symbol">♡</span><strong>Мой гид ↗</strong><small>Избранное, прогулки и история</small></button>' +
     '</div><div class="stats"><div class="stat"><strong>' +
     catalog.places.length + '</strong><span>мест</span></div><div class="stat"><strong>' +
     catalog.routes.length + '</strong><span>маршрутов</span></div><div class="stat"><strong>' +
