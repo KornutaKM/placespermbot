@@ -2,18 +2,18 @@ from datetime import date
 
 from app.catalog import CityCatalog, list_catalogs
 from app.domain import Place, PlaceSource, RoutePlan
+from app.route_review import (
+    collect_route_findings,
+    inspect_routes,
+    main,
+    render_route_review,
+)
 from app.route_transport import (
     REVIEWED_TRANSFERS,
     audit_reviewed_transfers,
     detect_long_transfers,
     route_requires_transport,
     transfer_notes,
-)
-from app.route_review import (
-    collect_route_findings,
-    inspect_routes,
-    main,
-    render_route_review,
 )
 
 SOURCE = PlaceSource("Test source", "https://example.org/", date(2026, 10, 1))
@@ -107,7 +107,7 @@ def test_long_transfer_registry_detects_new_and_obsolete_legs() -> None:
         city.slug, city.name, city.category_labels, city.places, changed_routes,
     )
     missing, obsolete = audit_reviewed_transfers(
-        (catalog for catalog in list_catalogs() if catalog.slug != "moscow")
+        catalog for catalog in list_catalogs() if catalog.slug != "moscow"
     )
     assert missing == ()
     assert all(city_slug == "moscow" for city_slug, *_ in obsolete)
