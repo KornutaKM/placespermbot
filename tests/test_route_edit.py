@@ -95,7 +95,7 @@ def test_edit_stop_recalculates_valid_routes_without_reordering():
             assert edited.places == expected
             assert edited.estimated_minutes <= route.budget_minutes
             assert route_timing(edited).walking_minutes >= 0
-            assert len(set(p.slug for p in edited.places)) == len(edited.places)
+            assert len({p.slug for p in edited.places}) == len(edited.places)
             assert edited.distance_km <= route.distance_km + 0.1
 
 
