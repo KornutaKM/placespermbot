@@ -1,5 +1,6 @@
 from app.personal_route import PersonalRouteResult
 from app.recommendations import recommendation_reason_text
+from app.route_timing import route_timing_text
 from app.saved_routes import PERSONAL_ROUTE_LABEL
 
 
@@ -21,7 +22,8 @@ def personal_route_result_text(
         f"Бюджет: {route.budget_minutes // 60} ч\n"
         f"{start_line}"
         f"Оценка маршрута: ~{hours} ч {minutes:02d} мин\n"
-        f"Пешком по расчёту: ~{route.distance_km:g} км\n"
+        + route_timing_text(route)
+        + f"Пешком по расчёту: ~{route.distance_km:g} км\n"
         f"Точек: {len(route.places)}\n\n"
         f"<b>Маршрут:</b>\n{stops}\n\n"
         "Использованы текущие интересы, избранное, история посещений "
