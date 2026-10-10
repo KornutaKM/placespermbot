@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from app.catalog import get_catalog, has_catalog, list_catalogs
+from app.catalog import get_catalog, has_catalog
 from app.catalog_service import CatalogService
 from app.config import Settings, get_settings
 from app.maps import google_maps_place_url, google_maps_route_links
