@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-
 from app.release_consistency import assess_release_consistency, collect_release_consistency, main
 
 
