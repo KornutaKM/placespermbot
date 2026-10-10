@@ -36,6 +36,7 @@ from app.keyboards import (
     route_details_keyboard,
     route_duration_keyboard,
     route_interest_keyboard,
+    route_stop_editor_keyboard,
     routes_keyboard,
     saved_route_delete_confirmation_keyboard,
     saved_route_details_keyboard,
@@ -71,6 +72,11 @@ from app.planner import INTEREST_LABELS, build_route
 from app.profile import ProfileSummary, build_profile_summary, profile_text
 from app.recommendations import recommend_personalized, recommendation_reason_text
 from app.route_completion import complete_saved_route
+from app.route_edit import (
+    parse_editor_callback,
+    parse_remove_callback,
+    route_after_removal,
+)
 from app.route_safety import route_access_warnings
 from app.route_timing import route_timing_text
 from app.route_transport import transfer_notes
@@ -1830,9 +1836,99 @@ async def route_builder_interest(
         reply_markup=generated_route_keyboard(
             route.places,
             save_callback=build_save_callback(catalog, route),
+            allow_edit=True,
         ),
     )
     await callback.answer()
+
+
+@router.callback_query(F.data.startswith("editgen:"))
+async def show_generated_route_stop_editor(callback: CallbackQuery) -> None:
+    catalog = current_catalog()
+    try:
+        snapshot = parse_editor_callback(callback.data, catalog)
+        save_callback = "savegen:" + callback.data.removeprefix("editgen:")
+        keyboard = route_stop_editor_keyboard(
+            snapshot.places, save_callback=save_callback
+        )
+    except ValueError:
+        await callback.answer(
+            "Маршрут устарел. Соберите его заново.",
+            show_alert=True,
+        )
+        return
+
+    await callback.message.edit_reply_markup(reply_markup=keyboard)
+    await callback.answer("Выберите остановку для удаления.")
+
+
+@router.callback_query(F.data.startswith("backgen:"))
+async def cancel_generated_route_stop_edit(callback: CallbackQuery) -> None:
+    catalog = current_catalog()
+    try:
+        snapshot = parse_editor_callback(callback.data, catalog)
+        save_callback = "savegen:" + callback.data.removeprefix("backgen:")
+    except ValueError:
+        await callback.answer(
+            "Маршрут устарел. Соберите его заново.",
+            show_alert=True,
+        )
+        return
+
+    await callback.message.edit_reply_markup(
+        reply_markup=generated_route_keyboard(
+            snapshot.places,
+            save_callback=save_callback,
+            allow_edit=True,
+        )
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("dropg:"))
+async def remove_generated_route_stop(callback: CallbackQuery) -> None:
+    catalog = current_catalog()
+    try:
+        snapshot, stop_index = parse_remove_callback(callback.data, catalog)
+        route = route_after_removal(snapshot, stop_index)
+        save_callback = build_save_callback(catalog, route)
+    except ValueError as exc:
+        reason = str(exc)
+        if "long walking leg" in reason:
+            message = (
+                "Удаление создаст пеший переход более 5 км по прямой. "
+                "Исходный маршрут сохранён."
+            )
+        elif "exceeds its time budget" in reason:
+            message = "После удаления маршрут не укладывается в бюджет времени."
+        else:
+            message = "Маршрут устарел или изменение недоступно. Соберите заново."
+        await callback.answer(message, show_alert=True)
+        return
+
+    stops = "\n".join(
+        f"{index}. {place.emoji} {place.title} — ~{place.visit_minutes} мин"
+        for index, place in enumerate(route.places, start=1)
+    )
+    hours, minutes = divmod(route.estimated_minutes, 60)
+    await callback.message.edit_text(
+        f"✂️ <b>{INTEREST_LABELS[route.interest]}</b>\n\n"
+        f"Остановка удалена. Осталось: {len(route.places)}.\n"
+        f"Бюджет: {route.budget_minutes // 60} ч\n"
+        f"Оценка маршрута: ~{hours} ч {minutes:02d} мин\n"
+        + route_timing_text(route)
+        + f"Пешком по расчёту: ~{route.distance_km:g} км\n\n"
+        f"<b>Маршрут:</b>\n{stops}\n\n"
+        "Маршрут пересчитан от первой оставшейся точки. "
+        "Если исходно использовалась геопозиция, она больше не учитывается. "
+        "Дорожный путь и время переходов остаются ориентировочными.",
+        reply_markup=generated_route_keyboard(
+            route.places,
+            save_callback=save_callback,
+            allow_edit=True,
+        ),
+    )
+    await callback.answer("Остановка удалена. Для сохранения нажмите 💾.")
 
 
 @router.callback_query(F.data.startswith("savegen:"))

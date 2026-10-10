@@ -30,6 +30,7 @@ from app.navigation import (
 )
 from app.pagination import Page, paginate
 from app.planner import INTEREST_LABELS
+from app.route_edit import back_callback, edit_callback, remove_callback
 from app.route_transport import route_requires_transport
 from app.saved_routes import SavedRoute, route_interest_label
 from app.storage import CompletedRouteSnapshot
@@ -502,6 +503,7 @@ def generated_route_keyboard(
     save_callback: str | None = None,
     restart_callback: str = "builder:start",
     restart_text: str = "🪄 Новый маршрут",
+    allow_edit: bool = False,
 ) -> InlineKeyboardMarkup:
     rows = [
         [
@@ -522,10 +524,44 @@ def generated_route_keyboard(
                 )
             ]
         )
+    if allow_edit and save_callback is not None and len(places) > 1:
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text="✂️ Убрать остановку",
+                    callback_data=edit_callback(save_callback),
+                )
+            ]
+        )
     rows.append(
         [InlineKeyboardButton(text=restart_text, callback_data=restart_callback)]
     )
     rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def route_stop_editor_keyboard(
+    places: tuple[Place, ...], *, save_callback: str
+) -> InlineKeyboardMarkup:
+    if len(places) < 2:
+        raise ValueError("Route editor needs at least two stops")
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"➖ {index + 1}. {place.emoji} {place.title}",
+                callback_data=remove_callback(save_callback, index),
+            )
+        ]
+        for index, place in enumerate(places)
+    ]
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text="↩️ Оставить маршрут без изменений",
+                callback_data=back_callback(save_callback),
+            )
+        ]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
