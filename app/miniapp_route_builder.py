@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.catalog import CityCatalog
 from app.domain import GeneratedRoute
@@ -29,7 +29,9 @@ class RouteBuildRequest(BaseModel):
 
 
 class SaveBuiltRouteRequest(RouteBuildRequest):
-    expected_route_id: str
+    expected_route_id: str = Field(
+        min_length=16, max_length=16, pattern=r"^[0-9a-f]{16}$"
+    )
 
 
 def build_miniapp_route(
