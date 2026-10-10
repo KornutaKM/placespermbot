@@ -14,7 +14,7 @@ from app.catalog_service import CatalogService
 from app.config import Settings, get_settings
 from app.maps import google_maps_place_url, google_maps_route_links
 from app.miniapp_auth import InvalidTelegramInitData, validate_init_data
-from app.storage import UserCityRepository
+from app.storage import FavoritesRepository, UserCityRepository
 
 STATIC_DIR = Path(__file__).resolve().parent / "miniapp_static"
 
@@ -29,6 +29,7 @@ def create_miniapp(settings: Settings | None = None) -> FastAPI:
         default_city_slug=config.city_slug,
         user_city_repo=UserCityRepository(config.database_path),
     )
+    favorites = FavoritesRepository(config.database_path)
     app = FastAPI(
         title="Places Mini App",
         docs_url=None,
@@ -151,6 +152,56 @@ def create_miniapp(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="City not found")
         selected = await cities.set_for_user(user_id, body.city_slug)
         return {"city_slug": selected.slug, "city_name": selected.name}
+
+    async def require_active_city(user_id: int, city_slug: str):
+        if not has_catalog(city_slug):
+            raise HTTPException(status_code=404, detail="City not found")
+        selected = await cities.selected_for_user(user_id)
+        if selected is None or selected.slug != city_slug:
+            raise HTTPException(
+                status_code=409,
+                detail="Select this city before editing favorites",
+            )
+        return selected
+
+    @app.get("/api/me/favorites/{city_slug}")
+    async def my_favorites(
+        city_slug: str,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        user_id = authenticated_user(x_telegram_init_data)
+        catalog = await require_active_city(user_id, city_slug)
+        stored = await favorites.list_place_slugs(user_id, catalog.slug)
+        valid = [
+            slug for slug in stored if catalog.place_by_slug(slug) is not None
+        ]
+        return {"city_slug": catalog.slug, "place_slugs": valid}
+
+    @app.put("/api/me/favorites/{city_slug}/{place_slug}")
+    async def add_favorite(
+        city_slug: str,
+        place_slug: str,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        user_id = authenticated_user(x_telegram_init_data)
+        catalog = await require_active_city(user_id, city_slug)
+        if catalog.place_by_slug(place_slug) is None:
+            raise HTTPException(status_code=404, detail="Place not found")
+        await favorites.add(user_id, catalog.slug, place_slug)
+        return {"city_slug": catalog.slug, "place_slug": place_slug, "is_favorite": True}
+
+    @app.delete("/api/me/favorites/{city_slug}/{place_slug}")
+    async def remove_favorite(
+        city_slug: str,
+        place_slug: str,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        user_id = authenticated_user(x_telegram_init_data)
+        catalog = await require_active_city(user_id, city_slug)
+        if catalog.place_by_slug(place_slug) is None:
+            raise HTTPException(status_code=404, detail="Place not found")
+        await favorites.remove(user_id, catalog.slug, place_slug)
+        return {"city_slug": catalog.slug, "place_slug": place_slug, "is_favorite": False}
 
     return app
 
