@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import pytest
-from app.release_consistency import assess_release_consistency, collect_release_consistency, main
 
+from app.release_consistency import assess_release_consistency, collect_release_consistency, main
 
 NAMES = ("Рязань", "Петрозаводск", "Пермь")
 
