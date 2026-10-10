@@ -2205,6 +2205,9 @@ async def route_card(callback: CallbackQuery) -> None:
         await callback.answer("Маршрут не найден.", show_alert=True)
         return
 
+    route_page_index = next(
+        index for index, item in enumerate(catalog.routes) if item.slug == route.slug
+    ) // PAGE_SIZE
     route_places = tuple(
         place
         for place_slug in route.place_slugs
@@ -2242,17 +2245,7 @@ async def route_card(callback: CallbackQuery) -> None:
         ),
         reply_markup=route_details_keyboard(
             route_places,
-            back_callback=(
-                "routes:page:"
-                + str(
-                    next(
-                        index
-                        for index, available_route in enumerate(catalog.routes)
-                        if available_route.slug == route.slug
-                    )
-                    // PAGE_SIZE
-                )
-            ),
+            back_callback=f"routes:page:{route_page_index}",
         ),
     )
     await callback.answer()
