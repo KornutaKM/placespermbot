@@ -10,7 +10,8 @@ const state = {
   guide: null, guideLoaded: false, guideSection: "favorites",
   visitPending: new Set(), routePending: new Set(),
   builder: { budget_minutes: 240, interest: "classic", exclude_visited: false,
-    result: null, busy: false, saving: false, saved: false, version: 0 }
+    result: null, busy: false, saving: false, saved: false, version: 0,
+    showMap: false, mapController: null }
 };
 const screen = document.getElementById("screen");
 const sheetRoot = document.getElementById("sheet-root");
@@ -666,6 +667,7 @@ function updateBuilderOption(key, value) {
   state.builder.version++;
   state.builder.result = null;
   state.builder.saved = false;
+  state.builder.showMap = false;
   renderBuilder();
 }
 
@@ -699,6 +701,16 @@ function builderResultMarkup(route, saved) {
       escapeText(label) + '</span></div>'
     ).join("") + '</div>' +
     '<ol class="builder-stops">' + stops + '</ol>' +
+    '<button class="builder-map-toggle" type="button" ' +
+    'data-builder-map-toggle="yes">' +
+    (state.builder.showMap ? "Скрыть карту" : "⌖ Показать остановки на карте") +
+    '</button>' +
+    (state.builder.showMap
+      ? '<div class="builder-map" id="builder-route-map" ' +
+        'role="region" aria-label="Карта остановок маршрута"></div>' +
+        '<p class="builder-disclaimer">Карта показывает точки, но не ' +
+        'строит путь по дорогам. Тайлы загружаются только по запросу.</p>'
+      : "") +
     '<div class="builder-links">' + links + '</div>' +
     '<p class="builder-disclaimer">Время ходьбы рассчитано из скорости 4,5 км/ч ' +
     'и расстояний по прямой, а не по дорожной сети. Перед выходом проверьте путь ' +
@@ -719,6 +731,10 @@ function builderResultMarkup(route, saved) {
 
 function renderBuilder() {
   const b = state.builder;
+  if (b.mapController) {
+    b.mapController.destroy();
+    b.mapController = null;
+  }
   screen.innerHTML = '<div class="page-heading"><div><h1>Свой маршрут</h1>' +
     '<p>Построй прогулку по ' + escapeText(state.catalog.name) +
     '</p></div></div>' +
@@ -751,6 +767,28 @@ function renderBuilder() {
     (b.busy || b.saving ? "disabled" : "") + '>' +
     (b.busy ? "Строим маршрут…" : "✨ Построить маршрут") + '</button></section>' +
     builderResultMarkup(b.result, b.saved);
+  if (b.showMap && b.result) {
+    try {
+      b.mapController = window.PlacesMap?.mount(
+        "builder-route-map", slug => openPlace(slug)
+      ) || null;
+      if (b.mapController) b.mapController.update(b.result.places);
+    } catch (_) {
+      b.mapController = null;
+    }
+    if (!b.mapController) {
+      const holder = document.getElementById("builder-route-map");
+      if (holder) {
+        holder.textContent = "Карта недоступна. Список остановок и ссылки ниже работают.";
+      }
+    }
+  }
+}
+
+function toggleBuilderMap() {
+  if (state.tab !== "builder" || !state.builder.result) return;
+  state.builder.showMap = !state.builder.showMap;
+  renderBuilder();
 }
 
 async function buildPreview() {
@@ -764,6 +802,7 @@ async function buildPreview() {
   b.busy = true;
   b.saved = false;
   b.result = null;
+  b.showMap = false;
   const version = ++b.version;
   renderBuilder();
   try {
@@ -876,6 +915,10 @@ function navigate(tab) {
     state.mapController.destroy();
     state.mapController = null;
   }
+  if (state.builder.mapController) {
+    state.builder.mapController.destroy();
+    state.builder.mapController = null;
+  }
   if (tab === "home") renderHome();
   else if (tab === "places") renderPlaces();
   else if (tab === "map") renderMap();
@@ -977,9 +1020,14 @@ async function loadCity(slug) {
   state.mapSearch = "";
   state.mapFilter = "all";
   state.mapSelected = null;
+  if (state.builder.mapController) {
+    state.builder.mapController.destroy();
+    state.builder.mapController = null;
+  }
   state.builder = { budget_minutes: 240, interest: "classic",
     exclude_visited: false, result: null, busy: false, saving: false,
-    saved: false, version: state.builder.version + 1 };
+    saved: false, version: state.builder.version + 1,
+    showMap: false, mapController: null };
   if (state.mapController) {
     state.mapController.destroy();
     state.mapController = null;
@@ -1046,6 +1094,10 @@ screen.addEventListener("click", event => {
   }
   if (trigger.dataset.builderPreview) {
     void buildPreview();
+    return;
+  }
+  if (trigger.dataset.builderMapToggle) {
+    toggleBuilderMap();
     return;
   }
   if (trigger.dataset.builderSave) {
