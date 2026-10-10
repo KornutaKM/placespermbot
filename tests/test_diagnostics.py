@@ -23,6 +23,7 @@ def test_diagnostics_reports_operational_state_without_secrets(tmp_path) -> None
 
         assert result["status"] == "healthy"
         assert result["environment"] == "test"
+        assert result["build_sha"] == "unverified"
         assert result["city_slug"] == "saint-petersburg"
         assert result["database"]["size_bytes"] > 0
         assert result["database"]["journal_mode"] == "wal"
@@ -66,3 +67,23 @@ def test_diagnostics_rejects_failed_quick_integrity_gate(tmp_path) -> None:
 
     asyncio.run(scenario())
 
+
+
+def test_diagnostics_reports_valid_build_sha_but_redacts_other_env_text(tmp_path) -> None:
+    async def scenario() -> None:
+        database_path = tmp_path / "places.db"
+        await migrate_database(database_path)
+        known = Settings(
+            bot_token="123456789:secret", database_path=str(database_path),
+            build_sha="f" * 40,
+        )
+        assert (await collect_diagnostics(known))["build_sha"] == "f" * 40
+        bad = Settings(
+            bot_token="123456789:secret", database_path=str(database_path),
+            build_sha="do-not-publish-secret",
+        )
+        report = await collect_diagnostics(bad)
+        assert report["build_sha"] == "unverified"
+        assert "do-not-publish" not in repr(report)
+
+    asyncio.run(scenario())

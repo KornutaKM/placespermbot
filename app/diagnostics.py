@@ -8,6 +8,7 @@ from typing import Any
 from app.config import Settings, get_settings
 from app.database import connect_database
 from app.database_contract import validate_database_contract, validate_integrity_result
+from app.release_identity import public_build_sha
 from app.runtime_checks import validate_static_runtime
 
 
@@ -45,6 +46,7 @@ async def collect_diagnostics(settings: Settings) -> dict[str, Any]:
     return {
         "status": "healthy",
         "environment": settings.environment,
+        "build_sha": public_build_sha(settings.build_sha),
         "city_slug": settings.city_slug,
         "database": {
             "size_bytes": database_path.stat().st_size,

@@ -51,7 +51,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build image
-        run: docker build -t placespermbot:ci .
+        run: docker build --build-arg "PLACES_BUILD_SHA=$(git rev-parse HEAD)" -t placespermbot:ci .
+      - name: Verify image Git revision
+        run: |
+          EXPECTED="$(git rev-parse HEAD)"
+          LABEL="$(docker inspect placespermbot:ci --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+          INSIDE="$(docker run --rm placespermbot:ci python -c 'import os; print(os.environ["PLACES_BUILD_SHA"])')"
+          test "$EXPECTED" = "$LABEL"
+          test "$EXPECTED" = "$INSIDE"
       - name: Run packaged image smoke
         run: >
           docker run --rm
