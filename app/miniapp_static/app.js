@@ -349,6 +349,295 @@ function renderMap() {
   drawMapPoints();
 }
 
+function canUseGuide() {
+  return state.signed && state.guideLoaded &&
+    state.savedCity === state.catalog?.slug;
+}
+
+function visitedButton(place) {
+  const marked = !!state.guide?.visited_slugs.includes(place.slug);
+  const allowed = canUseGuide() && !state.visitPending.has(place.slug);
+  return '<button type="button" class="visited-toggle ' +
+    (marked ? "selected" : "") + '" data-visited="' +
+    escapeText(place.slug) + '" aria-pressed="' + String(marked) +
+    '" aria-label="' + escapeText(
+      marked ? "Снять отметку о посещении: " + place.title :
+        "Отметить как посещённое: " + place.title
+    ) + '"' + (allowed ? "" : " disabled") + '>' +
+    (marked ? "✓ Посещено" : "✓ Я здесь был") + "</button>";
+}
+
+async function loadGuide(citySlug) {
+  state.guide = null;
+  state.guideLoaded = false;
+  if (!state.signed || state.savedCity !== citySlug) return;
+  try {
+    const snapshot = await api("/api/me/guide/" + encodeURIComponent(citySlug));
+    if (snapshot.city_slug !== citySlug || !snapshot.stats ||
+      !Array.isArray(snapshot.visited_slugs) ||
+      !Array.isArray(snapshot.saved_routes) ||
+      !Array.isArray(snapshot.completed_routes)) {
+      throw new Error("Invalid My Guide response");
+    }
+    if (state.catalog?.slug !== citySlug || state.savedCity !== citySlug) return;
+    state.guide = snapshot;
+    state.guideLoaded = true;
+  } catch (_) {
+    notify("Не удалось загрузить «Мой гид». Проверьте подключение.");
+  }
+}
+
+function guideRouteCard(route, finished = false) {
+  const first = route.places[0];
+  const label = finished ? "ПРОЙДЕННЫЙ МАРШРУТ" : "СОХРАНЁННЫЙ МАРШРУТ";
+  const attr = finished ? "data-guide-history" : "data-guide-route";
+  return '<article class="guide-route-card"><div class="guide-route-kicker">' +
+    label + (route.completed ? ' · ✓ Пройден' : "") + '</div><h3>' +
+    escapeText(route.interest_label) + '</h3><p>' +
+    (first ? escapeText(first.emoji + " " + first.title) :
+      "Места отсутствуют в актуальном каталоге") +
+    (route.place_count > 1 ? ' и ещё ' + (route.place_count - 1) : "") + '</p>' +
+    '<div class="guide-route-meta"><span>◷ ' + escapeText(route.budget_minutes) +
+    ' мин</span><span>⌖ ' + escapeText(route.place_count) +
+    ' точек</span>' +
+    (route.unavailable_count
+      ? '<span>Недоступно: ' + escapeText(route.unavailable_count) + '</span>'
+      : "") + '</div>' +
+    '<button class="guide-route-open" type="button" ' + attr + '="' +
+    escapeText(route.route_id) + '">Подробнее →</button></article>';
+}
+
+function renderGuide() {
+  const catalog = state.catalog;
+  if (!canUseGuide()) {
+    screen.innerHTML = '<div class="page-heading"><div><h1>Мой гид</h1>' +
+      '<p>Личные открытия · ' + escapeText(catalog.name) +
+      '</p></div></div>' +
+      '<div class="guide-welcome"><span>✦</span><h2>Места, которые станут твоей историей</h2>' +
+      '<p>' + (!state.signed
+        ? "Откройте приложение через Telegram, чтобы видеть сохранённые маршруты и отмечать посещения."
+        : state.savedCity !== catalog.slug
+          ? "Выберите этот город в Telegram, чтобы открыть персональный гид."
+          : "Не удалось загрузить профиль. Проверьте сеть и перезапустите Mini App.") +
+      '</p><button class="primary" type="button" data-open="places">Исследовать места →</button></div>';
+    return;
+  }
+  const guide = state.guide;
+  const stats = guide.stats;
+  const segments = [
+    ["favorites", "♡ Избранное"], ["visited", "✓ Посещено"],
+    ["saved", "〽 Маршруты"], ["history", "🏁 История"]
+  ];
+  let body = "";
+  if (state.guideSection === "favorites") {
+    const places = catalog.places.filter(place =>
+      guide.favorite_slugs.includes(place.slug));
+    body = places.length
+      ? '<div class="places-list">' + places.map(placeCard).join("") + "</div>"
+      : '<div class="empty"><strong>Пока без избранного</strong>' +
+        'Нажмите ♡ на месте, которое хотите запомнить.</div>' +
+        '<button type="button" class="primary" data-open="places">Найти места →</button>';
+  } else if (state.guideSection === "visited") {
+    const places = catalog.places.filter(place =>
+      guide.visited_slugs.includes(place.slug));
+    body = places.length
+      ? '<div class="guide-visited-list">' + places.map(place =>
+          '<div class="guide-visited-item">' + placeCard(place) +
+          '<button class="guide-unvisit" type="button" data-visited="' +
+          escapeText(place.slug) + '"' +
+          (state.visitPending.has(place.slug) ? " disabled" : "") +
+          '>Снять отметку о посещении</button></div>'
+        ).join("") + "</div>"
+      : '<div class="empty"><strong>История посещений пуста</strong>' +
+        'Откройте карточку места и выберите «Я здесь был».</div>' +
+        '<button type="button" class="primary" data-open="places">Исследовать места →</button>';
+  } else if (state.guideSection === "saved") {
+    body = guide.saved_routes.length
+      ? '<div class="guide-routes-list">' +
+        guide.saved_routes.map(route => guideRouteCard(route)).join("") + "</div>"
+      : '<div class="empty"><strong>Нет сохранённых маршрутов</strong>' +
+        'Маршруты, сохранённые в обычном Telegram-боте, появятся здесь.</div>' +
+        '<button type="button" class="primary" data-open="routes">Готовые прогулки →</button>';
+  } else {
+    body = guide.completed_routes.length
+      ? '<div class="guide-routes-list">' +
+        guide.completed_routes.map(route => guideRouteCard(route, true)).join("") +
+        "</div>"
+      : '<div class="empty"><strong>Пока нет пройденных маршрутов</strong>' +
+        'Отметьте сохранённый маршрут как пройденный, чтобы увидеть его в истории.</div>';
+    if (stats.completed_routes > guide.completed_routes.length) {
+      body += '<div class="notice">Некоторые старые прохождения сохранены без подробного снимка маршрута.</div>';
+    }
+  }
+  screen.innerHTML = '<div class="page-heading"><div><h1>Мой гид</h1>' +
+    '<p>Моя история · ' + escapeText(catalog.name) + '</p></div></div>' +
+    '<div class="guide-hero"><span class="guide-hero-eyebrow">ЛИЧНЫЙ ДНЕВНИК</span>' +
+    '<h2>Каждое место — новое открытие.</h2><p>Соберите свою историю города.</p></div>' +
+    '<div class="guide-stats">' +
+    [
+      [stats.visited, "Посещено"], [stats.favorites, "Избранное"],
+      [stats.saved_routes, "Сохранено"], [stats.completed_routes, "Пройдено"]
+    ].map(([count, title]) =>
+      '<div class="guide-stat"><strong>' + escapeText(count) +
+      '</strong><span>' + escapeText(title) + '</span></div>'
+    ).join("") + '</div>' +
+    '<div class="guide-progress"><div><strong>Исследовано ' +
+    escapeText(stats.visited) + ' из ' + escapeText(stats.catalog_places) +
+    ' мест</strong><span>' + (stats.catalog_places
+      ? Math.round(stats.visited / stats.catalog_places * 100)
+      : 0) + '%</span></div><div class="guide-progress-track"><span style="width:' +
+    Math.min(100, stats.catalog_places
+      ? Math.round(stats.visited / stats.catalog_places * 100) : 0) + '%"></span></div></div>' +
+    '<div class="guide-segments" aria-label="Разделы личного гида">' +
+    segments.map(([value, label]) =>
+      '<button type="button" data-guide-section="' + value +
+      '" class="' + (state.guideSection === value ? "active" : "") +
+      '" aria-pressed="' + String(state.guideSection === value) + '">' +
+      label + '</button>'
+    ).join("") + '</div>' +
+    body;
+}
+
+async function toggleVisited(slug) {
+  if (!canUseGuide()) {
+    notify("Откройте гид в Telegram и выберите город.");
+    return;
+  }
+  const city = state.catalog.slug;
+  const place = state.catalog.places.find(place => place.slug === slug);
+  if (!place || state.visitPending.has(slug)) return;
+  const already = state.guide.visited_slugs.includes(slug);
+  state.visitPending.add(slug);
+  try {
+    const result = await api(
+      "/api/me/visited/" + encodeURIComponent(city) + "/" + encodeURIComponent(slug),
+      { method: already ? "DELETE" : "PUT" }
+    );
+    if (result.city_slug !== city || result.place_slug !== slug ||
+      result.is_visited !== !already) throw new Error("Invalid visit response");
+    if (state.catalog.slug !== city || state.savedCity !== city) return;
+    state.guide.visited_slugs = already
+      ? state.guide.visited_slugs.filter(item => item !== slug)
+      : [...state.guide.visited_slugs, slug];
+    state.guide.stats.visited = state.guide.visited_slugs.length;
+    state.visitPending.delete(slug);
+    if (state.tab === "guide") renderGuide();
+    const openVisited = sheetRoot.querySelector('button[data-visited="' + slug + '"]');
+    if (openVisited) openPlace(slug);
+    notify(already ? "Отметка посещения снята" : "Место отмечено как посещённое");
+  } catch (_) {
+    notify("Не удалось обновить посещение. Попробуйте ещё раз.");
+  } finally {
+    state.visitPending.delete(slug);
+  }
+}
+
+function guideRouteSheet(route, { history = false, confirmDelete = false } = {}) {
+  const routeId = escapeText(route.route_id);
+  const places = route.places.map((place, index) =>
+    '<li><b>' + (index + 1) + '</b><span>' +
+    escapeText(place.emoji) + ' ' + escapeText(place.title) + '</span></li>'
+  ).join("");
+  const links = route.map_links.map((link, index) =>
+    '<a class="map-link ' + (index ? "secondary" : "") +
+    '" target="_blank" rel="noopener noreferrer" href="' +
+    escapeText(link.url) + '">Карта · участок ' + (index + 1) + ' ↗</a>'
+  ).join("");
+  const actions = history ? "" : confirmDelete
+    ? '<div class="guide-confirm"><strong>Удалить этот маршрут из сохранённых?</strong>' +
+      '<p>История прохождения, если она есть, останется доступной.</p>' +
+      '<button type="button" class="guide-danger" data-guide-delete-confirm="' +
+      routeId + '">Да, удалить маршрут</button>' +
+      '<button type="button" class="guide-cancel" data-guide-delete-cancel="' +
+      routeId + '">Отмена</button></div>'
+    : '<div class="guide-route-actions">' +
+      (route.completed ? '<span class="guide-done">✓ Уже пройден</span>' :
+        '<button type="button" data-guide-complete="' + routeId +
+        '" ' + (state.routePending.has(route.route_id) ? "disabled" : "") +
+        '>🏁 Отметить пройденным</button>') +
+      '<button class="guide-delete-request" type="button" data-guide-delete-ask="' +
+      routeId + '">Удалить из сохранённых</button></div>';
+
+  openSheet('<div class="sheet-head"><div><div class="eyebrow">' +
+    (history ? "🏁 ПРОЙДЕННЫЙ МАРШРУТ" : "〽 СОХРАНЁННЫЙ МАРШРУТ") +
+    '</div><h2>' + escapeText(route.interest_label) +
+    '</h2></div><button class="sheet-close" type="button" data-close ' +
+    'aria-label="Закрыть">×</button></div>' +
+    '<div class="detail-meta"><span>◷ ' + escapeText(route.budget_minutes) +
+    ' мин</span><span>⌖ ' + escapeText(route.place_count) + ' точек</span></div>' +
+    (route.unavailable_count ? '<div class="notice">Часть точек недоступна ' +
+      'в текущем каталоге: ' + escapeText(route.unavailable_count) + '.</div>' : "") +
+    (history ? '<p class="sheet-caption">Дата прохождения: ' +
+      escapeText(route.completed_at) + '</p>' : "") +
+    (places ? '<ol class="route-stops">' + places + '</ol>'
+      : '<div class="empty">Сейчас ни одна точка маршрута не доступна.</div>') +
+    '<p class="sheet-caption">Переходы и время в пути ориентировочны.</p>' +
+    links + actions);
+}
+
+function openSavedGuideRoute(routeId, confirmDelete = false) {
+  if (!canUseGuide()) return;
+  const route = state.guide.saved_routes.find(item => item.route_id === routeId);
+  if (route) guideRouteSheet(route, { confirmDelete });
+}
+
+function openCompletedGuideRoute(routeId) {
+  if (!canUseGuide()) return;
+  const route = state.guide.completed_routes.find(item => item.route_id === routeId);
+  if (route) guideRouteSheet(route, { history: true });
+}
+
+async function completeGuideRoute(routeId) {
+  if (!canUseGuide() || state.routePending.has(routeId)) return;
+  const city = state.catalog.slug;
+  if (!state.guide.saved_routes.some(route => route.route_id === routeId)) return;
+  state.routePending.add(routeId);
+  try {
+    const result = await api(
+      "/api/me/saved-routes/" + encodeURIComponent(city) + "/" +
+      encodeURIComponent(routeId) + "/complete", { method: "PUT" }
+    );
+    if (result.city_slug !== city || result.route_id !== routeId ||
+      typeof result.already_completed !== "boolean") {
+      throw new Error("Invalid completion response");
+    }
+    if (state.catalog.slug !== city) return;
+    await loadGuide(city);
+    if (state.tab === "guide") renderGuide();
+    closeSheet();
+    notify(result.already_completed
+      ? "Маршрут уже был пройден" : "Маршрут отмечен как пройденный");
+  } catch (_) {
+    notify("Не удалось отметить маршрут. Попробуйте ещё раз.");
+  } finally {
+    state.routePending.delete(routeId);
+  }
+}
+
+async function deleteGuideRoute(routeId) {
+  if (!canUseGuide() || state.routePending.has(routeId)) return;
+  const city = state.catalog.slug;
+  if (!state.guide.saved_routes.some(route => route.route_id === routeId)) return;
+  state.routePending.add(routeId);
+  try {
+    const result = await api(
+      "/api/me/saved-routes/" + encodeURIComponent(city) + "/" +
+      encodeURIComponent(routeId), { method: "DELETE" }
+    );
+    if (result.city_slug !== city || result.route_id !== routeId ||
+      result.deleted !== true) throw new Error("Invalid deletion response");
+    if (state.catalog.slug !== city) return;
+    await loadGuide(city);
+    if (state.tab === "guide") renderGuide();
+    closeSheet();
+    notify("Маршрут удалён из сохранённых");
+  } catch (_) {
+    notify("Не удалось удалить маршрут. Попробуйте ещё раз.");
+  } finally {
+    state.routePending.delete(routeId);
+  }
+}
+
 function routeCard(route, number) {
   return '<article class="route-card"><div class="route-number">МАРШРУТ / ' +
     String(number).padStart(2, "0") + '</div><h3>' +
