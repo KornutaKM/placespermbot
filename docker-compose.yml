@@ -7,5 +7,16 @@ services:
     volumes:
       - places-data:/app/data
 
+  web:
+    build: .
+    restart: unless-stopped
+    command: uvicorn app.miniapp_server:app --host 0.0.0.0 --port 8080
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - places-data:/app/data
+
 volumes:
   places-data:
