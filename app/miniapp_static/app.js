@@ -8,7 +8,10 @@ const state = {
   favorites: new Set(), favoritesLoaded: false, favoritePending: new Set(),
   mapController: null, mapFilter: "all", mapSearch: "", mapSelected: null,
   guide: null, guideLoaded: false, guideSection: "favorites",
-  visitPending: new Set(), routePending: new Set()
+  visitPending: new Set(), routePending: new Set(),
+  builder: { budget_minutes: 240, interest: "classic", exclude_visited: false,
+    result: null, busy: false, saving: false, saved: false, version: 0,
+    showMap: false, mapController: null }
 };
 const screen = document.getElementById("screen");
 const sheetRoot = document.getElementById("sheet-root");
@@ -99,7 +102,7 @@ function renderHome() {
     '<p class="tiny">Все впечатления в одном месте</p></div></div>' +
     '<div class="quick-grid">' +
     '<button class="quick-card" type="button" data-open="places"><span class="symbol">⌖</span><strong>Куда сходить ↗</strong><small>Места, которые стоит увидеть</small></button>' +
-    '<button class="quick-card green" type="button" data-open="routes"><span class="symbol">〽</span><strong>Маршруты ↗</strong><small>Прогулки с готовыми точками</small></button>' +
+    '<button class="quick-card green" type="button" data-open="builder"><span class="symbol">〽</span><strong>Свой маршрут ↗</strong><small>Время, интересы и остановки</small></button>' +
     '<button class="quick-card peach" type="button" data-category="free"><span class="symbol">✳</span><strong>Бесплатно ↗</strong><small>Город без лишних расходов</small></button>' +
     '<button class="quick-card purple" type="button" data-open="guide"><span class="symbol">♡</span><strong>Мой гид ↗</strong><small>Избранное, прогулки и история</small></button>' +
     '</div><div class="stats"><div class="stat"><strong>' +
@@ -638,6 +641,236 @@ async function deleteGuideRoute(routeId) {
   }
 }
 
+const BUILDER_INTERESTS = [
+  ["classic", "🏛 Главные места"], ["museums", "🖼 Музеи"],
+  ["architecture", "🏛 Архитектура"], ["walks", "🌿 Прогулки"],
+  ["unusual", "✨ Необычные места"], ["family", "👨‍👩‍👧 С детьми"],
+  ["free", "💸 Бесплатно"]
+];
+
+function builderBody() {
+  const b = state.builder;
+  return {
+    budget_minutes: b.budget_minutes,
+    interest: b.interest,
+    exclude_visited: b.exclude_visited
+  };
+}
+
+function updateBuilderOption(key, value) {
+  if (state.tab !== "builder" || state.builder.busy || state.builder.saving) return;
+  if (key === "exclude_visited" && !canUseGuide() && value) {
+    notify("Чтобы исключить посещённые места, откройте приложение через Telegram.");
+    return;
+  }
+  state.builder[key] = value;
+  state.builder.version++;
+  state.builder.result = null;
+  state.builder.saved = false;
+  state.builder.showMap = false;
+  renderBuilder();
+}
+
+function builderResultMarkup(route, saved) {
+  if (!route) return "";
+  const stops = route.places.map((place, index) =>
+    '<li><b>' + (index + 1) + '</b><span><strong>' +
+    escapeText(place.emoji) + ' ' + escapeText(place.title) +
+    '</strong><small>' + escapeText(place.district) + ' · осмотр ~' +
+    escapeText(place.visit_minutes) + ' мин</small></span></li>'
+  ).join("");
+  const links = route.map_links.map((link, index) =>
+    '<a class="builder-map-link" target="_blank" rel="noopener noreferrer" href="' +
+    escapeText(link.url) + '">Карта · ' +
+    (link.mode === "transit" ? "транспортный переход" : "пеший участок") +
+    (route.map_links.length > 1 ? " " + (index + 1) : "") + ' ↗</a>'
+  ).join("");
+  const canSave = state.signed && state.savedCity === state.catalog.slug;
+  return '<section class="builder-result"><div class="builder-result-head">' +
+    '<span>ГОТОВАЯ ПРОГУЛКА</span><h2>' +
+    escapeText(route.interest_label) + '</h2><p>' +
+    escapeText(route.places.length) + ' остановок · ~' +
+    escapeText(route.distance_km) + ' км по прямой между точками</p></div>' +
+    '<div class="builder-time-grid">' + [
+      [route.estimated_minutes, "Всего, мин"],
+      [route.visit_minutes, "Осмотр"],
+      [route.walking_minutes, "Переходы"],
+      [route.spare_minutes, "Резерв"]
+    ].map(([minutes, label]) =>
+      '<div><strong>' + escapeText(minutes) + '</strong><span>' +
+      escapeText(label) + '</span></div>'
+    ).join("") + '</div>' +
+    '<ol class="builder-stops">' + stops + '</ol>' +
+    '<button class="builder-map-toggle" type="button" ' +
+    'data-builder-map-toggle="yes">' +
+    (state.builder.showMap ? "Скрыть карту" : "⌖ Показать остановки на карте") +
+    '</button>' +
+    (state.builder.showMap
+      ? '<div class="builder-map" id="builder-route-map" ' +
+        'role="region" aria-label="Карта остановок маршрута"></div>' +
+        '<p class="builder-disclaimer">Карта показывает точки, но не ' +
+        'строит путь по дорогам. Тайлы загружаются только по запросу.</p>'
+      : "") +
+    '<div class="builder-links">' + links + '</div>' +
+    '<p class="builder-disclaimer">Время ходьбы рассчитано из скорости 4,5 км/ч ' +
+    'и расстояний по прямой, а не по дорожной сети. Перед выходом проверьте путь ' +
+    'и доступность мест.</p>' +
+    (saved
+      ? '<div class="builder-saved">✓ Маршрут сохранён в «Мой гид».</div>' +
+        '<button class="builder-go-guide" type="button" data-builder-guide="yes">' +
+        'Перейти к сохранённым маршрутам →</button>'
+      : '<button class="builder-save" type="button" data-builder-save="yes" ' +
+        (!canSave || state.builder.saving ? "disabled" : "") + '>' +
+        (state.builder.saving ? "Сохраняем…" : "♡ Сохранить в «Мой гид»") +
+        '</button>' +
+        (!canSave
+          ? '<p class="builder-disclaimer">Для сохранения откройте Mini App ' +
+            'через Telegram и выберите свой город.</p>'
+          : "")) + '</section>';
+}
+
+function renderBuilder() {
+  const b = state.builder;
+  if (b.mapController) {
+    b.mapController.destroy();
+    b.mapController = null;
+  }
+  screen.innerHTML = '<div class="page-heading"><div><h1>Свой маршрут</h1>' +
+    '<p>Построй прогулку по ' + escapeText(state.catalog.name) +
+    '</p></div></div>' +
+    '<section class="builder-panel"><div class="builder-kicker">ШАГ 1 / ВРЕМЯ</div>' +
+    '<h2>Сколько есть времени?</h2><div class="builder-budget-options">' +
+    [120, 240, 360].map(minutes =>
+      '<button type="button" data-builder-budget="' + minutes + '" ' +
+      'aria-pressed="' + String(b.budget_minutes === minutes) +
+      '" class="' + (b.budget_minutes === minutes ? "active" : "") + '"' +
+      (b.busy || b.saving ? " disabled" : "") + '>' +
+      (minutes / 60) + ' часа</button>'
+    ).join("") + '</div><div class="builder-kicker">ШАГ 2 / ИНТЕРЕСЫ</div>' +
+    '<h2>Что посмотреть?</h2><div class="builder-interests">' +
+    BUILDER_INTERESTS.map(([value, label]) =>
+      '<button type="button" data-builder-interest="' + value +
+      '" aria-pressed="' + String(b.interest === value) +
+      '" class="' + (b.interest === value ? "active" : "") + '"' +
+      (b.busy || b.saving ? " disabled" : "") + '>' + label + "</button>"
+    ).join("") + '</div>' +
+    '<div class="builder-kicker">ШАГ 3 / НАСТРОЙКА</div>' +
+    '<button class="builder-visited ' + (b.exclude_visited ? "active" : "") +
+    '" type="button" data-builder-visited="' + String(!b.exclude_visited) +
+    '" aria-pressed="' + String(b.exclude_visited) + '"' +
+    (!canUseGuide() || b.busy || b.saving ? " disabled" : "") +
+    '>✓ Исключить уже посещённые места ' +
+    (b.exclude_visited ? "· Включено" : "· Выключено") + '</button>' +
+    (!canUseGuide() ? '<p class="builder-hint">Этот фильтр работает ' +
+      'только с вашими отметками посещения в Telegram.</p>' : "") +
+    '<button class="builder-generate" type="button" data-builder-preview="yes" ' +
+    (b.busy || b.saving ? "disabled" : "") + '>' +
+    (b.busy ? "Строим маршрут…" : "✨ Построить маршрут") + '</button></section>' +
+    builderResultMarkup(b.result, b.saved);
+  if (b.showMap && b.result) {
+    try {
+      b.mapController = window.PlacesMap?.mount(
+        "builder-route-map", slug => openPlace(slug)
+      ) || null;
+      if (b.mapController) b.mapController.update(b.result.places);
+    } catch (_) {
+      b.mapController = null;
+    }
+    if (!b.mapController) {
+      const holder = document.getElementById("builder-route-map");
+      if (holder) {
+        holder.textContent = "Карта недоступна. Список остановок и ссылки ниже работают.";
+      }
+    }
+  }
+}
+
+function toggleBuilderMap() {
+  if (state.tab !== "builder" || !state.builder.result) return;
+  state.builder.showMap = !state.builder.showMap;
+  renderBuilder();
+}
+
+async function buildPreview() {
+  if (state.tab !== "builder" || state.builder.busy || state.builder.saving) return;
+  const city = state.catalog.slug;
+  const b = state.builder;
+  if (b.exclude_visited && !canUseGuide()) {
+    notify("Этот фильтр доступен только в Telegram.");
+    return;
+  }
+  b.busy = true;
+  b.saved = false;
+  b.result = null;
+  b.showMap = false;
+  const version = ++b.version;
+  renderBuilder();
+  try {
+    const preview = await api(
+      "/api/routes/" + encodeURIComponent(city) + "/preview",
+      { method: "POST", body: JSON.stringify(builderBody()) }
+    );
+    if (state.catalog.slug !== city || b.version !== version) return;
+    if (preview.city_slug !== city || !preview.route_id ||
+      !Array.isArray(preview.places) || !Array.isArray(preview.map_links)) {
+      throw new Error("Invalid route preview");
+    }
+    b.result = preview;
+  } catch (_) {
+    if (state.catalog.slug === city && b.version === version) {
+      notify("Не удалось построить маршрут. Выберите другой интерес или время.");
+    }
+  } finally {
+    if (b.version === version) {
+      b.busy = false;
+      if (state.tab === "builder" && state.catalog.slug === city) renderBuilder();
+    }
+  }
+}
+
+async function saveBuiltRoute() {
+  if (!state.builder.result || state.builder.saving ||
+    state.builder.busy || state.builder.saved) return;
+  if (!state.signed || state.savedCity !== state.catalog.slug) {
+    notify("Для сохранения откройте Mini App из Telegram.");
+    return;
+  }
+  const city = state.catalog.slug;
+  const b = state.builder;
+  const version = b.version;
+  const expectedId = b.result.route_id;
+  b.saving = true;
+  renderBuilder();
+  try {
+    const reply = await api(
+      "/api/me/routes/" + encodeURIComponent(city) + "/save",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          ...builderBody(), expected_route_id: expectedId
+        })
+      }
+    );
+    if (state.catalog.slug !== city || b.version !== version) return;
+    if (!reply.saved || reply.city_slug !== city || reply.route_id !== expectedId) {
+      throw new Error("Invalid saved-route response");
+    }
+    b.saved = true;
+    await loadGuide(city);
+    notify("Маршрут сохранён в «Мой гид»");
+  } catch (_) {
+    if (state.catalog.slug === city && b.version === version) {
+      b.result = null;
+      notify("Маршрут изменился или сохранение недоступно. Постройте его заново.");
+    }
+  } finally {
+    if (b.version === version) {
+      b.saving = false;
+      if (state.tab === "builder" && state.catalog.slug === city) renderBuilder();
+    }
+  }
+}
+
 function routeCard(route, number) {
   return '<article class="route-card"><div class="route-number">МАРШРУТ / ' +
     String(number).padStart(2, "0") + '</div><h3>' +
@@ -657,6 +890,9 @@ function renderRoutes() {
     '</p></div><span class="counter">' +
     city.routes.length + ' маршрутов</span></div>' +
     '<div class="notice">Длительность и расстояние ориентировочные. Перед прогулкой проверьте транспорт и доступность мест.</div>' +
+    '<div class="builder-entry"><div><strong>Соберите свою прогулку</strong>' +
+    '<p>Выберите 2, 4 или 6 часов и то, что интересно именно вам.</p></div>' +
+    '<button type="button" data-open="builder">Собрать маршрут →</button></div>' +
     '<div class="routes-list">' +
     city.routes.map((route, index) => routeCard(route, index + 1)).join("") +
     '</div>';
@@ -679,10 +915,15 @@ function navigate(tab) {
     state.mapController.destroy();
     state.mapController = null;
   }
+  if (state.builder.mapController) {
+    state.builder.mapController.destroy();
+    state.builder.mapController = null;
+  }
   if (tab === "home") renderHome();
   else if (tab === "places") renderPlaces();
   else if (tab === "map") renderMap();
   else if (tab === "guide") renderGuide();
+  else if (tab === "builder") renderBuilder();
   else if (tab === "favorites") renderFavorites();
   else renderRoutes();
   window.scrollTo({ top: 0, behavior: "instant" });
@@ -779,6 +1020,14 @@ async function loadCity(slug) {
   state.mapSearch = "";
   state.mapFilter = "all";
   state.mapSelected = null;
+  if (state.builder.mapController) {
+    state.builder.mapController.destroy();
+    state.builder.mapController = null;
+  }
+  state.builder = { budget_minutes: 240, interest: "classic",
+    exclude_visited: false, result: null, busy: false, saving: false,
+    saved: false, version: state.builder.version + 1,
+    showMap: false, mapController: null };
   if (state.mapController) {
     state.mapController.destroy();
     state.mapController = null;
@@ -829,6 +1078,35 @@ screen.addEventListener("click", event => {
   }
   if (trigger.dataset.guideHistory) {
     openCompletedGuideRoute(trigger.dataset.guideHistory);
+    return;
+  }
+  if (trigger.dataset.builderBudget) {
+    updateBuilderOption("budget_minutes", Number(trigger.dataset.builderBudget));
+    return;
+  }
+  if (trigger.dataset.builderInterest) {
+    updateBuilderOption("interest", trigger.dataset.builderInterest);
+    return;
+  }
+  if (trigger.dataset.builderVisited) {
+    updateBuilderOption("exclude_visited", trigger.dataset.builderVisited === "true");
+    return;
+  }
+  if (trigger.dataset.builderPreview) {
+    void buildPreview();
+    return;
+  }
+  if (trigger.dataset.builderMapToggle) {
+    toggleBuilderMap();
+    return;
+  }
+  if (trigger.dataset.builderSave) {
+    void saveBuiltRoute();
+    return;
+  }
+  if (trigger.dataset.builderGuide) {
+    state.guideSection = "saved";
+    navigate("guide");
     return;
   }
   if (trigger.dataset.mapPlace) {
