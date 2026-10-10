@@ -2,7 +2,15 @@ from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import BufferedInputFile, CallbackQuery, Message, ReplyKeyboardRemove
+from aiogram.types import (
+    BufferedInputFile,
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+    ReplyKeyboardRemove,
+    WebAppInfo,
+)
 
 from app.catalog import CityCatalog
 from app.catalog_context import get_current_catalog
@@ -44,6 +52,7 @@ from app.keyboards import (
     visited_places_keyboard,
 )
 from app.maps import google_maps_route_links
+from app.miniapp_launch import miniapp_launch_url
 from app.navigation import (
     category_context,
     dismissed_context,
@@ -200,6 +209,32 @@ async def start(
         f"Ваш город: <b>{selected.name}</b>.\n\n"
         + home_text(selected),
         reply_markup=home_keyboard(),
+    )
+
+
+@router.message(Command("app"))
+async def miniapp_command(message: Message) -> None:
+    url = miniapp_launch_url(get_settings().mini_app_url)
+    if url is None:
+        await message.answer(
+            "Мини-приложение пока не опубликовано. "
+            "Используйте /city или /start для работы в обычном чате."
+        )
+        return
+
+    await message.answer(
+        "✨ <b>Городской гид</b>\n\n"
+        "Откройте места и маршруты в новом интерфейсе Telegram.",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="Открыть гид ↗",
+                        web_app=WebAppInfo(url=url),
+                    )
+                ]
+            ]
+        ),
     )
 
 
