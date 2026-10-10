@@ -53,6 +53,8 @@ jobs:
           if ($parseErrors) { throw ($parseErrors | Out-String) }
       - name: Mini App JavaScript syntax
         run: node --check app/miniapp_static/app.js
+      - name: Mini App favorites UI regression
+        run: node tests/node/test_miniapp_favorites.cjs
       - name: Full test suite
         run: pytest -q
 
