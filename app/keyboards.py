@@ -588,6 +588,25 @@ def saved_route_details_keyboard(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+def saved_route_delete_confirmation_keyboard(route_id: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🗑 Да, удалить маршрут",
+                    callback_data=f"savedroute:delete-confirm:{route_id}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="Отмена — к маршруту",
+                    callback_data=f"savedroute:{route_id}",
+                )
+            ],
+        ]
+    )
+
+
 def route_details_keyboard(places: tuple[Place, ...]) -> InlineKeyboardMarkup:
     rows = _google_maps_rows(places)
     rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])

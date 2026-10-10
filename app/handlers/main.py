@@ -37,6 +37,7 @@ from app.keyboards import (
     route_duration_keyboard,
     route_interest_keyboard,
     routes_keyboard,
+    saved_route_delete_confirmation_keyboard,
     saved_route_details_keyboard,
     saved_routes_keyboard,
     visited_places_keyboard,
@@ -1928,6 +1929,25 @@ async def complete_saved_route_callback(
         )
         return
 
+    saved_route = await saved_routes_repo.get(
+        callback.from_user.id,
+        catalog.slug,
+        route_id,
+    )
+    if saved_route is not None:
+        visible_places = tuple(
+            place
+            for slug in saved_route.place_slugs
+            if (place := catalog.place_by_slug(slug)) is not None
+        )
+        await callback.message.edit_reply_markup(
+            reply_markup=saved_route_details_keyboard(
+                saved_route,
+                visible_places,
+                is_completed=True,
+            )
+        )
+
     await callback.answer(
         "Маршрут отмечен как пройденный. "
         f"Новых мест: {result.added}; "
@@ -1938,15 +1958,55 @@ async def complete_saved_route_callback(
 
 
 @router.callback_query(F.data.startswith("savedroute:delete:"))
+async def request_saved_route_deletion(
+    callback: CallbackQuery,
+    saved_routes_repo: SavedRoutesRepository,
+) -> None:
+    route_id = callback.data.removeprefix("savedroute:delete:").strip()
+    if not route_id:
+        await callback.answer("Некорректный маршрут.", show_alert=True)
+        return
+
+    catalog = current_catalog()
+    route = await saved_routes_repo.get(
+        callback.from_user.id,
+        catalog.slug,
+        route_id,
+    )
+    if route is None:
+        await callback.answer("Сохранённый маршрут не найден.", show_alert=True)
+        return
+
+    await callback.message.edit_text(
+        "🗑 <b>Удалить сохранённый маршрут?</b>\n\n"
+        f"{route_interest_label(route.interest)} · "
+        f"{route.budget_minutes // 60} ч · точек: {len(route.place_slugs)}.\n\n"
+        "Маршрут будет удалён из сохранённых. "
+        "Если он уже был пройден, история прохождения сохранится.",
+        reply_markup=saved_route_delete_confirmation_keyboard(route.route_id),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("savedroute:delete-confirm:"))
 async def delete_saved_route(
     callback: CallbackQuery,
     saved_routes_repo: SavedRoutesRepository,
     completed_routes_repo: CompletedRoutesRepository,
 ) -> None:
-    route_id = callback.data.removeprefix("savedroute:delete:").strip()
-    catalog = current_catalog()
+    route_id = callback.data.removeprefix("savedroute:delete-confirm:").strip()
     if not route_id:
         await callback.answer("Некорректный маршрут.", show_alert=True)
+        return
+
+    catalog = current_catalog()
+    route = await saved_routes_repo.get(
+        callback.from_user.id,
+        catalog.slug,
+        route_id,
+    )
+    if route is None:
+        await callback.answer("Сохранённый маршрут не найден.", show_alert=True)
         return
 
     await saved_routes_repo.remove(
