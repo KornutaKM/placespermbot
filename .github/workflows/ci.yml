@@ -51,6 +51,8 @@ jobs:
           $parseErrors = $null
           [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'scripts/update-local.ps1').Path, [ref]$tokens, [ref]$parseErrors)
           if ($parseErrors) { throw ($parseErrors | Out-String) }
+      - name: Mini App JavaScript syntax
+        run: node --check app/miniapp_static/app.js
       - name: Full test suite
         run: pytest -q
 
@@ -76,3 +78,16 @@ jobs:
           -e PLACES_CITY_SLUG=saint-petersburg
           placespermbot:ci
           python -m app.smoke
+      - name: Verify packaged Mini App HTTP service
+        run: |
+          docker run -d --rm --name places-miniapp-ci placespermbot:ci uvicorn app.miniapp_server:app --host 0.0.0.0 --port 8080
+          trap 'docker rm -f places-miniapp-ci >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 15); do
+            if docker exec places-miniapp-ci python -m app.miniapp_healthcheck; then
+              docker exec places-miniapp-ci python -c 'import json, urllib.request; r=json.load(urllib.request.urlopen("http://127.0.0.1:8080/api/cities")); assert len(r["cities"]) >= 35'
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs places-miniapp-ci
+          exit 1
