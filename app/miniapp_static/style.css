@@ -133,5 +133,8 @@
 .builder-entry strong{font-size:15px}
 .builder-entry p{font-size:11px;color:#cadbf3;line-height:1.5;margin:6px 0 0}
 .builder-entry button{background:#b2f4da;border:0;border-radius:11px;padding:10px 12px;font-size:11px;color:#164c42;font-weight:850;flex:none;max-width:45%}
+.builder-map-toggle{margin:16px 0 10px;width:100%;background:#e8f0ff;color:#3057c6;padding:12px 10px;border:1px solid #cadbff;border-radius:12px;font-size:12px;font-weight:800}
+.builder-map{height:min(45dvh,360px);min-height:220px;background:#e3ebf2;border:1px solid var(--line);border-radius:16px;overflow:hidden;font-size:12px;color:#526783}
+.builder-map .leaflet-control-attribution{font-size:10px!important;background:#ffffffec!important}
 @media(min-width:600px){.screen{padding:22px 30px 40px}.hero{min-height:275px}.quick-grid{grid-template-columns:repeat(4,1fr)}.quick-card{min-height:165px}.places-list,.routes-list{grid-template-columns:repeat(2,1fr)}.place-visual{flex-basis:120px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
