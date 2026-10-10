@@ -1728,12 +1728,13 @@ async def route_builder_duration(callback: CallbackQuery, state: FSMContext) -> 
 
     await state.update_data(budget_minutes=budget_minutes)
     await state.set_state(RouteBuilderFlow.waiting_interest)
+    options = await state.get_data()
     await callback.message.edit_text(
         "🪄 <b>Что вам интереснее?</b>\n\n"
         f"Доступное время: <b>{budget_minutes // 60} ч</b>.\n"
         + (
             "Посещённые места: исключены.\n"
-            if (await state.get_data()).get("exclude_visited") is True
+            if options.get("exclude_visited") is True
             else ""
         )
         + "Выберите акцент маршрута:",
