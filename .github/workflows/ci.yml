@@ -55,6 +55,8 @@ jobs:
         run: node --check app/miniapp_static/app.js
       - name: Mini App favorites UI regression
         run: node tests/node/test_miniapp_favorites.cjs
+      - name: Mini App interactive map regression
+        run: node tests/node/test_miniapp_map.cjs
       - name: Full test suite
         run: pytest -q
 
