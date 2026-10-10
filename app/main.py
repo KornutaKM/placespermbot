@@ -64,6 +64,7 @@ async def main() -> None:
 
     commands = [
         BotCommand(command="start", description="Открыть городской гид"),
+        BotCommand(command="help", description="Как пользоваться гидом"),
         BotCommand(command="city", description="Выбрать город"),
         BotCommand(command="profile", description="Открыть «Мой гид»"),
         BotCommand(command="export", description="Экспортировать мои данные"),
