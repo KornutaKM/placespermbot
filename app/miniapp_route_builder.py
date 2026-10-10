@@ -72,6 +72,8 @@ def route_preview(catalog: CityCatalog, route: GeneratedRoute) -> dict:
                 "emoji": place.emoji,
                 "visit_minutes": place.visit_minutes,
                 "district": place.district,
+                "latitude": place.latitude,
+                "longitude": place.longitude,
             }
             for place in places
         ],
