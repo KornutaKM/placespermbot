@@ -30,6 +30,7 @@ from app.navigation import (
 )
 from app.pagination import Page
 from app.planner import INTEREST_LABELS
+from app.route_transport import route_requires_transport
 from app.saved_routes import SavedRoute, route_interest_label
 from app.storage import CompletedRouteSnapshot
 
@@ -315,9 +316,20 @@ def paginated_places_keyboard(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def routes_keyboard(routes: tuple[RoutePlan, ...]) -> InlineKeyboardMarkup:
+def routes_keyboard(
+    routes: tuple[RoutePlan, ...], *, city_slug: str | None = None,
+) -> InlineKeyboardMarkup:
     rows = [
-        [InlineKeyboardButton(text=f"🧭 {route.title}", callback_data=f"route:{route.slug}")]
+        [
+            InlineKeyboardButton(
+                text=(
+                    f"🚌 {route.title}"
+                    if city_slug is not None and route_requires_transport(city_slug, route.slug)
+                    else f"🧭 {route.title}"
+                ),
+                callback_data=f"route:{route.slug}",
+            )
+        ]
         for route in routes
     ]
     rows.append([InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")])
