@@ -35,9 +35,9 @@ const route = {
   distance_km: 1.8,
   places: [
     { slug: "a", title: "Музей <img onerror=alert(1)>", emoji: "🏛",
-      district: "Центр", visit_minutes: 60 },
+      district: "Центр", visit_minutes: 60, latitude: 58, longitude: 56 },
     { slug: "b", title: "Парк", emoji: "🌿", district: "Центр",
-      visit_minutes: 60 }
+      visit_minutes: 60, latitude: 58.01, longitude: 56.01 }
   ],
   map_links: [{
     url: "https://www.google.com/maps/dir/?api=1",
@@ -45,7 +45,6 @@ const route = {
   }]
 };
 let failSave = false;
-let changedPreview = false;
 const fetchMock = async (url, options = {}) => {
   const body = options.body ? JSON.parse(options.body) : null;
   calls.push({ url, method: options.method || "GET",
@@ -86,7 +85,7 @@ const context = {
 };
 vm.runInNewContext(source + "\nthis.__ui = {" +
   "state, navigate, updateBuilderOption, builderBody, " +
-  "renderBuilder, buildPreview, saveBuiltRoute, builderResultMarkup" +
+  "renderBuilder, buildPreview, saveBuiltRoute, toggleBuilderMap, builderResultMarkup" +
   "};", context);
 const ui = context.__ui;
 ui.state.catalog = { slug: "perm", name: "Пермь", places: [],
@@ -113,6 +112,28 @@ async function test() {
   assert.doesNotMatch(nodes.get("screen").innerHTML, /<img onerror/);
   assert.match(nodes.get("screen").innerHTML, /Построить маршрут/);
   assert.match(nodes.get("screen").innerHTML, /Сохранить в «Мой гид»/);
+  assert.match(nodes.get("screen").innerHTML, /Показать остановки на карте/);
+  let mounts = 0;
+  let updates = 0;
+  let destroys = 0;
+  context.window.PlacesMap = {
+    mount() {
+      mounts++;
+      return {
+        update(places) { updates += places.length; },
+        destroy() { destroys++; }
+      };
+    }
+  };
+  assert.equal(mounts, 0, "The map must be lazy");
+  ui.toggleBuilderMap();
+  assert.equal(mounts, 1);
+  assert.equal(updates, 2);
+  assert.match(nodes.get("screen").innerHTML, /id="builder-route-map"/);
+  ui.toggleBuilderMap();
+  assert.equal(destroys, 1);
+  assert.equal(ui.state.builder.mapController, null);
+
   assert.match(nodes.get("screen").innerHTML,
     /class="builder-save"[^>]*disabled/,
     "Public browsing cannot save personal routes");
