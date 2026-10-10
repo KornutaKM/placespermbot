@@ -85,7 +85,13 @@ function renderHome() {
     '<p>Находи атмосферные места, выбирай готовые прогулки и смотри город по-новому.</p>' +
     '<div class="hero-mark"><span>⌖ ' + escapeText(catalog.name) + '</span> ' +
     escapeText(catalog.places.length) + ' мест для открытий</div></div></section>' +
-    (state.signed ? "" : '<div class="notice">Режим просмотра: откройте Mini App из Telegram, чтобы сохранять избранное и выбор города.</div>') +
+    (!state.signed
+      ? '<div class="notice">Режим просмотра: откройте Mini App из Telegram, чтобы сохранять избранное и выбор города.</div>'
+      : state.savedCity !== catalog.slug
+        ? '<div class="notice">Выберите город, чтобы включить синхронизацию избранного.</div>'
+        : !state.favoritesLoaded
+          ? '<div class="notice">Избранное временно недоступно. Перезапустите Mini App.</div>'
+          : "") +
     '<div class="section-title"><div><h2>С чего начнём?</h2>' +
     '<p class="tiny">Все впечатления в одном месте</p></div></div>' +
     '<div class="quick-grid">' +
@@ -204,6 +210,7 @@ async function toggleFavorite(placeSlug) {
     if (state.catalog.slug !== citySlug) return;
     if (result.is_favorite) state.favorites.add(placeSlug);
     else state.favorites.delete(placeSlug);
+    state.favoritePending.delete(placeSlug);
     if (state.tab === "home") renderHome();
     else if (state.tab === "places") drawPlaceResults();
     else if (state.tab === "favorites") renderFavorites();
