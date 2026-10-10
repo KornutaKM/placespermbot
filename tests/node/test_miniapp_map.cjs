@@ -118,6 +118,11 @@ assert.equal(tiles[1], "https://tile.openstreetmap.org/{z}/{x}/{y}.png");
 assert.equal(tiles[2].referrerPolicy, "strict-origin-when-cross-origin");
 assert.match(tiles[2].attribution, /OpenStreetMap contributors/);
 assert.equal(state.mapController.count(), 2);
+navigate("map");
+assert.equal(events.filter(event => event[0] === "destroy").length, 1,
+  "Reopening the map must dispose of the old Leaflet instance");
+assert.equal(events.filter(event => event[0] === "mount").length, 2);
+assert.equal(state.mapController.count(), 2);
 assert.match(doc.getElementById("map-count").textContent, /2 мест/);
 assert.equal(mapVisiblePlaces().length, 2);
 assert.match(markers[1].options.icon.html, /&lt;img/);
@@ -146,7 +151,7 @@ selectMapPlace("place-two");
 assert.equal(state.mapSelected, "place-two");
 
 navigate("home");
-assert.equal(events.filter(event => event[0] === "destroy").length, 1);
+assert.equal(events.filter(event => event[0] === "destroy").length, 2);
 assert.equal(state.mapController, null);
 
 ctx.window.L = null;
