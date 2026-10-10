@@ -93,5 +93,45 @@
 .guide-confirm button{width:100%;border:0;border-radius:11px;padding:12px;margin-top:8px;font-size:12px;font-weight:800}
 .guide-danger{background:#c73d51;color:#fff}
 .guide-cancel{background:#fff;color:#405473}
+
+/* Custom route builder: compact three-step wizard and trusted result. */
+.builder-panel{background:#fff;border:1px solid var(--line);border-radius:23px;padding:21px 19px;box-shadow:var(--shadow)}
+.builder-kicker{font-size:10px;letter-spacing:1.5px;color:var(--blue);font-weight:850;margin:12px 0 9px}
+.builder-panel h2{font-size:18px;letter-spacing:-.4px;margin:0 0 13px}
+.builder-budget-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:25px}
+.builder-budget-options button,.builder-interests button{border:1px solid #dee5ef;background:#f8faff;color:#53627a;border-radius:13px;padding:13px 8px;font-size:13px;font-weight:750}
+.builder-budget-options button.active,.builder-interests button.active{background:#e8efff;color:var(--blue);border-color:#92aafa}
+.builder-budget-options button:disabled,.builder-interests button:disabled{opacity:.64;cursor:wait}
+.builder-interests{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:25px}
+.builder-interests button{text-align:left;line-height:1.5;font-size:12px}
+.builder-visited{display:block;width:100%;padding:14px 12px;text-align:left;border:1px solid #dce6f1;background:#f4f8fc;border-radius:12px;color:#66778e;font-size:12px;font-weight:750}
+.builder-visited.active{border-color:#6bcca6;background:#e6f8ef;color:#1b7d5c}
+.builder-visited:disabled{opacity:.6}
+.builder-hint{color:var(--muted);font-size:11px;line-height:1.6}
+.builder-generate,.builder-save,.builder-go-guide{display:block;width:100%;border:0;border-radius:13px;padding:15px 14px;background:var(--blue);color:#fff;font-weight:800;font-size:13px;margin-top:18px}
+.builder-save:disabled,.builder-generate:disabled{background:#9fb0db;cursor:not-allowed}
+.builder-result{margin-top:17px;background:#fff;border:1px solid var(--line);border-radius:23px;padding:20px 18px;box-shadow:var(--shadow)}
+.builder-result-head{background:#142e5a;color:white;border-radius:16px;padding:18px 17px}
+.builder-result-head>span{font-size:10px;font-weight:850;letter-spacing:1.6px;color:#a3e4d0}
+.builder-result-head h2{font-size:22px;margin:12px 0 5px;letter-spacing:-.5px;line-height:1.25}
+.builder-result-head p{font-size:12px;line-height:1.55;color:#d4e3f7;margin:0}
+.builder-time-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:15px 0}
+.builder-time-grid>div{padding:11px 3px;text-align:center;background:#f3f6fa;border-radius:12px}
+.builder-time-grid strong{display:block;font-size:19px;letter-spacing:-.5px}
+.builder-time-grid span{display:block;color:#79869b;font-size:10px;margin-top:4px}
+.builder-stops{list-style:none;padding:0;margin:12px 0}
+.builder-stops li{display:flex;gap:11px;align-items:flex-start;border-bottom:1px solid var(--line);padding:13px 2px}
+.builder-stops li>b{background:#ecf2ff;color:var(--blue);padding:7px 10px;border-radius:10px;font-size:12px}
+.builder-stops li span strong{font-size:13px;font-weight:760}
+.builder-stops li span small{display:block;color:var(--muted);margin-top:6px;line-height:1.45;font-size:11px}
+.builder-links{display:grid;grid-template-columns:1fr;gap:7px}
+.builder-map-link{display:block;background:#eef3ff;border-radius:11px;padding:11px;color:var(--blue);font-size:12px;font-weight:750;text-align:center}
+.builder-disclaimer{font-size:11px;color:var(--muted);line-height:1.65;margin-top:16px}
+.builder-saved{margin-top:18px;color:#147851;background:#e4f7ec;border-radius:13px;padding:14px;font-size:12px;font-weight:800}
+.builder-go-guide{margin-top:10px}
+.builder-entry{background:linear-gradient(130deg,#203c70,#2e5193);color:#fff;border-radius:20px;padding:20px 19px;display:flex;align-items:center;gap:12px;justify-content:space-between;margin:16px 0}
+.builder-entry strong{font-size:15px}
+.builder-entry p{font-size:11px;color:#cadbf3;line-height:1.5;margin:6px 0 0}
+.builder-entry button{background:#b2f4da;border:0;border-radius:11px;padding:10px 12px;font-size:11px;color:#164c42;font-weight:850;flex:none;max-width:45%}
 @media(min-width:600px){.screen{padding:22px 30px 40px}.hero{min-height:275px}.quick-grid{grid-template-columns:repeat(4,1fr)}.quick-card{min-height:165px}.places-list,.routes-list{grid-template-columns:repeat(2,1fr)}.place-visual{flex-basis:120px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
