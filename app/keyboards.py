@@ -68,8 +68,46 @@ def home_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="✅ Посещённые", callback_data="menu:visited"),
             InlineKeyboardButton(text="🔍 Поиск", callback_data="menu:search"),
         ],
+        [
+            InlineKeyboardButton(text="❓ Как пользоваться", callback_data="menu:help"),
+        ],
     ]
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+
+def help_keyboard(*, city_selected: bool) -> InlineKeyboardMarkup:
+    if not city_selected:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="🌆 Выбрать город",
+                        callback_data="menu:cities",
+                    )
+                ]
+            ]
+        )
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="📍 Куда сходить",
+                    callback_data="menu:places",
+                ),
+                InlineKeyboardButton(
+                    text="🪄 Собрать маршрут",
+                    callback_data="builder:start",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="← Главное меню",
+                    callback_data="menu:home",
+                )
+            ],
+        ]
+    )
 
 
 def profile_keyboard() -> InlineKeyboardMarkup:
