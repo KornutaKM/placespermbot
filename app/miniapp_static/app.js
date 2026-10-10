@@ -214,6 +214,7 @@ async function toggleFavorite(placeSlug) {
     state.favoritePending.delete(placeSlug);
     if (state.tab === "home") renderHome();
     else if (state.tab === "places") drawPlaceResults();
+    else if (state.tab === "map") drawMapPoints();
     else if (state.tab === "favorites") renderFavorites();
     if (sheetRoot.querySelector('button[data-favorite="' + placeSlug + '"]')) {
       openPlace(placeSlug);
@@ -230,7 +231,8 @@ function mapVisiblePlaces() {
   if (!state.catalog) return [];
   const term = state.mapSearch.trim().toLocaleLowerCase("ru");
   return state.catalog.places.filter(place => {
-    if (!window.PlacesMap?.validCoordinates(place)) return false;
+    if (!Number.isFinite(place.latitude) || !Number.isFinite(place.longitude) ||
+      Math.abs(place.latitude) > 90 || Math.abs(place.longitude) > 180) return false;
     const category = state.mapFilter;
     if (category === "free" && !place.is_free) return false;
     if (category === "family" && !place.tags.includes("с детьми")) return false;
