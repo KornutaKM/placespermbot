@@ -109,3 +109,13 @@ its secure deletion.
 
 There is deliberately no unattended production deployment workflow. CI
 success and a GitHub merge do not establish that a server was updated.
+
+
+## Release metadata consistency
+
+Before approving the image, CI executes `python -m app.release_consistency --check`.
+It compares the registered manifest/catalog count, the README city count and
+`deployment_preflight.MINIMUM_CITY_COUNT`. Adding a city requires updating all
+three deliberately. A stale branch must be rebased onto the current main and
+retested; do not override a failed consistency check. This is a static source
+contract, not evidence that production has been deployed.

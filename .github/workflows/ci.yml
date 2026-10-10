@@ -22,6 +22,8 @@ jobs:
         run: ruff check .
       - name: Catalog audit
         run: python -m app.catalog_audit
+      - name: Release catalog metadata consistency
+        run: python -m app.release_consistency --check
       - name: Catalog coverage report
         run: |
           python -m app.catalog_coverage --format json > catalog-coverage.json
