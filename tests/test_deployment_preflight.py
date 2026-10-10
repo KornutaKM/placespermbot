@@ -8,7 +8,15 @@ import pytest
 from app.config import Settings
 from app.database import migrate_database
 from app.database_backup import create_database_backup
-from app.deployment_preflight import collect_deployment_readiness
+from app.deployment_preflight import collect_deployment_readiness as _collect_readiness
+
+VALID_SHA = "a" * 40
+
+
+async def collect_deployment_readiness(config, backup, **kwargs):
+    return await _collect_readiness(
+        config, backup, expected_sha=kwargs.pop("expected_sha", VALID_SHA), **kwargs,
+    )
 
 
 def settings(database, **changes) -> Settings:
@@ -17,6 +25,7 @@ def settings(database, **changes) -> Settings:
         "environment": "production",
         "city_slug": "saint-petersburg",
         "database_path": str(database),
+        "build_sha": VALID_SHA,
     }
     options.update(changes)
     return Settings(**options)
@@ -134,5 +143,29 @@ def test_preflight_rejects_hardlinked_live_sqlite_database(tmp_path) -> None:
         finally:
             linked.unlink()
         assert source.exists()
+
+    asyncio.run(scenario())
+
+
+def test_preflight_rejects_invalid_and_mismatched_revisions(tmp_path) -> None:
+    async def scenario() -> None:
+        source = tmp_path / "live.db"
+        backup = tmp_path / "snapshot.db"
+        await migrate_database(source)
+        await create_database_backup(source, backup)
+        with pytest.raises(ValueError, match="expected_sha"):
+            await collect_deployment_readiness(
+                settings(source), backup, expected_sha="HEAD",
+            )
+        with pytest.raises(RuntimeError, match="revision"):
+            await collect_deployment_readiness(
+                settings(source, build_sha=""), backup,
+            )
+        with pytest.raises(RuntimeError, match="revision"):
+            await collect_deployment_readiness(
+                settings(source, build_sha="b" * 40), backup,
+            )
+        result = await collect_deployment_readiness(settings(source), backup)
+        assert result.build_sha == VALID_SHA
 
     asyncio.run(scenario())

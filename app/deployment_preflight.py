@@ -14,9 +14,10 @@ from app.catalog import list_catalogs
 from app.config import Settings, get_settings
 from app.database import LATEST_SCHEMA_VERSION
 from app.database_contract import validate_database_contract
+from app.release_identity import require_build_revision
 from app.runtime_checks import validate_health
 
-MINIMUM_CITY_COUNT = 32
+MINIMUM_CITY_COUNT = 33
 FUTURE_CLOCK_TOLERANCE_SECONDS = 300
 
 
@@ -24,6 +25,7 @@ FUTURE_CLOCK_TOLERANCE_SECONDS = 300
 class DeploymentReadiness:
     status: str
     environment: str
+    build_sha: str
     catalogs: int
     schema_version: int
     backup_age_minutes: int
@@ -43,6 +45,7 @@ async def collect_deployment_readiness(
     settings: Settings,
     backup_path: str | Path,
     *,
+    expected_sha: str,
     max_age_hours: float = 24,
     min_cities: int = MINIMUM_CITY_COUNT,
 ) -> DeploymentReadiness:
@@ -53,6 +56,7 @@ async def collect_deployment_readiness(
         raise ValueError("min_cities must be positive")
     if settings.environment != "production":
         raise RuntimeError("Preflight requires PLACES_ENVIRONMENT=production")
+    revision = require_build_revision(expected_sha, settings.build_sha)
 
     db_path = Path(settings.database_path).resolve()
     backup = Path(backup_path).resolve()
@@ -81,6 +85,7 @@ async def collect_deployment_readiness(
     return DeploymentReadiness(
         status="ready",
         environment=settings.environment,
+        build_sha=revision,
         catalogs=len(list_catalogs()),
         schema_version=LATEST_SCHEMA_VERSION,
         backup_age_minutes=max(0, int(age_seconds // 60)),
@@ -91,6 +96,7 @@ async def collect_deployment_readiness(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backup", required=True, help="Read-only snapshot to validate")
+    parser.add_argument("--expected-sha", required=True, help="Approved 40-character Git SHA")
     parser.add_argument("--max-age-hours", type=float, default=24)
     parser.add_argument("--min-cities", type=int, default=MINIMUM_CITY_COUNT)
     args = parser.parse_args()
@@ -98,6 +104,7 @@ def main() -> None:
         collect_deployment_readiness(
             get_settings(),
             args.backup,
+            expected_sha=args.expected_sha,
             max_age_hours=args.max_age_hours,
             min_cities=args.min_cities,
         )
