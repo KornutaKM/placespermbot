@@ -22,6 +22,8 @@ def test_kostroma_routes_are_city_scoped_and_sources_current() -> None:
     assert city.place_by_slug("kst-ipatiev-monastery") is not None
     assert city.place_by_slug("kst-snow-maiden-house").is_free is False
     assert city.search_places("Костромская слобода")[0].slug == "kst-wooden-museum"
+    assert all(57.74 <= p.latitude <= 57.80 for p in city.places)
+    assert all(40.85 <= p.longitude <= 41.00 for p in city.places)
     assert all(p.source.url.startswith("https://") for p in city.places)
     assert all(p.source.checked_at == date(2026, 10, 10) for p in city.places)
     assert all(all(city.place_by_slug(slug) for slug in route.place_slugs)
