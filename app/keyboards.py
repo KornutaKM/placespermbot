@@ -208,20 +208,53 @@ def data_delete_all_confirm_keyboard() -> InlineKeyboardMarkup:
         ]
     )
 
+CITY_PAGE_SIZE = 12
+
+
 def cities_keyboard(
     catalogs: tuple[CityCatalog, ...],
     current_slug: str | None,
     *,
     include_home: bool = True,
+    page_index: int = 0,
 ) -> InlineKeyboardMarkup:
+    page_count = max(1, (len(catalogs) + CITY_PAGE_SIZE - 1) // CITY_PAGE_SIZE)
+    page_index = max(0, min(page_index, page_count - 1))
+    first = page_index * CITY_PAGE_SIZE
+    visible_catalogs = catalogs[first : first + CITY_PAGE_SIZE]
     buttons = [
         InlineKeyboardButton(
             text=("✅ " if catalog.slug == current_slug else "") + catalog.name,
             callback_data=f"city:set:{catalog.slug}",
         )
-        for catalog in catalogs
+        for catalog in visible_catalogs
     ]
     rows = [buttons[index : index + 2] for index in range(0, len(buttons), 2)]
+
+    if page_count > 1:
+        navigation: list[InlineKeyboardButton] = []
+        if page_index > 0:
+            navigation.append(
+                InlineKeyboardButton(
+                    text="←",
+                    callback_data=f"city:page:{page_index - 1}",
+                )
+            )
+        navigation.append(
+            InlineKeyboardButton(
+                text=f"{page_index + 1}/{page_count}",
+                callback_data="noop",
+            )
+        )
+        if page_index + 1 < page_count:
+            navigation.append(
+                InlineKeyboardButton(
+                    text="→",
+                    callback_data=f"city:page:{page_index + 1}",
+                )
+            )
+        rows.append(navigation)
+
     if include_home:
         rows.append(
             [
@@ -232,7 +265,6 @@ def cities_keyboard(
             ]
         )
     return InlineKeyboardMarkup(inline_keyboard=rows)
-
 
 def categories_keyboard(category_labels: Mapping[str, str]) -> InlineKeyboardMarkup:
     rows = [

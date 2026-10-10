@@ -4,6 +4,7 @@ from app.data.spb import CITY_SLUG
 from app.events import get_event_providers
 from app.excursions import get_excursion_providers
 from app.keyboards import (
+    CITY_PAGE_SIZE,
     cities_keyboard,
     data_controls_keyboard,
     data_delete_confirm_keyboard,
@@ -255,22 +256,81 @@ def test_city_selector_marks_current_catalog() -> None:
 
 
 def test_city_selector_supports_first_run_without_preselection() -> None:
-    markup = cities_keyboard(
-        list_catalogs(),
-        None,
-        include_home=False,
-    )
+    catalogs = list_catalogs()
+    markup = cities_keyboard(catalogs, None, include_home=False)
     callbacks = callback_values(markup)
 
-    assert callbacks == {
+    assert {value for value in callbacks if value.startswith("city:set:")} == {
         f"city:set:{catalog.slug}"
-        for catalog in list_catalogs()
+        for catalog in catalogs[:CITY_PAGE_SIZE]
     }
+    assert "city:page:1" in callbacks
+    assert "menu:home" not in callbacks
     assert all(
         not button.text.startswith("✅ ")
         for row in markup.inline_keyboard
         for button in row
     )
+
+
+def test_city_selector_pagination_covers_all_cities() -> None:
+    catalogs = list_catalogs()
+    total_pages = (len(catalogs) + CITY_PAGE_SIZE - 1) // CITY_PAGE_SIZE
+    visible: list[str] = []
+
+    for index in range(total_pages):
+        markup = cities_keyboard(catalogs, None, page_index=index)
+        callbacks = callback_values(markup)
+        place_callbacks = {
+            value for value in callbacks if value.startswith("city:set:")
+        }
+        visible.extend(
+            button.callback_data
+            for row in markup.inline_keyboard
+            for button in row
+            if button.callback_data in place_callbacks
+        )
+
+        assert len(place_callbacks) <= CITY_PAGE_SIZE
+        assert "noop" in callbacks
+        assert ("city:page:" + str(index - 1) in callbacks) == (index > 0)
+        assert ("city:page:" + str(index + 1) in callbacks) == (
+            index + 1 < total_pages
+        )
+
+    assert visible == [f"city:set:{catalog.slug}" for catalog in catalogs]
+
+
+def test_city_selector_clamps_out_of_bounds_pages() -> None:
+    catalogs = list_catalogs()
+    last = catalogs[-1]
+    last_page = (len(catalogs) - 1) // CITY_PAGE_SIZE
+    markup = cities_keyboard(
+        catalogs,
+        last.slug,
+        page_index=10_000,
+    )
+
+    assert callback_values(markup) == callback_values(
+        cities_keyboard(catalogs, last.slug, page_index=last_page)
+    )
+    assert any(
+        button.text == f"✅ {last.name}"
+        for row in markup.inline_keyboard
+        for button in row
+    )
+    assert callback_values(cities_keyboard(catalogs, None, page_index=-1)) == (
+        callback_values(cities_keyboard(catalogs, None, page_index=0))
+    )
+
+
+def test_city_selector_omits_pagination_for_short_lists() -> None:
+    catalogs = list_catalogs()[:2]
+    callbacks = callback_values(cities_keyboard(catalogs, None, include_home=False))
+
+    assert callbacks == {f"city:set:{catalog.slug}" for catalog in catalogs}
+
+
 
 
 def test_live_providers_fail_closed_for_unsupported_city() -> None:

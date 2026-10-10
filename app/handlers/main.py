@@ -479,6 +479,19 @@ async def delete_all_user_data(
     await callback.answer("Все данные удалены")
 
 
+def city_selector_text(selected: CityCatalog | None) -> str:
+    selection = (
+        f"Сейчас выбран: <b>{selected.name}</b>.\n"
+        if selected is not None
+        else "Сначала выберите город.\n"
+    )
+    return (
+        "🌆 <b>Выбор города</b>\n\n"
+        + selection
+        + "Выберите город из доступных каталогов:"
+    )
+
+
 @router.message(Command("city"))
 async def city_command(
     message: Message,
@@ -493,14 +506,13 @@ async def city_command(
             reply_markup=ReplyKeyboardRemove(),
         )
 
-    catalog = current_catalog()
+    selected = await catalog_service.selected_for_user(message.from_user.id)
     await message.answer(
-        "🌆 <b>Выбор города</b>\n\n"
-        f"Сейчас выбран: <b>{catalog.name}</b>.\n"
-        "Выберите город из доступных каталогов:",
+        city_selector_text(selected),
         reply_markup=cities_keyboard(
             catalog_service.available_catalogs(),
-            catalog.slug,
+            selected.slug if selected is not None else None,
+            include_home=selected is not None,
         ),
     )
 
@@ -510,14 +522,36 @@ async def menu_cities(
     callback: CallbackQuery,
     catalog_service: CatalogService,
 ) -> None:
-    catalog = current_catalog()
+    selected = await catalog_service.selected_for_user(callback.from_user.id)
     await callback.message.edit_text(
-        "🌆 <b>Выбор города</b>\n\n"
-        f"Сейчас выбран: <b>{catalog.name}</b>.\n"
-        "Выберите город из доступных каталогов:",
+        city_selector_text(selected),
         reply_markup=cities_keyboard(
             catalog_service.available_catalogs(),
-            catalog.slug,
+            selected.slug if selected is not None else None,
+            include_home=selected is not None,
+        ),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("city:page:"))
+async def city_page(
+    callback: CallbackQuery,
+    catalog_service: CatalogService,
+) -> None:
+    raw_page = callback.data.removeprefix("city:page:")
+    if not raw_page.isascii() or not raw_page.isdecimal() or len(raw_page) > 6:
+        await callback.answer("Страница недоступна.", show_alert=True)
+        return
+
+    selected = await catalog_service.selected_for_user(callback.from_user.id)
+    await callback.message.edit_text(
+        city_selector_text(selected),
+        reply_markup=cities_keyboard(
+            catalog_service.available_catalogs(),
+            selected.slug if selected is not None else None,
+            include_home=selected is not None,
+            page_index=int(raw_page),
         ),
     )
     await callback.answer()
