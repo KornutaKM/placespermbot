@@ -163,3 +163,80 @@ def test_generated_keyboard_only_offers_editor_when_enabled():
     assert edit_callback(save) in callbacks(
         generated_route_keyboard(route.places, save_callback=save, allow_edit=True)
     )
+
+
+def test_telegram_remove_cancel_and_saved_variant_are_independent(tmp_path):
+    async def scenario():
+        db = str(tmp_path / "places.db")
+        await migrate_database(db)
+        repository = SavedRoutesRepository(db)
+        catalog = get_catalog("saint-petersburg")
+        route = build_route(catalog, budget_minutes=240, interest="classic")
+        assert route is not None and len(route.places) >= 2
+        save = build_save_callback(catalog, route)
+        original = await repository.save(
+            42, catalog.slug, route.interest, route.budget_minutes,
+            tuple(place.slug for place in route.places),
+        )
+        editor = FakeCallback(42, edit_callback(save))
+        cancel = FakeCallback(42, back_callback(save))
+        drop = FakeCallback(42, remove_callback(save, len(route.places) - 1))
+        with patch("app.handlers.main.current_catalog", return_value=catalog):
+            await show_generated_route_stop_editor(editor)
+            assert len(editor.message.markups) == 1
+            options = callbacks(editor.message.markups[0])
+            assert back_callback(save) in options
+            assert remove_callback(save, 0) in options
+            assert not editor.message.edits
+
+            await cancel_generated_route_stop_edit(cancel)
+            restored = callbacks(cancel.message.markups[0])
+            assert save in restored
+            assert edit_callback(save) in restored
+
+            await remove_generated_route_stop(drop)
+            assert len(drop.message.edits) == 1
+            text, markup = drop.message.edits[0]
+            assert "Маршрут пересчитан от первой оставшейся точки" in text
+            assert "Резерв бюджета" in text
+            new_save = next(
+                x for x in callbacks(markup) if x.startswith("savegen:")
+            )
+            edited_snapshot = parse_save_callback(new_save, catalog)
+            assert edited_snapshot.places == route.places[:-1]
+            assert save != new_save
+            assert await repository.list_routes(42, catalog.slug) == (original,)
+
+            save_result = FakeCallback(42, new_save)
+            await save_generated_route(save_result, repository)
+            saved = await repository.list_routes(42, catalog.slug)
+            assert len(saved) == 2
+            assert {
+                item.place_slugs for item in saved
+            } == {
+                tuple(p.slug for p in route.places),
+                tuple(p.slug for p in route.places[:-1]),
+            }
+            assert save_result.message.markups
+
+    asyncio.run(scenario())
+
+
+def test_failed_removal_does_not_modify_telegram_message():
+    async def scenario():
+        catalog = get_catalog("saint-petersburg")
+        route = build_route(catalog, budget_minutes=240, interest="classic")
+        assert route is not None and len(route.places) >= 2
+        save = build_save_callback(catalog, route)
+
+        invalid = FakeCallback(42, remove_callback(save, 255))
+        stale = FakeCallback(42, "editgen:corrupt")
+        with patch("app.handlers.main.current_catalog", return_value=catalog):
+            await remove_generated_route_stop(invalid)
+            await show_generated_route_stop_editor(stale)
+        assert invalid.answers[0][1] is True
+        assert stale.answers[0][1] is True
+        assert not invalid.message.edits
+        assert not stale.message.markups
+
+    asyncio.run(scenario())
