@@ -6,8 +6,11 @@
   <meta name="theme-color" content="#0b1426">
   <meta name="description" content="Городской гид: интересные места и готовые маршруты">
   <title>Город рядом · гид</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
   <link rel="stylesheet" href="/assets/style.css">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+  <script defer src="/assets/map.js"></script>
   <script defer src="/assets/app.js"></script>
 </head>
 <body>
@@ -22,6 +25,7 @@
     <nav class="bottom-nav" aria-label="Разделы гида">
       <button class="nav-tab active" type="button" data-tab="home" aria-current="page"><span>◈</span>Главная</button>
       <button class="nav-tab" type="button" data-tab="places"><span>⌖</span>Места</button>
+      <button class="nav-tab" type="button" data-tab="map"><span>▦</span>Карта</button>
       <button class="nav-tab" type="button" data-tab="routes"><span>〽</span>Маршруты</button>
       <button class="nav-tab" type="button" data-tab="favorites"><span>♡</span>Избранное</button>
     </nav>
