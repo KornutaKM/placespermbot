@@ -15,6 +15,12 @@ from app.config import Settings, get_settings
 from app.maps import google_maps_place_url, google_maps_route_links
 from app.miniapp_auth import InvalidTelegramInitData, validate_init_data
 from app.miniapp_profile import my_guide_snapshot
+from app.miniapp_route_builder import (
+    RouteBuildRequest,
+    SaveBuiltRouteRequest,
+    build_miniapp_route,
+    route_preview,
+)
 from app.route_completion import complete_saved_route
 from app.storage import (
     CompletedRoutesRepository,
@@ -213,6 +219,62 @@ def create_miniapp(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="Place not found")
         await favorites.remove(user_id, catalog.slug, place_slug)
         return {"city_slug": catalog.slug, "place_slug": place_slug, "is_favorite": False}
+
+    @app.post("/api/routes/{city_slug}/preview")
+    async def preview_generated_route(
+        city_slug: str,
+        body: RouteBuildRequest,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        if not has_catalog(city_slug):
+            raise HTTPException(status_code=404, detail="City not found")
+        excluded: tuple[str, ...] = ()
+        if body.exclude_visited:
+            user_id = authenticated_user(x_telegram_init_data)
+            await require_active_city(user_id, city_slug)
+            excluded = await visited.list_place_slugs(user_id, city_slug)
+        catalog = get_catalog(city_slug)
+        route = build_miniapp_route(catalog, body, excluded_slugs=excluded)
+        if route is None:
+            raise HTTPException(
+                status_code=422, detail="No route fits the selected conditions"
+            )
+        return route_preview(catalog, route)
+
+    @app.post("/api/me/routes/{city_slug}/save")
+    async def save_built_route(
+        city_slug: str,
+        body: SaveBuiltRouteRequest,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        user_id = authenticated_user(x_telegram_init_data)
+        await require_active_city(user_id, city_slug)
+        excluded = (
+            await visited.list_place_slugs(user_id, city_slug)
+            if body.exclude_visited else ()
+        )
+        catalog = get_catalog(city_slug)
+        route = build_miniapp_route(catalog, body, excluded_slugs=excluded)
+        if route is None:
+            raise HTTPException(
+                status_code=409, detail="The route is no longer available"
+            )
+        preview = route_preview(catalog, route)
+        if body.expected_route_id != preview["route_id"]:
+            raise HTTPException(
+                status_code=409,
+                detail="The route changed; generate it again before saving",
+            )
+        saved = await saved_routes.save(
+            user_id, city_slug, route.interest, route.budget_minutes,
+            tuple(place.slug for place in route.places),
+        )
+        return {
+            "city_slug": city_slug,
+            "route_id": saved.route_id,
+            "saved": True,
+            "place_count": len(saved.place_slugs),
+        }
 
     @app.get("/api/me/guide/{city_slug}")
     async def guide_dashboard(
