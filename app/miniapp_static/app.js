@@ -4,7 +4,8 @@ const tg = window.Telegram?.WebApp ?? null;
 const initData = tg?.initData || "";
 const state = {
   cities: [], catalog: null, tab: "home", category: "all", search: "",
-  signed: false, savedCity: null
+  signed: false, savedCity: null,
+  favorites: new Set(), favoritesLoaded: false, favoritePending: new Set()
 };
 const screen = document.getElementById("screen");
 const sheetRoot = document.getElementById("sheet-root");
@@ -45,6 +46,23 @@ function placeVisual(place) {
     escapeText(place.emoji) + "</span></div>";
 }
 
+function canEditFavorites() {
+  return state.signed && state.favoritesLoaded &&
+    state.savedCity === state.catalog?.slug;
+}
+
+function favoriteButton(place) {
+  const active = state.favorites.has(place.slug);
+  const editable = canEditFavorites() && !state.favoritePending.has(place.slug);
+  return '<button type="button" class="favorite-toggle ' +
+    (active ? "selected" : "") + '" data-favorite="' +
+    escapeText(place.slug) + '" aria-pressed="' + String(active) +
+    '" aria-label="' + (active ? "Удалить из избранного: " : "В избранное: ") +
+    escapeText(place.title) + '"' + (editable ? "" : " disabled") +
+    ' title="' + (editable ? "Избранное в Telegram" : "Нужна авторизация Telegram") +
+    '">' + (active ? "♥" : "♡") + "</button>";
+}
+
 function placeCard(place) {
   return '<article class="place-card">' + placeVisual(place) +
     '<div class="place-info"><span class="kicker">' +
@@ -53,7 +71,8 @@ function placeCard(place) {
     escapeText(place.summary) + '</p><div class="place-footer"><span>' +
     escapeText(place.district) + ' · ~' +
     escapeText(place.visit_minutes) +
-    ' мин</span><button type="button" data-place="' +
+    ' мин</span><div class="place-actions">' + favoriteButton(place) +
+    '<button class="place-more" type="button" data-place="' +
     escapeText(place.slug) + '">Подробнее ↗</button></div></div></article>';
 }
 
@@ -66,7 +85,7 @@ function renderHome() {
     '<p>Находи атмосферные места, выбирай готовые прогулки и смотри город по-новому.</p>' +
     '<div class="hero-mark"><span>⌖ ' + escapeText(catalog.name) + '</span> ' +
     escapeText(catalog.places.length) + ' мест для открытий</div></div></section>' +
-    (initData ? "" : '<div class="notice">Режим просмотра: откройте Mini App из Telegram, чтобы сохранять выбор города.</div>') +
+    (state.signed ? "" : '<div class="notice">Режим просмотра: откройте Mini App из Telegram, чтобы сохранять избранное и выбор города.</div>') +
     '<div class="section-title"><div><h2>С чего начнём?</h2>' +
     '<p class="tiny">Все впечатления в одном месте</p></div></div>' +
     '<div class="quick-grid">' +
@@ -164,6 +183,7 @@ function navigate(tab) {
   if (!state.catalog) return;
   if (tab === "home") renderHome();
   else if (tab === "places") renderPlaces();
+  else if (tab === "favorites") renderFavorites();
   else renderRoutes();
   window.scrollTo({ top: 0, behavior: "instant" });
 }
@@ -196,6 +216,8 @@ function openPlace(slug) {
     '<div class="detail-meta"><span>⌖ ' + escapeText(place.district) +
     '</span><span>◷ ~' + escapeText(place.visit_minutes) + ' мин</span>' +
     (place.is_free ? '<span>✳ Бесплатно</span>' : "") + '</div>' +
+    '<div class="detail-favorite">' + favoriteButton(place) +
+    '<span>Сохранить место в избранном</span></div>' +
     '<p class="sheet-caption">Перед посещением уточните часы работы и условия доступа.</p>' +
     '<a class="map-link" target="_blank" rel="noopener noreferrer" href="' +
     escapeText(place.map_url) + '">Открыть на карте ↗</a>');
@@ -252,6 +274,7 @@ async function loadCity(slug) {
   state.catalog = catalog;
   state.category = "all";
   state.search = "";
+  await loadFavorites(catalog.slug);
   cityName.textContent = catalog.name;
   navigate(state.tab);
 }
@@ -277,6 +300,10 @@ async function chooseCity(slug) {
 screen.addEventListener("click", event => {
   const trigger = event.target.closest("button");
   if (!trigger) return;
+  if (trigger.dataset.favorite) {
+    void toggleFavorite(trigger.dataset.favorite);
+    return;
+  }
   if (trigger.dataset.open) navigate(trigger.dataset.open);
   if (trigger.dataset.category) {
     state.category = trigger.dataset.category;
@@ -291,6 +318,11 @@ screen.addEventListener("click", event => {
 });
 
 sheetRoot.addEventListener("click", event => {
+  const favorite = event.target.closest("button[data-favorite]");
+  if (favorite) {
+    void toggleFavorite(favorite.dataset.favorite);
+    return;
+  }
   const button = event.target.closest("button[data-city]");
   if (button) void chooseCity(button.dataset.city);
 });
