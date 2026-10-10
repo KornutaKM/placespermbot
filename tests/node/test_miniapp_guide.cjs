@@ -16,7 +16,8 @@ function element() {
     addEventListener(name, fn) { this.handlers[name] = fn; },
     setAttribute() {}, removeAttribute() {},
     replaceChildren() { this.innerHTML = ""; },
-    querySelector() { return null; }, querySelectorAll() { return []; }
+    querySelector(selector) { return selector === ".overlay" ? element() : null; },
+    querySelectorAll() { return []; }
   };
 }
 const elements = new Map();
