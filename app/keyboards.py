@@ -435,8 +435,17 @@ def routes_keyboard(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def route_duration_keyboard(*, location_selected: bool = False) -> InlineKeyboardMarkup:
+def route_duration_keyboard(
+    *,
+    location_selected: bool = False,
+    exclude_visited: bool = False,
+) -> InlineKeyboardMarkup:
     location_text = "✅ Старт: моя геопозиция" if location_selected else "📍 Начать рядом со мной"
+    visited_text = (
+        "✅ Посещённые исключены"
+        if exclude_visited
+        else "🚫 Исключить посещённые"
+    )
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -448,6 +457,12 @@ def route_duration_keyboard(*, location_selected: bool = False) -> InlineKeyboar
                 InlineKeyboardButton(
                     text=location_text,
                     callback_data="builder:location",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=visited_text,
+                    callback_data="builder:visited:toggle",
                 )
             ],
             [InlineKeyboardButton(text="← Главное меню", callback_data="menu:home")],

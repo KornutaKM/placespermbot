@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Collection
 from math import ceil
 
 from app.catalog import CityCatalog, coordinates_distance_km, distance_km
@@ -28,12 +29,18 @@ def build_route(
     start_latitude: float | None = None,
     start_longitude: float | None = None,
     prefer_variety: bool = False,
+    excluded_slugs: Collection[str] = (),
 ) -> GeneratedRoute | None:
     if interest not in INTEREST_LABELS:
         raise ValueError(f"Unsupported interest: {interest}")
 
+    excluded = set(excluded_slugs)
     return build_ranked_route(
-        tuple(_candidates(catalog, interest)),
+        tuple(
+            place
+            for place in _candidates(catalog, interest)
+            if place.slug not in excluded
+        ),
         budget_minutes=budget_minutes,
         route_interest=interest,
         start_latitude=start_latitude,

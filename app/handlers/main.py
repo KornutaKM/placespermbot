@@ -1619,7 +1619,8 @@ async def route_builder_start(callback: CallbackQuery, state: FSMContext) -> Non
         "🪄 <b>Собрать маршрут</b>\n\n"
         "Сколько времени вы хотите провести на прогулке?\n\n"
         "Можно также поделиться геопозицией — тогда маршрут начнётся с ближайшей "
-        "подходящей точки. В расчёт входят посещение и пешие переходы.",
+        "подходящей точки. Посещённые места можно исключить отдельной кнопкой. "
+        "В расчёт входят посещение и пешие переходы.",
         reply_markup=route_duration_keyboard(),
     )
     await callback.answer()
@@ -1652,13 +1653,17 @@ async def route_builder_location(message: Message, state: FSMContext) -> None:
         start_longitude=location.longitude,
     )
     await state.set_state(RouteBuilderFlow.waiting_duration)
+    selected_options = await state.get_data()
     await message.answer(
         "✅ Геопозиция принята.",
         reply_markup=ReplyKeyboardRemove(),
     )
     await message.answer(
         "Теперь выберите, сколько времени есть на прогулку:",
-        reply_markup=route_duration_keyboard(location_selected=True),
+        reply_markup=route_duration_keyboard(
+            location_selected=True,
+            exclude_visited=selected_options.get("exclude_visited") is True,
+        ),
     )
 
 
@@ -1682,6 +1687,32 @@ async def route_builder_location_invalid(message: Message) -> None:
     )
 
 
+@router.callback_query(F.data == "builder:visited:toggle")
+async def route_builder_toggle_visited(
+    callback: CallbackQuery,
+    state: FSMContext,
+) -> None:
+    if await state.get_state() != RouteBuilderFlow.waiting_duration.state:
+        await callback.answer("Начните сбор маршрута заново.", show_alert=True)
+        return
+
+    data = await state.get_data()
+    exclude_visited = not (data.get("exclude_visited") is True)
+    await state.update_data(exclude_visited=exclude_visited)
+    await callback.message.edit_reply_markup(
+        reply_markup=route_duration_keyboard(
+            location_selected=(
+                data.get("start_latitude") is not None
+                and data.get("start_longitude") is not None
+            ),
+            exclude_visited=exclude_visited,
+        )
+    )
+    await callback.answer(
+        "Посещённые места исключены" if exclude_visited else "Посещённые места включены"
+    )
+
+
 @router.callback_query(F.data.startswith("builder:duration:"))
 async def route_builder_duration(callback: CallbackQuery, state: FSMContext) -> None:
     raw_minutes = callback.data.rsplit(":", 1)[1]
@@ -1697,17 +1728,27 @@ async def route_builder_duration(callback: CallbackQuery, state: FSMContext) -> 
 
     await state.update_data(budget_minutes=budget_minutes)
     await state.set_state(RouteBuilderFlow.waiting_interest)
+    options = await state.get_data()
     await callback.message.edit_text(
         "🪄 <b>Что вам интереснее?</b>\n\n"
         f"Доступное время: <b>{budget_minutes // 60} ч</b>.\n"
-        "Выберите акцент маршрута:",
+        + (
+            "Посещённые места: исключены.\n"
+            if options.get("exclude_visited") is True
+            else ""
+        )
+        + "Выберите акцент маршрута:",
         reply_markup=route_interest_keyboard(),
     )
     await callback.answer()
 
 
 @router.callback_query(F.data.startswith("builder:interest:"))
-async def route_builder_interest(callback: CallbackQuery, state: FSMContext) -> None:
+async def route_builder_interest(
+    callback: CallbackQuery,
+    state: FSMContext,
+    visited_repo: VisitedRepository,
+) -> None:
     interest = callback.data.rsplit(":", 1)[1]
     if interest not in INTEREST_LABELS:
         await callback.answer("Неизвестный тип маршрута.", show_alert=True)
@@ -1731,20 +1772,36 @@ async def route_builder_interest(callback: CallbackQuery, state: FSMContext) -> 
         await callback.answer("Некорректная геопозиция. Начните заново.", show_alert=True)
         return
 
+    exclude_visited = data.get("exclude_visited", False)
+    if not isinstance(exclude_visited, bool):
+        await state.clear()
+        await callback.answer("Начните сбор маршрута заново.", show_alert=True)
+        return
+
     catalog = current_catalog()
+    excluded_slugs = (
+        await visited_repo.list_place_slugs(callback.from_user.id, catalog.slug)
+        if exclude_visited
+        else ()
+    )
     route = build_route(
         catalog,
         budget_minutes=budget_minutes,
         interest=interest,
         start_latitude=float(start_latitude) if start_latitude is not None else None,
         start_longitude=float(start_longitude) if start_longitude is not None else None,
+        excluded_slugs=excluded_slugs,
     )
     location_used = start_latitude is not None and start_longitude is not None
     await state.clear()
 
     if route is None or not route.places:
         await callback.message.edit_text(
-            "Не удалось собрать маршрут под эти условия из текущего каталога.",
+            "Не удалось собрать маршрут под эти условия из текущего каталога."
+            + (
+                "\nПопробуйте отключить исключение посещённых мест или сменить интерес."
+                if exclude_visited else ""
+            ),
             reply_markup=back_home_keyboard(),
         )
         await callback.answer()
@@ -1760,6 +1817,7 @@ async def route_builder_interest(callback: CallbackQuery, state: FSMContext) -> 
         f"🪄 <b>{INTEREST_LABELS[route.interest]}</b>\n\n"
         f"Бюджет: {route.budget_minutes // 60} ч\n"
         + ("Старт: от вашей геопозиции\n" if location_used else "")
+        + ("Посещённые места: исключены\n" if exclude_visited else "")
         + f"Оценка маршрута: ~{hours} ч {minutes:02d} мин\n"
         f"Пешком по расчёту: ~{route.distance_km:g} км\n"
         f"Точек: {len(route.places)}\n\n"
