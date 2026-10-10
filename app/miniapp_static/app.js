@@ -6,7 +6,9 @@ const state = {
   cities: [], catalog: null, tab: "home", category: "all", search: "",
   signed: false, savedCity: null,
   favorites: new Set(), favoritesLoaded: false, favoritePending: new Set(),
-  mapController: null, mapFilter: "all", mapSearch: "", mapSelected: null
+  mapController: null, mapFilter: "all", mapSearch: "", mapSelected: null,
+  guide: null, guideLoaded: false, guideSection: "favorites",
+  visitPending: new Set(), routePending: new Set()
 };
 const screen = document.getElementById("screen");
 const sheetRoot = document.getElementById("sheet-root");
@@ -212,7 +214,12 @@ async function toggleFavorite(placeSlug) {
     if (result.is_favorite) state.favorites.add(placeSlug);
     else state.favorites.delete(placeSlug);
     state.favoritePending.delete(placeSlug);
+    if (state.guide) {
+      state.guide.favorite_slugs = [...state.favorites];
+      state.guide.stats.favorites = state.favorites.size;
+    }
     if (state.tab === "home") renderHome();
+    else if (state.tab === "guide") renderGuide();
     else if (state.tab === "places") drawPlaceResults();
     else if (state.tab === "map") drawMapPoints();
     else if (state.tab === "favorites") renderFavorites();
@@ -386,6 +393,7 @@ function navigate(tab) {
   if (tab === "home") renderHome();
   else if (tab === "places") renderPlaces();
   else if (tab === "map") renderMap();
+  else if (tab === "guide") renderGuide();
   else if (tab === "favorites") renderFavorites();
   else renderRoutes();
   window.scrollTo({ top: 0, behavior: "instant" });
@@ -421,6 +429,8 @@ function openPlace(slug) {
     (place.is_free ? '<span>✳ Бесплатно</span>' : "") + '</div>' +
     '<div class="detail-favorite">' + favoriteButton(place) +
     '<span>Сохранить место в избранном</span></div>' +
+    '<div class="detail-visited">' + visitedButton(place) +
+    '<span>Отметить посещение в «Моём гиде»</span></div>' +
     '<p class="sheet-caption">Перед посещением уточните часы работы и условия доступа.</p>' +
     '<a class="map-link" target="_blank" rel="noopener noreferrer" href="' +
     escapeText(place.map_url) + '">Открыть на карте ↗</a>');
@@ -485,6 +495,7 @@ async function loadCity(slug) {
     state.mapController = null;
   }
   await loadFavorites(catalog.slug);
+  await loadGuide(catalog.slug);
   cityName.textContent = catalog.name;
   navigate(state.tab);
 }
@@ -514,6 +525,23 @@ screen.addEventListener("click", event => {
     void toggleFavorite(trigger.dataset.favorite);
     return;
   }
+  if (trigger.dataset.visited) {
+    void toggleVisited(trigger.dataset.visited);
+    return;
+  }
+  if (trigger.dataset.guideSection) {
+    state.guideSection = trigger.dataset.guideSection;
+    renderGuide();
+    return;
+  }
+  if (trigger.dataset.guideRoute) {
+    openSavedGuideRoute(trigger.dataset.guideRoute);
+    return;
+  }
+  if (trigger.dataset.guideHistory) {
+    openCompletedGuideRoute(trigger.dataset.guideHistory);
+    return;
+  }
   if (trigger.dataset.mapPlace) {
     selectMapPlace(trigger.dataset.mapPlace);
     return;
@@ -540,6 +568,31 @@ sheetRoot.addEventListener("click", event => {
   const favorite = event.target.closest("button[data-favorite]");
   if (favorite) {
     void toggleFavorite(favorite.dataset.favorite);
+    return;
+  }
+  const visited = event.target.closest("button[data-visited]");
+  if (visited) {
+    void toggleVisited(visited.dataset.visited);
+    return;
+  }
+  const complete = event.target.closest("button[data-guide-complete]");
+  if (complete) {
+    void completeGuideRoute(complete.dataset.guideComplete);
+    return;
+  }
+  const requestDelete = event.target.closest("button[data-guide-delete-ask]");
+  if (requestDelete) {
+    openSavedGuideRoute(requestDelete.dataset.guideDeleteAsk, true);
+    return;
+  }
+  const confirmDelete = event.target.closest("button[data-guide-delete-confirm]");
+  if (confirmDelete) {
+    void deleteGuideRoute(confirmDelete.dataset.guideDeleteConfirm);
+    return;
+  }
+  const cancelDelete = event.target.closest("button[data-guide-delete-cancel]");
+  if (cancelDelete) {
+    openSavedGuideRoute(cancelDelete.dataset.guideDeleteCancel);
     return;
   }
   const button = event.target.closest("button[data-city]");
