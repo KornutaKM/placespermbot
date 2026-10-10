@@ -39,7 +39,7 @@ def client_for(tmp_path):
 
 
 def test_catalog_and_assets_are_public_but_private_info_is_not(tmp_path):
-    client, db, token = client_for(tmp_path)
+    client, _db, token = client_for(tmp_path)
     with client:
         cities = client.get("/api/cities")
         assert cities.status_code == 200
