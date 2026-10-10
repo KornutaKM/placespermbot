@@ -11,7 +11,7 @@ from urllib.parse import urlencode
 import pytest
 from fastapi.testclient import TestClient
 
-from app.catalog import distance_km, get_catalog, list_catalogs
+from app.catalog import distance_km, list_catalogs
 from app.config import Settings
 from app.database import migrate_database
 from app.miniapp_route_builder import RouteBuildRequest, build_miniapp_route, route_preview
