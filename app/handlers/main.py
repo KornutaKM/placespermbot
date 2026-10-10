@@ -72,6 +72,7 @@ from app.profile import ProfileSummary, build_profile_summary, profile_text
 from app.recommendations import recommend_personalized, recommendation_reason_text
 from app.route_completion import complete_saved_route
 from app.route_safety import route_access_warnings
+from app.route_timing import route_timing_text
 from app.route_transport import transfer_notes
 from app.saved_routes import (
     PERSONAL_ROUTE_INTEREST,
@@ -824,7 +825,8 @@ async def place_route_duration(callback: CallbackQuery) -> None:
         f"Старт: <b>{origin.title}</b>\n"
         f"Бюджет: {route.budget_minutes // 60} ч\n"
         f"Оценка маршрута: ~{hours} ч {minutes:02d} мин\n"
-        f"Пешком между точками: ~{route.distance_km:g} км\n"
+        + route_timing_text(route)
+        + f"Пешком между точками: ~{route.distance_km:g} км\n"
         f"Точек: {len(route.places)}\n\n"
         f"<b>Маршрут:</b>\n{stops}",
         reply_markup=generated_route_keyboard(
@@ -1819,7 +1821,8 @@ async def route_builder_interest(
         + ("Старт: от вашей геопозиции\n" if location_used else "")
         + ("Посещённые места: исключены\n" if exclude_visited else "")
         + f"Оценка маршрута: ~{hours} ч {minutes:02d} мин\n"
-        f"Пешком по расчёту: ~{route.distance_km:g} км\n"
+        + route_timing_text(route)
+        + f"Пешком по расчёту: ~{route.distance_km:g} км\n"
         f"Точек: {len(route.places)}\n\n"
         f"<b>Маршрут:</b>\n{stops}\n\n"
         "Время переходов рассчитано ориентировочно для пешей скорости 4,5 км/ч. "
