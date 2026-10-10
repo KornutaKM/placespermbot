@@ -70,7 +70,7 @@ def validate_init_data(
 
         user = json.loads(values["user"])
         if not isinstance(user, dict):
-            raise ValueError("Invalid user data")
+            raise TypeError("Invalid user data")
         user_id = user.get("id")
         if (
             isinstance(user_id, bool)
