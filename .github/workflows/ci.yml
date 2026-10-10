@@ -57,6 +57,8 @@ jobs:
         run: node tests/node/test_miniapp_favorites.cjs
       - name: Mini App interactive map regression
         run: node tests/node/test_miniapp_map.cjs
+      - name: Mini App My Guide UI regression
+        run: node tests/node/test_miniapp_guide.cjs
       - name: Full test suite
         run: pytest -q
 
