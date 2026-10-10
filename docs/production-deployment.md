@@ -9,6 +9,7 @@ deployed or restarted.
 ## Principles and prerequisites
 
 - Record the approved new Git SHA and previous running SHA before any change.
+- Verify the checkout matches the reviewed commit; CI success is not a deployed version.
 - Preserve the Compose named volume `places-data`. Never run
   `docker compose down -v`, `docker volume rm`, or delete SQLite WAL files.
 - Confirm `.env` is not committed, contains the actual bot token, and has
@@ -47,14 +48,24 @@ Check out the approved Git SHA (use your normal reviewed release procedure).
 Then run:
 
 ```bash
-docker compose build bot
+APPROVED_SHA="$(git rev-parse HEAD)"
+docker compose build --build-arg "PLACES_BUILD_SHA=$APPROVED_SHA" bot
 docker compose run --rm --no-deps \
   -v "$PWD/backups:/backups:ro" bot \
   python -m app.deployment_preflight --backup "/backups/$SNAPSHOT" \
-  --max-age-hours 24 --min-cities 32
+  --expected-sha "$APPROVED_SHA" --max-age-hours 24 --min-cities 33
 ```
 
-The preflight also rejects hard links or aliases pointing at the live SQLite file: a filesystem link is not a WAL-consistent backup.\n\nThe preflight opens the live DB and backup **read-only**, checks the full
+The preflight also rejects hard links or aliases pointing at the live SQLite
+file: a filesystem link is not a WAL-consistent backup.
+
+The Docker image embeds the Git SHA as the OCI image label and the
+`PLACES_BUILD_SHA` environment variable. Preflight rejects a missing,
+malformed or mismatching SHA even if the backup and SQLite checks pass.
+**Do not set PLACES_BUILD_SHA in the server .env file or override it in Compose:**
+the value must come from the approved Docker image. In the Docker build
+command above, APPROVED_SHA must refer to the reviewed *full* Git commit.
+The preflight opens the live DB and backup **read-only**, checks the full
 database contract, source catalog validation, backup freshness and count of
 registered cities, and returns a small JSON status without secrets, user
 records or file paths. It **does not** restart containers, run migrations or
@@ -75,6 +86,7 @@ docker compose up -d --no-deps --no-build bot
 docker compose ps
 docker compose exec -T bot python -m app.healthcheck
 docker compose exec -T bot python -m app.diagnostics
+# Confirm the "build_sha" field in the diagnostics JSON equals $APPROVED_SHA.
 docker compose logs --tail=100 bot
 ```
 
