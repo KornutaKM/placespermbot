@@ -5,7 +5,8 @@ const initData = tg?.initData || "";
 const state = {
   cities: [], catalog: null, tab: "home", category: "all", search: "",
   signed: false, savedCity: null,
-  favorites: new Set(), favoritesLoaded: false, favoritePending: new Set()
+  favorites: new Set(), favoritesLoaded: false, favoritePending: new Set(),
+  mapController: null, mapFilter: "all", mapSearch: "", mapSelected: null
 };
 const screen = document.getElementById("screen");
 const sheetRoot = document.getElementById("sheet-root");
@@ -213,6 +214,7 @@ async function toggleFavorite(placeSlug) {
     state.favoritePending.delete(placeSlug);
     if (state.tab === "home") renderHome();
     else if (state.tab === "places") drawPlaceResults();
+    else if (state.tab === "map") drawMapPoints();
     else if (state.tab === "favorites") renderFavorites();
     if (sheetRoot.querySelector('button[data-favorite="' + placeSlug + '"]')) {
       openPlace(placeSlug);
@@ -223,6 +225,121 @@ async function toggleFavorite(placeSlug) {
   } finally {
     state.favoritePending.delete(placeSlug);
   }
+}
+
+function mapVisiblePlaces() {
+  if (!state.catalog) return [];
+  const term = state.mapSearch.trim().toLocaleLowerCase("ru");
+  return state.catalog.places.filter(place => {
+    if (!Number.isFinite(place.latitude) || !Number.isFinite(place.longitude) ||
+      Math.abs(place.latitude) > 90 || Math.abs(place.longitude) > 180) return false;
+    const category = state.mapFilter;
+    if (category === "free" && !place.is_free) return false;
+    if (category === "family" && !place.tags.includes("с детьми")) return false;
+    if (!["all", "free", "family"].includes(category) &&
+      place.category !== category) return false;
+    if (!term) return true;
+    return [place.title, place.district, place.summary, ...place.tags]
+      .join(" ").toLocaleLowerCase("ru").includes(term);
+  });
+}
+
+function selectMapPlace(slug) {
+  if (state.tab !== "map") return;
+  const place = mapVisiblePlaces().find(place => place.slug === slug);
+  if (!place) return;
+  state.mapSelected = slug;
+  const preview = document.getElementById("map-preview");
+  if (preview) preview.innerHTML = placeCard(place);
+  state.mapController?.focus([place.latitude, place.longitude]);
+}
+
+function drawMapPoints() {
+  if (state.tab !== "map") return;
+  const places = mapVisiblePlaces();
+  const count = document.getElementById("map-count");
+  if (count) count.textContent = places.length + " мест на карте";
+  const preview = document.getElementById("map-preview");
+  if (state.mapSelected && !places.some(place => place.slug === state.mapSelected)) {
+    state.mapSelected = null;
+  }
+  if (preview) {
+    const selected = places.find(place => place.slug === state.mapSelected);
+    preview.innerHTML = selected
+      ? placeCard(selected)
+      : '<div class="map-empty">' +
+        (places.length ? "Выберите метку на карте или место в списке."
+          : "Для этих фильтров достопримечательностей не найдено.") +
+        "</div>";
+  }
+  const matches = document.getElementById("map-matches");
+  if (matches) {
+    matches.innerHTML = places.slice(0, 8).map(place =>
+      '<button class="map-match" type="button" data-map-place="' +
+      escapeText(place.slug) + '"><span>' + escapeText(place.emoji) +
+      '</span><span>' + escapeText(place.title) + '</span><span>→</span></button>'
+    ).join("");
+  }
+  const chips = document.querySelectorAll("[data-map-filter]");
+  chips.forEach(button => {
+    button.classList.toggle("active", button.dataset.mapFilter === state.mapFilter);
+    button.setAttribute(
+      "aria-pressed", String(button.dataset.mapFilter === state.mapFilter)
+    );
+  });
+  if (state.mapController) state.mapController.update(places);
+}
+
+function renderMap() {
+  const city = state.catalog;
+  const categories = [
+    ["all", "Все"], ["free", "✳ Бесплатно"], ["family", "♡ С детьми"],
+    ...Object.entries(city.category_labels)
+  ];
+  screen.innerHTML =
+    '<div class="page-heading"><div><h1>Карта города</h1><p>Исследуйте ' +
+    escapeText(city.name) + ' поблизости</p></div></div>' +
+    '<label class="search"><span>⌕</span><input id="map-search" type="search" ' +
+    'autocomplete="off" placeholder="Найти место на карте…" ' +
+    'aria-label="Поиск достопримечательностей на карте"></label>' +
+    '<div class="chips map-chips" aria-label="Фильтры карты">' +
+    categories.map(([key, text]) =>
+      '<button class="chip" type="button" data-map-filter="' +
+      escapeText(key) + '">' + escapeText(text) + '</button>'
+    ).join("") + '</div>' +
+    '<div class="map-frame"><div id="city-map" class="map-canvas" ' +
+    'role="region" aria-label="Интерактивная карта достопримечательностей"></div>' +
+    '<div id="map-fallback" class="map-fallback" hidden></div></div>' +
+    '<p class="map-disclosure">Карта: © OpenStreetMap. Тайлы загружаются ' +
+    'только при открытии раздела и передают картографическому сервису ' +
+    'сетевой адрес браузера. Для построения реального пути используйте ' +
+    'кнопку «На карте» в карточке места.</p>' +
+    '<div class="section-title"><h2>Исследовать точки</h2>' +
+    '<span class="counter" id="map-count"></span></div>' +
+    '<div id="map-preview"></div>' +
+    '<div id="map-matches" class="map-matches"></div>';
+
+  const input = document.getElementById("map-search");
+  input.value = state.mapSearch;
+  input.addEventListener("input", event => {
+    state.mapSearch = event.target.value;
+    drawMapPoints();
+  });
+
+  try {
+    state.mapController = window.PlacesMap?.mount(
+      "city-map", placeSlug => selectMapPlace(placeSlug)
+    ) || null;
+  } catch (_) {
+    state.mapController = null;
+  }
+  if (!state.mapController) {
+    const fallback = document.getElementById("map-fallback");
+    fallback.hidden = false;
+    fallback.textContent = "Карта временно недоступна. Выберите место в списке ниже.";
+    notify("Не удалось загрузить карту. Список мест доступен ниже.");
+  }
+  drawMapPoints();
 }
 
 function routeCard(route, number) {
@@ -262,8 +379,13 @@ function navigate(tab) {
   state.tab = tab;
   updateNav();
   if (!state.catalog) return;
+  if (state.mapController) {
+    state.mapController.destroy();
+    state.mapController = null;
+  }
   if (tab === "home") renderHome();
   else if (tab === "places") renderPlaces();
+  else if (tab === "map") renderMap();
   else if (tab === "favorites") renderFavorites();
   else renderRoutes();
   window.scrollTo({ top: 0, behavior: "instant" });
@@ -355,6 +477,13 @@ async function loadCity(slug) {
   state.catalog = catalog;
   state.category = "all";
   state.search = "";
+  state.mapSearch = "";
+  state.mapFilter = "all";
+  state.mapSelected = null;
+  if (state.mapController) {
+    state.mapController.destroy();
+    state.mapController = null;
+  }
   await loadFavorites(catalog.slug);
   cityName.textContent = catalog.name;
   navigate(state.tab);
@@ -383,6 +512,15 @@ screen.addEventListener("click", event => {
   if (!trigger) return;
   if (trigger.dataset.favorite) {
     void toggleFavorite(trigger.dataset.favorite);
+    return;
+  }
+  if (trigger.dataset.mapPlace) {
+    selectMapPlace(trigger.dataset.mapPlace);
+    return;
+  }
+  if (trigger.dataset.mapFilter) {
+    state.mapFilter = trigger.dataset.mapFilter;
+    drawMapPoints();
     return;
   }
   if (trigger.dataset.open) navigate(trigger.dataset.open);

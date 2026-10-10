@@ -65,6 +65,16 @@ def test_catalog_and_assets_are_public_but_private_info_is_not(tmp_path):
         assert "/assets/app.js" in page.text
         assert "no-store" in page.headers["cache-control"]
         assert "telegram.org" in page.headers["content-security-policy"]
+        assert page.headers["referrer-policy"] == (
+            "strict-origin-when-cross-origin"
+        )
+        assert "https://tile.openstreetmap.org" in (
+            page.headers["content-security-policy"]
+        )
+        assert "https://unpkg.com" in page.headers["content-security-policy"]
+        assert "sha256-20nQCchB9co0qIjJZRGuk2" in page.text
+        assert 'data-tab="map"' in page.text
+        assert client.get("/assets/map.js").status_code == 200
         assert client.get("/assets/style.css").status_code == 200
         assert client.get("/assets/app.js").status_code == 200
 
