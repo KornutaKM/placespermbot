@@ -53,7 +53,7 @@ docker compose build --build-arg "PLACES_BUILD_SHA=$APPROVED_SHA" bot
 docker compose run --rm --no-deps \
   -v "$PWD/backups:/backups:ro" bot \
   python -m app.deployment_preflight --backup "/backups/$SNAPSHOT" \
-  --expected-sha "$APPROVED_SHA" --max-age-hours 24 --min-cities 33
+  --expected-sha "$APPROVED_SHA" --max-age-hours 24 --min-cities 34
 ```
 
 The preflight also rejects hard links or aliases pointing at the live SQLite
@@ -114,8 +114,9 @@ success and a GitHub merge do not establish that a server was updated.
 ## Release metadata consistency
 
 Before approving the image, CI executes `python -m app.release_consistency --check`.
-It compares the registered manifest/catalog count, the README city count and
-`deployment_preflight.MINIMUM_CITY_COUNT`. Adding a city requires updating all
-three deliberately. A stale branch must be rebased onto the current main and
+It compares registered manifest/catalog cities against the README city count
+and full list of city names, `deployment_preflight.MINIMUM_CITY_COUNT`, and
+the explicit `--min-cities` example above. Adding a city requires updating
+all declarations deliberately. A stale branch must be rebased onto the current main and
 retested; do not override a failed consistency check. This is a static source
 contract, not evidence that production has been deployed.
