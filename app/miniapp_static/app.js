@@ -379,7 +379,7 @@ function navigate(tab) {
   state.tab = tab;
   updateNav();
   if (!state.catalog) return;
-  if (tab !== "map" && state.mapController) {
+  if (state.mapController) {
     state.mapController.destroy();
     state.mapController = null;
   }
