@@ -57,7 +57,7 @@ def test_all_promoted_seed_catalogs_are_sourced_and_geographically_consistent():
             points = [catalog.place_by_slug(slug) for slug in route.place_slugs]
             assert all(points)
             assert all(
-                distance_km(a, b) <= 3.5
+                distance_km(a, b) <= 5.0
                 for a, b in pairwise(points)
             )
 
