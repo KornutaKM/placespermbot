@@ -245,7 +245,8 @@ def top100_text() -> str:
     """Population-ranked directory, with unavailable guides explicitly marked."""
     summary = coverage_summary()
     rows = [
-        f"{item['rank']}. {'✓' if item['guide_available'] else '·'} "
+        f"{item['rank']}. "
+        f"{'✓' if item['guide_status'] == 'editorial' else '≈' if item['guide_status'] == 'map_seed' else '·'} "
         f"{escape(item['name'])}"
         for item in summary["cities"]
     ]
@@ -254,7 +255,8 @@ def top100_text() -> str:
         "По населению на 01.01.2025, в границах города.\n"
         f"Готовы путеводители: {summary['ready_count']} из 100; "
         f"в подготовке: {summary['pending_count']}.\n"
-        "✓ — доступен через /city; · — ещё не добавлен в путеводитель.\n\n"
+        "✓ — редакционный гид; ≈ — точки OpenStreetMap без проверки переходов; "
+        "· — ещё нет каталога. Рабочие города доступны через /city.\n\n"
         + "\n".join(rows)
         + "\n\nЧетыре дополнительных туристических города сохранены."
     )
