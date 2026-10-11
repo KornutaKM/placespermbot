@@ -58,10 +58,8 @@ def http_transport_url(url: str) -> str:
         hostname += f":{parts.port}"
     # Existing percent escapes must not be encoded again. A fragment is local
     # browser state and must never be part of an outbound HTTP request.
-    path = quote(parts.path, safe="/%:@!def http_request(url: str, *, timeout: float, method: str = "GET"):
-'()*+,;=-._~")
-    query = quote(parts.query, safe="/%:@!def http_request(url: str, *, timeout: float, method: str = "GET"):
-'()*+,;=?-._~")
+    path = quote(parts.path, safe="/%:@!$&'()*+,;=-._~")
+    query = quote(parts.query, safe="/%:@!$&'()*+,;=?-._~")
     return urlunsplit((parts.scheme, hostname, path, query, ""))
 
 
