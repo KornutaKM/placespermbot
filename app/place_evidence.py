@@ -107,6 +107,38 @@ EVIDENCE = (
         "подтверждение свободного доступа в историческое здание "
         "или на причалы.",
     ),
+    Evidence(
+        "kursk", "kursk-deineka", "operator_listed",
+        date(2026, 10, 11),
+        "https://deinekagallery.ru/posetitelyam/",
+        "Оператор указывает действующий выставочный зал на Радищева, 85 "
+        "(в отличие от административного здания на Советской, 3). "
+        "Доступность конкретной выставки и часы уточняйте перед поездкой.",
+    ),
+    Evidence(
+        "kursk", "kursk-museum-local", "operator_listed",
+        date(2026, 10, 11),
+        "https://kursk-museum.ru/ekskursiya-kurskij-detinec/",
+        "На сайте музея указаны Луначарского, 6 и контакты экскурсионного "
+        "обслуживания. Актуальную экспозицию, вход и режим уточняйте "
+        "непосредственно у музея.",
+    ),
+    Evidence(
+        "kursk", "kursk-znamensky", "operator_listed",
+        date(2026, 10, 11),
+        "https://kursk-znamen-1.cerkov.ru/",
+        "Официальный сайт действующего Знаменского монастыря указывает "
+        "Луначарского, 4 и богослужения. Доступ к собору и правила "
+        "посещения уточняйте в монастыре.",
+    ),
+    Evidence(
+        "kursk", "kursk-sergiev", "operator_listed",
+        date(2026, 10, 11),
+        "https://serge-kazan.cerkov.ru/",
+        "Официальный сайт Сергиево-Казанского собора описывает храм "
+        "и общее расписание служб. Реальный доступ в конкретный день "
+        "уточняйте в приходе.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(
