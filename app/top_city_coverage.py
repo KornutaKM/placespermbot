@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 
 from app.city_manifest import list_city_manifests
+from app.data.osm_seed_2026 import OSM_SEED_CITIES
 
 RANKING_DATE = "2025-01-01"
 RANKING_SOURCES = (
@@ -195,11 +196,13 @@ class TopCity:
     name: str
     slug: str
     guide_available: bool
+    guide_status: str
 
 
 def top_city_coverage() -> tuple[TopCity, ...]:
     """Consistent view of the ranked target and live manifest-backed coverage."""
     active = {city.name: city.slug for city in list_city_manifests()}
+    map_seeds = {city.slug for city in OSM_SEED_CITIES}
     result: list[TopCity] = []
     for rank, name in enumerate(TOP_100_NAMES, start=1):
         known_slug = RESERVED_SLUGS.get(name)
@@ -209,7 +212,12 @@ def top_city_coverage() -> tuple[TopCity, ...]:
         slug = registered_slug or known_slug
         if not slug:
             raise RuntimeError(f"Top-100 city lacks canonical slug: {name}")
-        result.append(TopCity(rank, name, slug, registered_slug is not None))
+        result.append(TopCity(
+            rank, name, slug, registered_slug is not None,
+            "map_seed" if slug in map_seeds else (
+                "editorial" if registered_slug is not None else "pending"
+            ),
+        ))
     if len(result) != 100 or len({c.name for c in result}) != 100:
         raise RuntimeError("Invalid top-100 population ranking")
     if len({c.slug for c in result}) != 100:
@@ -220,11 +228,15 @@ def top_city_coverage() -> tuple[TopCity, ...]:
 def coverage_summary() -> dict:
     ranked = top_city_coverage()
     covered = sum(city.guide_available for city in ranked)
+    editorial = sum(city.guide_status == "editorial" for city in ranked)
+    seeded = sum(city.guide_status == "map_seed" for city in ranked)
     return {
         "ranking_date": RANKING_DATE,
         "ranking_sources": list(RANKING_SOURCES),
         "target_count": len(ranked),
         "ready_count": covered,
+        "editorial_count": editorial,
+        "map_seed_count": seeded,
         "pending_count": len(ranked) - covered,
         "catalog_city_count": len(list_city_manifests()),
         "cities": [asdict(city) for city in ranked],
