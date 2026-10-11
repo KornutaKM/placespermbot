@@ -39,8 +39,8 @@ function sourceDetails(place) {
   const name = String(source.name ?? "").trim() || "Редакционный источник";
   const url = String(source.url ?? "").trim();
   // Reject active schemes, credentials and malformed hosts even if API data changes.
-  const safeUrl = /^https:\/\/[^\/\\s@?#<>"']+(?:[\/?#][^\\s<>"']*)?$/i.test(url);
-  const checkedAt = /^\\d{4}-\\d{2}-\\d{2}$/.test(String(source.checked_at ?? ""))
+  const safeUrl = /^https:\/\/[^\/\s@?#<>"']+(?:[\/?#][^\s<>"']*)?$/i.test(url);
+  const checkedAt = /^\d{4}-\d{2}-\d{2}$/.test(String(source.checked_at ?? ""))
     ? source.checked_at : "не указана";
   return '<div class="source-details"><strong>Откуда сведения</strong>' +
     '<p>' + (safeUrl
