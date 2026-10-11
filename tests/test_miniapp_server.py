@@ -43,7 +43,7 @@ def test_catalog_and_assets_are_public_but_private_info_is_not(tmp_path):
     with client:
         cities = client.get("/api/cities")
         assert cities.status_code == 200
-        assert len(cities.json()["cities"]) == 73
+        assert len(cities.json()["cities"]) == 96
         assert client.get("/api/catalogs/not-a-city").status_code == 404
 
         catalog = client.get("/api/catalogs/perm")
