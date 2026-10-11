@@ -12,9 +12,9 @@ GOTO_OMSK = PlaceSource(
     checked_at=SOURCE_CHECKED_AT,
 )
 OMSK_FORTRESS = PlaceSource(
-    name="Историко-культурный комплекс «Омская крепость»",
-    url="https://omskkrepost.ru/",
-    checked_at=SOURCE_CHECKED_AT,
+    name="Туристский информационный центр Омской области — Омская крепость и исторические ворота",
+    url="https://gotoomsk.ru/places/istoriko-kulturnyj-kompleks-omskaya-krepost/",
+    checked_at=date(2026, 10, 11),
 )
 SIB_MUSEUM = PlaceSource(
     name="Омский государственный историко-краеведческий музей",
