@@ -77,10 +77,10 @@ from app.navigation import (
     similar_child_context,
 )
 from app.pagination import PAGE_SIZE, Page, paginate
-from app.place_evidence import telegram_evidence_notice
 from app.personal_route import build_explained_personal_route
 from app.personal_route_ui import personal_route_result_text
 from app.personalization_context import load_personalization_context
+from app.place_evidence import telegram_evidence_notice
 from app.place_route import build_place_route
 from app.planner import INTEREST_LABELS, build_route
 from app.profile import ProfileSummary, build_profile_summary, profile_text
