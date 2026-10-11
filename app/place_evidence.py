@@ -222,6 +222,14 @@ EVIDENCE = (
         "экспозиционные комплексы, сведения для посетителей и маршрут "
         "автобуса № 37. Время входа и сезонный доступ уточняйте.",
     ),
+    Evidence(
+        "ulan-ude", "ulan-ude-buddhist", "operator_listed",
+        date(2026, 10, 11),
+        "https://datsan-rinpoche-bagsha.ru/contacts",
+        "Зарегистрированный буддийский центр Ринпоче Багша указывает "
+        "Стрелецкую, 1, автобус № 97 и общий график приёма. "
+        "Праздничные изменения и доступ на конкретную дату уточняйте.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(
