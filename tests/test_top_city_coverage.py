@@ -85,13 +85,16 @@ def test_city_can_be_promoted_only_by_real_manifest_registration(monkeypatch):
     import app.top_city_coverage as target
 
     original = target.list_city_manifests()
+    was_ready = any(city.name == "Тверь" for city in original)
+    without_tver = tuple(city for city in original if city.name != "Тверь")
     monkeypatch.setattr(
         target, "list_city_manifests",
-        lambda: (*original, SimpleNamespace(name="Тверь", slug="tver")),
+        lambda: (*without_tver, SimpleNamespace(name="Тверь", slug="tver")),
     )
     summary = coverage_summary()
     assert (summary["ready_count"], summary["pending_count"]) == (
-        42 + len(OSM_SEED_CITIES), 58 - len(OSM_SEED_CITIES)
+        41 + len(OSM_SEED_CITIES) + (0 if was_ready else 1),
+        59 - len(OSM_SEED_CITIES) - (0 if was_ready else 1),
     )
     assert next(city for city in summary["cities"] if city["name"] == "Тверь")[
         "guide_available"
@@ -99,7 +102,7 @@ def test_city_can_be_promoted_only_by_real_manifest_registration(monkeypatch):
 
     monkeypatch.setattr(
         target, "list_city_manifests",
-        lambda: (*original, SimpleNamespace(name="Тверь", slug="wrong-slug")),
+        lambda: (*without_tver, SimpleNamespace(name="Тверь", slug="wrong-slug")),
     )
     with pytest.raises(RuntimeError, match="Reserved slug mismatch"):
         top_city_coverage()
