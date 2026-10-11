@@ -17,8 +17,11 @@ from app.miniapp_auth import InvalidTelegramInitData, validate_init_data
 from app.miniapp_profile import my_guide_snapshot
 from app.miniapp_route_builder import (
     RouteBuildRequest,
+    RouteEditRequest,
     SaveBuiltRouteRequest,
+    SaveEditedRouteRequest,
     build_miniapp_route,
+    edited_miniapp_route,
     route_preview,
 )
 from app.route_completion import complete_saved_route
@@ -264,6 +267,68 @@ def create_miniapp(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(
                 status_code=409,
                 detail="The route changed; generate it again before saving",
+            )
+        saved = await saved_routes.save(
+            user_id, city_slug, route.interest, route.budget_minutes,
+            tuple(place.slug for place in route.places),
+        )
+        return {
+            "city_slug": city_slug,
+            "route_id": saved.route_id,
+            "saved": True,
+            "place_count": len(saved.place_slugs),
+        }
+
+    @app.post("/api/routes/{city_slug}/edit")
+    async def preview_edited_route(
+        city_slug: str,
+        body: RouteEditRequest,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        if not has_catalog(city_slug):
+            raise HTTPException(status_code=404, detail="City not found")
+        excluded: tuple[str, ...] = ()
+        if body.exclude_visited:
+            user_id = authenticated_user(x_telegram_init_data)
+            await require_active_city(user_id, city_slug)
+            excluded = await visited.list_place_slugs(user_id, city_slug)
+        catalog = get_catalog(city_slug)
+        try:
+            route = edited_miniapp_route(
+                catalog, body, excluded_slugs=excluded
+            )
+        except ValueError as exc:
+            status = 409 if "original route" in str(exc) else 422
+            raise HTTPException(status_code=status, detail=str(exc)) from exc
+        return route_preview(catalog, route)
+
+    @app.post("/api/me/routes/{city_slug}/save-edited")
+    async def save_edited_route(
+        city_slug: str,
+        body: SaveEditedRouteRequest,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        user_id = authenticated_user(x_telegram_init_data)
+        await require_active_city(user_id, city_slug)
+        excluded = (
+            await visited.list_place_slugs(user_id, city_slug)
+            if body.exclude_visited else ()
+        )
+        catalog = get_catalog(city_slug)
+        try:
+            route = edited_miniapp_route(
+                catalog, body, excluded_slugs=excluded
+            )
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail="The route must be rebuilt before saving",
+            ) from exc
+        preview = route_preview(catalog, route)
+        if preview["route_id"] != body.expected_route_id:
+            raise HTTPException(
+                status_code=409,
+                detail="The edited route changed; preview it again",
             )
         saved = await saved_routes.save(
             user_id, city_slug, route.interest, route.budget_minutes,
