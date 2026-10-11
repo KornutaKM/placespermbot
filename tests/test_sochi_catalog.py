@@ -53,3 +53,40 @@ def routes_summary(city, slug: str) -> str:
     route = city.route_by_slug(slug)
     assert route is not None
     return route.summary
+
+
+def test_sochi_port_and_theatre_have_venue_sources_without_false_access_claims() -> None:
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("sochi")
+    expected = {
+        "winter-theatre-sochi": (
+            "https://www.skfo.online/contacts/", "www.skfo.online"
+        ),
+        "marine-station-sochi": (
+            "https://www.morport-sochi.ru/contacts/", "www.morport-sochi.ru"
+        ),
+    }
+    for slug, (url, host) in expected.items():
+        place = city.place_by_slug(slug)
+        assert place is not None
+        assert place.source.url == url
+        assert urlparse(url).hostname == host
+        assert place.source.checked_at == date(2026, 10, 11)
+        evidence = public_evidence("sochi", slug, as_of=date(2026, 10, 11))
+        assert evidence["status"] == "operator_listed"
+        assert evidence["evidence_url"] == url
+        assert "доступ" in evidence["finding"].lower() or (
+            "билеты" in evidence["finding"].lower()
+        )
+
+    assert "служебные зоны" in city.place_by_slug(
+        "marine-station-sochi"
+    ).summary
+    assert "билетов" in city.place_by_slug("winter-theatre-sochi").summary
+    assert any(
+        "winter-theatre-sochi" in r.place_slugs for r in city.routes
+    )
+    assert any(
+        "marine-station-sochi" in r.place_slugs for r in city.routes
+    )

@@ -90,6 +90,23 @@ EVIDENCE = (
         "как свой отдел на улице Книповича, 23А. Актуальное расписание "
         "занятий и выставок уточняйте у музея.",
     ),
+    Evidence(
+        "sochi", "winter-theatre-sochi", "operator_listed",
+        date(2026, 10, 11),
+        "https://www.skfo.online/contacts/",
+        "Муниципальный оператор Зимнего театра указывает Театральную, 2 "
+        "и кассы. Спектакли, билеты и внутренний доступ уточняйте "
+        "по актуальной афише учреждения.",
+    ),
+    Evidence(
+        "sochi", "marine-station-sochi", "operator_listed",
+        date(2026, 10, 11),
+        "https://www.morport-sochi.ru/contacts/",
+        "АО «Морпорт Сочи» указывает фактический адрес Войкова, 1. "
+        "Это операторское свидетельство об объекте порта, но не "
+        "подтверждение свободного доступа в историческое здание "
+        "или на причалы.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(
