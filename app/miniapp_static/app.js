@@ -43,18 +43,26 @@ function sourceDetails(place) {
   const checkedAt = /^\d{4}-\d{2}-\d{2}$/.test(String(source.checked_at ?? ""))
     ? source.checked_at : "не указана";
   const isOsm = safeUrl && url.startsWith("https://www.openstreetmap.org/");
+  const isWikidata = safeUrl && /^https:\/\/www\.wikidata\.org\/wiki\/Q[1-9][0-9]*$/.test(url);
   return '<div class="source-details"><strong>Откуда сведения</strong>' +
     '<p>' + (safeUrl
       ? '<a href="' + escapeText(url) +
         '" target="_blank" rel="noopener noreferrer">' + escapeText(name) + ' ↗</a>'
       : escapeText(name)) + '</p>' +
-    '<small>' + (isOsm ? 'Дата выгрузки данных OSM: ' : 'Дата редакционной записи: ') +
+    '<small>' + (isOsm ? 'Дата выгрузки данных OSM: ' :
+      isWikidata ? 'Дата выгрузки Wikidata: ' : 'Дата редакционной записи: ') +
     escapeText(checkedAt) +
     '. Не гарантирует актуальность часов, цен и доступности.</small>' +
     (isOsm
       ? '<small>Картографические данные: © OpenStreetMap contributors, ' +
         '<a href="https://www.openstreetmap.org/copyright" target="_blank" ' +
         'rel="noopener noreferrer">Open Database License (ODbL)</a>. ' +
+        'Объект и доступность не проверены на месте.</small>'
+      : "") +
+    (isWikidata
+      ? '<small>Данные: Wikidata contributors, ' +
+        '<a href="https://www.wikidata.org/wiki/Wikidata:Licensing" ' +
+        'target="_blank" rel="noopener noreferrer">CC0</a>. ' +
         'Объект и доступность не проверены на месте.</small>'
       : "") + '</div>';
 }
