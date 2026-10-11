@@ -21,6 +21,7 @@ from urllib.request import Request, urlopen
 
 from app.catalog import list_catalogs
 from app.place_evidence import public_evidence
+from app.withheld_places import WITHHELD_PLACES
 
 USER_AGENT = "PlacesBotSourceAudit/1.0 (public tourism source maintenance)"
 OSM_URL = re.compile(r"^https://www\.openstreetmap\.org/(node|way|relation)/(\d+)$")
@@ -247,6 +248,25 @@ def run_audit(*, live: bool = False, timeout: float = 12) -> dict:
         wiki = probe_wikidata([qid for _, qid in pairs], timeout=max(timeout, 30))
         for url, qid in pairs:
             result_by_url[url] = wiki[qid]
+    # Continue watching withheld sites so they can be reviewed for reinstatement.
+    withheld_watch = []
+    for item in WITHHELD_PLACES:
+        kind, subtype, identifier = classify_url(item.map_url)
+        if live and kind == "osm":
+            evidence = probe_osm_batch(
+                subtype, [identifier], timeout=max(timeout, 40)
+            )[identifier]
+        else:
+            evidence = {"signal": "not_probed"}
+        withheld_watch.append({
+            "city_slug": item.city_slug,
+            "place_slug": item.place_slug,
+            "title": item.title,
+            "source_url": item.map_url,
+            "reason": item.reason,
+            "probe": evidence,
+            "eligibility": "withheld_pending_independent_opening_evidence",
+        })
     rows = []
     city_stats: dict[str, Counter] = defaultdict(Counter)
     for city in catalogs:
@@ -279,13 +299,18 @@ def run_audit(*, live: bool = False, timeout: float = 12) -> dict:
                    "existence, entrance, hours, transport or public access certification",
         "city_count": len(catalogs),
         "place_count": len(rows),
-        "unique_source_urls": len(unique),
+        "withheld_count": len(withheld_watch),
+        "total_tracked": len(rows) + len(withheld_watch),
+        "unique_source_urls": len({
+            *unique, *(item["source_url"] for item in withheld_watch)
+        }),
         "signal_counts": dict(sorted(status_counts.items())),
         "city_summary": [
             {"slug": c.slug, "name": c.name, **dict(city_stats[c.slug])}
             for c in catalogs
         ],
         "places": rows,
+        "withheld_review_watch": withheld_watch,
     }
 
 

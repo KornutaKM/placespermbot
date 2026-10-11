@@ -55,7 +55,7 @@ def test_evidence_validation_catches_missing_place_in_altered_catalog():
 
 def test_all_city_inventory_annotates_every_source_without_false_claims():
     report = build_inventory(as_of=date(2026, 10, 11))
-    assert report["active_places_count"] == 2142
+    assert report["active_places_count"] == 2141
     assert report["documented_operator_listings"] == 14
     assert report["blocking_findings"] == []
     checked = [
@@ -78,9 +78,14 @@ def test_source_probe_classification_and_no_network_structural_coverage():
     assert classify_url("https://museumperm.ru/visit")[0] == "web"
     report = run_audit(live=False)
     assert report["city_count"] == len(list_catalogs()) == 104
-    assert report["place_count"] == 2142
-    assert len(report["places"]) == 2142
-    assert report["signal_counts"] == {"not_probed": 2142}
+    assert report["place_count"] == 2141
+    assert len(report["places"]) == 2141
+    assert report["signal_counts"] == {"not_probed": 2141}
+    assert report["total_tracked"] == 2142
+    assert report["withheld_count"] == 1
+    assert report["withheld_review_watch"][0]["place_slug"] == (
+        "nalchik-osm-way-234973881"
+    )
     assert {p["city_slug"] for p in report["places"]} == {
         c.slug for c in list_catalogs()
     }
