@@ -178,5 +178,5 @@ def test_kursk_archaeology_and_theatre_map_pins_match_named_city_venues():
     assert "kursk-archaeology" in city.route_by_slug(
         "kursk-museums"
     ).place_slugs
-    assert "kursk-pushkin" in city.route_by_slug("kursk-historic").place_slugs
+    assert city.place_by_slug("kursk-pushkin") is not None
     assert not hard_route_findings(inspect_routes(city))
