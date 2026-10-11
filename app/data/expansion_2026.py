@@ -230,11 +230,20 @@ def _compile_city(item: list) -> ExpansionCity:
         estimated_duration = sum(p.visit_minutes for p in items) + ceil(
             walking_distance_km / 4.5 * 60
         ) + 20
+        description = (
+            "Комбинированный музейный день: музеи в центре и удалённый "
+            "Этнографический музей в Верхней Берёзовке. Между ними нужен "
+            "транспорт: оператор музея указывает автобус № 37. Расстояние "
+            "рассчитано по прямой с коэффициентом и не задаёт путь по "
+            "дорогам; время пересадки и расписание проверяйте отдельно."
+            if slug == "ulan-ude" and key == "museums" else
+            "Прогулка по выбранным городским точкам. Расстояние и время "
+            "приблизительны; проверьте реальные переходы по карте."
+        )
         routes.append(RoutePlan(
             f"{slug}-{key}", f"{name}: {title}",
-            "Прогулка по выбранным городским точкам. Расстояние и время "
-            "приблизительны; проверьте реальные переходы по карте.",
-            estimated_duration, walking_distance_km, tuple(p.slug for p in items),
+            description, estimated_duration, walking_distance_km,
+            tuple(p.slug for p in items),
         ))
     return ExpansionCity(slug, name, CATEGORY_LABELS, places, tuple(routes))
 
