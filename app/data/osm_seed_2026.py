@@ -126,15 +126,22 @@ def _compile_city(item: dict) -> OsmSeedCity:
     return OsmSeedCity(slug, name, CATEGORY_LABELS, placed, routes)
 
 
-def _load_seed_cities() -> tuple[OsmSeedCity, ...]:
+def _load_seed_cities() -> tuple[tuple[OsmSeedCity, ...], tuple[str, ...]]:
     if not SNAPSHOT_FILE.is_file():
-        return ()
+        return (), ()
     contents = json.loads(SNAPSHOT_FILE.read_text(encoding="utf-8"))
-    return tuple(
-        _compile_city(item)
-        for item in contents["cities"]
-        if item.get("places") and not item.get("issues")
-    )
+    accepted: list[OsmSeedCity] = []
+    rejected: list[str] = []
+    for item in contents["cities"]:
+        if not item.get("places") or item.get("issues"):
+            continue
+        try:
+            accepted.append(_compile_city(item))
+        except (KeyError, ValueError, TypeError) as exc:
+            # Invalid OSM entries must not take down the whole bot.
+            # CI asserts this review list is empty before merge.
+            rejected.append(f"{item.get('slug', '<missing>')}: {exc}")
+    return tuple(accepted), tuple(rejected)
 
 
-OSM_SEED_CITIES = _load_seed_cities()
+OSM_SEED_CITIES, OSM_REVIEW_ISSUES = _load_seed_cities()
