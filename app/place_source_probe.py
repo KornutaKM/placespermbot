@@ -13,9 +13,9 @@ import re
 import time
 import xml.etree.ElementTree as ET
 from collections import Counter, defaultdict
-from math import isfinite
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
+from math import isfinite
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
