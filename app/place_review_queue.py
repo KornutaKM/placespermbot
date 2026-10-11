@@ -68,7 +68,7 @@ def build_review_queue(
     }
     rows = scan.get("places", [])
     if not isinstance(rows, list):
-        raise ValueError("Scan must contain a list of places")
+        raise TypeError("Scan must contain a list of places")
     received = [(row.get("city_slug"), row.get("place_slug")) for row in rows]
     if (
         len(received) != len(by_id)
@@ -196,17 +196,17 @@ def render_markdown(result: dict, *, max_items: int = 30) -> str:
     lines = [
         "# 104-city source review queue",
         "",
-        "Source probes are **not proof of venue opening/closure**. "
+        ("Source probes are **not proof of venue opening/closure**. "
         "Do not automatically delete objects or mark them visitable. "
-        "HTTP 403/429 and network errors are technical follow-ups.",
+        "HTTP 403/429 and network errors are technical follow-ups."),
         "",
-        f"Cities: **{result['city_count']}**; active POIs: "
+        (f"Cities: **{result['city_count']}**; active POIs: "
         f"**{result['active_place_count']}**; withheld and still watched: "
-        f"**{result['withheld_count']}**.",
+        f"**{result['withheld_count']}**."),
         "",
-        f"Documentary investigations: **{result['critical_review_count']}**; "
+        (f"Documentary investigations: **{result['critical_review_count']}**; "
         f"source identity investigations: **{result['source_identity_review_count']}**; "
-        f"technical retries: **{result['technical_retry_count']}**.",
+        f"technical retries: **{result['technical_retry_count']}**."),
         "",
         "## Priority cases and affected prebuilt routes",
         "",
