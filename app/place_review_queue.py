@@ -92,12 +92,16 @@ def build_review_queue(
         or scan.get("city_count") != len(active)
     ):
         raise ValueError("Source scan must cover every active place exactly once")
-    old_signals = {}
+    old_rows = {}
     if previous is not None:
-        old_signals = {
-            (row["city_slug"], row["place_slug"]): row.get("probe", {}).get("signal")
-            for row in previous.get("places", [])
-        }
+        prior_places = previous.get("places", [])
+        if not isinstance(prior_places, list):
+            raise ValueError("Previous scan must contain a list of places")
+        for prior in prior_places:
+            key = (prior["city_slug"], prior["place_slug"])
+            if key in old_rows:
+                raise ValueError(f"Duplicate place in previous scan: {key}")
+            old_rows[key] = prior
     route_impact = defaultdict(list)
     for catalog in active:
         for route in catalog.routes:
@@ -105,6 +109,10 @@ def build_review_queue(
                 route_impact[(catalog.slug, slug)].append(route.slug)
 
     queue = []
+    recovered_technical_probes = []
+    source_url_changes = []
+    comparable_source_count = 0
+    persistent_technical_retry_count = 0
     by_city = {
         catalog.slug: {
             "slug": catalog.slug,
@@ -131,6 +139,47 @@ def build_review_queue(
         signal = row.get("probe", {}).get("signal")
         if signal not in ALLOWED_SIGNALS:
             raise ValueError(f"{key}: unknown probe signal: {signal}")
+        old = old_rows.get(key)
+        previous_signal = (
+            old.get("probe", {}).get("signal") if old is not None else None
+        )
+        source_changed = (
+            old is not None and old.get("source_url") != row["source_url"]
+        )
+        if source_changed:
+            source_url_changes.append({
+                "city_slug": catalog.slug,
+                "place_slug": place.slug,
+                "previous_url": old["source_url"],
+                "current_url": row["source_url"],
+                "previous_signal": previous_signal,
+                "current_signal": signal,
+            })
+        elif old is not None:
+            comparable_source_count += 1
+            if previous_signal in RETRY_SIGNALS and signal in RETRY_SIGNALS:
+                persistent_technical_retry_count += 1
+            if (
+                previous_signal in RETRY_SIGNALS
+                and signal in PASSIVE_SIGNALS - {"not_probed"}
+            ):
+                recovered_technical_probes.append({
+                    "city_slug": catalog.slug,
+                    "place_slug": place.slug,
+                    "title": place.title,
+                    "source_url": row["source_url"],
+                    "source_host": (
+                        (urlparse(row["source_url"]).hostname or "")
+                        .removeprefix("www.")
+                    ),
+                    "previous_signal": previous_signal,
+                    "current_signal": signal,
+                    "route_slugs": sorted(set(route_impact[key])),
+                    "meaning": (
+                        "previous technical probe failure no longer observed; "
+                        "venue and visitor access are NOT verified"
+                    ),
+                })
         evidence = row.get("published_evidence") or {}
         if evidence.get("status") == "operator_listed":
             by_city[catalog.slug]["operator_listings"] += 1
@@ -165,9 +214,11 @@ def build_review_queue(
             "route_count": len(routes),
             "probe_details": row["probe"],
             "operator_evidence": evidence,
-            "previous_signal": old_signals.get(key),
+            "previous_signal": previous_signal,
+            "source_changed_since_previous": source_changed,
             "new_or_changed": (
-                previous is not None and old_signals.get(key) != signal
+                previous is not None
+                and (previous_signal != signal or source_changed)
             ),
             "disposition": (
                 "independent evidence needed; do not delete automatically"
@@ -249,6 +300,12 @@ def build_review_queue(
         key=lambda item: (-item["affected_places"], item["host"]),
     )
     counts = Counter(entry["priority"] for entry in queue)
+    recovered_technical_probes.sort(key=lambda entry: (
+        entry["source_host"], entry["city_slug"], entry["place_slug"],
+    ))
+    source_url_changes.sort(key=lambda entry: (
+        entry["city_slug"], entry["place_slug"],
+    ))
     return {
         "produced_at": datetime.now(UTC).isoformat(),
         "scan_date": scan.get("date"),
@@ -269,6 +326,12 @@ def build_review_queue(
         "technical_retry_host_count": len(retry_host_summary),
         "technical_retry_hosts": retry_host_summary,
         "previous_scan_available": previous is not None,
+        "same_source_comparable_count": comparable_source_count,
+        "source_url_change_count": len(source_url_changes),
+        "source_url_changes": source_url_changes,
+        "persistent_technical_retry_count": persistent_technical_retry_count,
+        "recovered_technical_probe_count": len(recovered_technical_probes),
+        "recovered_technical_probes": recovered_technical_probes,
         "new_or_changed_count": sum(q["new_or_changed"] for q in queue),
         "official_tourism_listing_count": sum(
             city["official_tourism_listings"] for city in by_city.values()
@@ -299,6 +362,13 @@ def render_markdown(result: dict, *, max_items: int = 30) -> str:
         "",
         (f"Previous completed scan available: **{result['previous_scan_available']}**; "
         f"new/changed review signals: **{result['new_or_changed_count']}**."),
+        (f"Comparable unchanged source URLs: **{result['same_source_comparable_count']}**; "
+        f"persistent technical retries: **{result['persistent_technical_retry_count']}**; "
+        f"technical probes no longer failing: **{result['recovered_technical_probe_count']}**; "
+        f"source URL changes: **{result['source_url_change_count']}**."),
+        "A cleared probe failure only describes the source request. It does "
+        "**not** verify a venue, its entrance, or public access. Changed URLs "
+        "are excluded from same-source recovery statistics.",
         "",
         "## Priority cases and affected prebuilt routes",
         "",
@@ -319,6 +389,29 @@ def render_markdown(result: dict, *, max_items: int = 30) -> str:
         lines.append(
             f"\nFull list: {len(result['queue'])} active-place cases, "
             "including every affected route slug, in the JSON artifact."
+        )
+    lines.extend([
+        "",
+        "## Previously failing source requests with no current error",
+        "",
+        "Only the technical probe signal cleared; actual visitor access remains "
+        "unverified. These rows do not re-enter the active review queue solely "
+        "because of their earlier network errors.",
+        "",
+        "| City | Place | Previous signal | Current signal | Source host |",
+        "|---|---|---|---|---|",
+    ])
+    for entry in result["recovered_technical_probes"][:max_items]:
+        lines.append(
+            f"| {_clean_cell(entry['city_slug'])} "
+            f"| {_clean_cell(entry['title'])} "
+            f"| {_clean_cell(entry['previous_signal'])} "
+            f"| {_clean_cell(entry['current_signal'])} "
+            f"| {_clean_cell(entry['source_host'])} |"
+        )
+    if len(result["recovered_technical_probes"]) > max_items:
+        lines.append(
+            "Complete list of cleared technical probes is in the JSON artifact."
         )
     lines.extend([
         "",
