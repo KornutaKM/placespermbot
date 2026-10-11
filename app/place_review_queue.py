@@ -366,9 +366,9 @@ def render_markdown(result: dict, *, max_items: int = 30) -> str:
         f"persistent technical retries: **{result['persistent_technical_retry_count']}**; "
         f"technical probes no longer failing: **{result['recovered_technical_probe_count']}**; "
         f"source URL changes: **{result['source_url_change_count']}**."),
-        "A cleared probe failure only describes the source request. It does "
-        "**not** verify a venue, its entrance, or public access. Changed URLs "
-        "are excluded from same-source recovery statistics.",
+        ("A cleared probe failure only describes the source request. It does "
+         "**not** verify a venue, its entrance, or public access. Changed URLs "
+         "are excluded from same-source recovery statistics."),
         "",
         "## Priority cases and affected prebuilt routes",
         "",
@@ -394,9 +394,9 @@ def render_markdown(result: dict, *, max_items: int = 30) -> str:
         "",
         "## Previously failing source requests with no current error",
         "",
-        "Only the technical probe signal cleared; actual visitor access remains "
-        "unverified. These rows do not re-enter the active review queue solely "
-        "because of their earlier network errors.",
+        ("Only the technical probe signal cleared; actual visitor access remains "
+         "unverified. These rows do not re-enter the active review queue solely "
+         "because of their earlier network errors."),
         "",
         "| City | Place | Previous signal | Current signal | Source host |",
         "|---|---|---|---|---|",
