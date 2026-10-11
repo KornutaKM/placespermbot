@@ -4,7 +4,7 @@ from itertools import pairwise
 
 from fastapi.testclient import TestClient
 
-from app.catalog import get_catalog, has_catalog, list_catalogs
+from app.catalog import distance_km, get_catalog, has_catalog, list_catalogs
 from app.catalog_coverage import assess_catalog_coverage
 from app.catalog_quality import validate_catalog_quality
 from app.catalog_validation import validate_catalog
@@ -68,17 +68,16 @@ def test_expanded_cities_support_all_seven_planner_modes_without_fake_routes():
             assert set(p.slug for p in route.places).issubset(
                 {p.slug for p in catalog.places}
             )
-            from app.catalog import distance_km
             assert all(
                 distance_km(left, right) <= 5.0
                 for left, right in pairwise(route.places)
             )
 
 
-def test_new_city_catalogs_are_available_in_public_miniapp_api():
+def test_new_city_catalogs_are_available_in_public_miniapp_api(tmp_path):
     with TestClient(create_miniapp(Settings(
         bot_token="123456789:expanded-cities-tests",
-        database_path="/tmp/expanded-cities-test-nonexistent.sqlite3",
+        database_path=str(tmp_path / "catalogs.db"),
         environment="development",
     ))) as client:
         cities = client.get("/api/cities")
