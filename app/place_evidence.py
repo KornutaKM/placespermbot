@@ -189,6 +189,39 @@ EVIDENCE = (
         "на Свободы, 60, контакт и обычное расписание богослужений. "
         "Праздничные ограничения и доступ на конкретную дату уточняйте.",
     ),
+    Evidence(
+        "ulan-ude", "ulan-ude-opera", "operator_listed",
+        date(2026, 10, 11),
+        "https://uuopera.ru/contacts/",
+        "Бурятский театр оперы и балета указывает Ленина, 51 "
+        "и часы работы кассы. Режим кассы не подтверждает вход "
+        "в зрительный зал; наличие билетов уточняйте отдельно.",
+    ),
+    Evidence(
+        "ulan-ude", "ulan-ude-history-museum", "operator_listed",
+        date(2026, 10, 11),
+        ("https://catalog.muzeyrb.ru/listing/"
+         "музей-истории-бурятии-имени-м-н-хангал/"),
+        "Национальный музей Бурятии указывает Музей истории имени "
+        "М. Н. Хангалова на Профсоюзной, 29. Режим работы "
+        "и экскурсионные условия на дату визита уточняйте.",
+    ),
+    Evidence(
+        "ulan-ude", "ulan-ude-art-museum", "operator_listed",
+        date(2026, 10, 11),
+        "https://catalog.muzeyrb.ru/listing/художественный-музей/",
+        "Каталог Национального музея Бурятии подтверждает "
+        "Художественный музей Сампилова на Куйбышева, 29. "
+        "Наличие конкретных экспозиций и билетов уточняйте.",
+    ),
+    Evidence(
+        "ulan-ude", "ulan-ude-ethnographic", "operator_listed",
+        date(2026, 10, 11),
+        "https://xn--80akfjmebi8an4c6c.xn--p1ai/",
+        "Сайт этнографического музея подтверждает Верхнюю Берёзовку, 17б, "
+        "экспозиционные комплексы, сведения для посетителей и маршрут "
+        "автобуса № 37. Время входа и сезонный доступ уточняйте.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(
