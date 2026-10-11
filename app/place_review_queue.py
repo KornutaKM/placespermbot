@@ -161,6 +161,9 @@ def build_review_queue(
             "disposition": (
                 "independent evidence needed; do not delete automatically"
                 if signal in CRITICAL_SIGNALS | MISSING_SIGNALS else
+                "verify POI coordinates and route stop independently; "
+                "do not assume the attraction relocated"
+                if signal in LOCATION_SIGNALS else
                 "retry URL and find alternate source; do not interpret as closure"
             ),
         })
