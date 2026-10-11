@@ -16,7 +16,7 @@ from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
 from app.catalog import list_catalogs
@@ -41,9 +41,31 @@ def classify_url(url: str) -> tuple[str, str, str]:
     return "web", "page", url
 
 
+def http_transport_url(url: str) -> str:
+    """Percent-encode IRI paths/queries; don't treat Unicode URLs as dead sites."""
+    parts = urlsplit(url)
+    if (
+        parts.scheme != "https"
+        or not parts.hostname
+        or parts.username is not None
+        or parts.password is not None
+    ):
+        raise ValueError("Probe source must be a public HTTPS URL")
+    hostname = parts.hostname.encode("idna").decode("ascii")
+    if ":" in hostname:
+        hostname = f"[{hostname}]"
+    if parts.port is not None:
+        hostname += f":{parts.port}"
+    # Existing percent escapes must not be encoded again. A fragment is local
+    # browser state and must never be part of an outbound HTTP request.
+    path = quote(parts.path, safe="/%:@!$&'()*+,;=-._~")
+    query = quote(parts.query, safe="/%:@!$&'()*+,;=?-._~")
+    return urlunsplit((parts.scheme, hostname, path, query, ""))
+
+
 def http_request(url: str, *, timeout: float, method: str = "GET"):
     request = Request(
-        url,
+        http_transport_url(url),
         method=method,
         headers={
             "User-Agent": USER_AGENT,
@@ -68,6 +90,7 @@ def _status(code: int, kind: str) -> str:
 def probe_page(url: str, *, timeout: float = 12) -> dict:
     """URL-level availability only. Treat 403/5xx and timeouts as inconclusive."""
     try:
+        transport_url = http_transport_url(url)
         try:
             status, final, _ = http_request(url, timeout=timeout, method="HEAD")
             if status == 405:
@@ -84,7 +107,7 @@ def probe_page(url: str, *, timeout: float = 12) -> dict:
         return {
             "signal": _status(status, "web"),
             "http_status": status,
-            "redirected_to": final if final != url else None,
+            "redirected_to": final if final not in (url, transport_url) else None,
         }
     except HTTPError as exc:
         return {
