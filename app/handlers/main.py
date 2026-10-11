@@ -101,7 +101,6 @@ from app.saved_routes import (
 )
 from app.search_ui import search_not_found_text, search_prompt, search_results_text
 from app.similarity import find_similar_places
-from app.top_city_coverage import coverage_summary
 from app.storage import (
     CompletedRoutesRepository,
     DismissedRepository,
@@ -110,6 +109,7 @@ from app.storage import (
     SavedRoutesRepository,
     VisitedRepository,
 )
+from app.top_city_coverage import coverage_summary
 from app.user_data_controls import (
     UserDataControlsRepository,
     bound_city_slug,
