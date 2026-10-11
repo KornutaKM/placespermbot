@@ -12,7 +12,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.catalog import CityCatalog, distance_km
-from app.domain import GeneratedRoute
+from app.domain import GeneratedRoute, Place
 from app.maps import google_maps_route_links
 from app.planner import (
     INTEREST_LABELS,
@@ -55,6 +55,23 @@ class SaveEditedRouteRequest(RouteEditRequest):
     expected_route_id: str = Field(
         min_length=16, max_length=16, pattern=r"^[0-9a-f]{16}$"
     )
+
+
+class RouteAlternativesRequest(RouteEditRequest):
+    stop_index: int = Field(ge=0, lt=32)
+
+
+class RouteReplacementRequest(RouteAlternativesRequest):
+    candidate_slug: str = Field(min_length=1, max_length=120)
+
+
+class SaveReplacedRouteRequest(RouteReplacementRequest):
+    expected_route_id: str = Field(
+        min_length=16, max_length=16, pattern=r"^[0-9a-f]{16}$"
+    )
+
+
+MAX_ALTERNATIVES = 8
 
 
 def build_miniapp_route(
@@ -106,23 +123,102 @@ def edited_miniapp_route(
     ):
         raise ValueError("Unavailable route stop")
 
-    total_minutes = sum(place.visit_minutes for place in places)
+    return _validated_route(
+        body.interest, body.budget_minutes, places
+    )
+
+
+def _validated_route(
+    interest: str, budget_minutes: int, places: tuple[Place, ...],
+) -> GeneratedRoute:
+    if not places:
+        raise ValueError("At least one stop must remain")
+    if len({place.slug for place in places}) != len(places):
+        raise ValueError("Duplicate route stops are not allowed")
+    if any(
+        not is_route_stop_available(place) or place.visit_minutes <= 0
+        for place in places
+    ):
+        raise ValueError("Unavailable route stop")
+    minutes = sum(place.visit_minutes for place in places)
     distance = 0.0
     for left, right in pairwise(places):
-        leg_km = distance_km(left, right)
-        if leg_km > MAX_GENERATED_WALK_LEG_KM:
+        leg = distance_km(left, right)
+        if leg > MAX_GENERATED_WALK_LEG_KM:
             raise ValueError("Walking leg exceeds the safe 5 km straight-line bound")
-        total_minutes += ceil(leg_km / WALKING_SPEED_KMH * 60)
-        distance += leg_km
-    if total_minutes > body.budget_minutes:
+        minutes += ceil(leg / WALKING_SPEED_KMH * 60)
+        distance += leg
+    if minutes > budget_minutes:
         raise ValueError("Edited route exceeds the selected time budget")
     return GeneratedRoute(
-        interest=body.interest,
-        budget_minutes=body.budget_minutes,
-        estimated_minutes=total_minutes,
+        interest=interest,
+        budget_minutes=budget_minutes,
+        estimated_minutes=minutes,
         distance_km=round(distance, 1),
         places=places,
     )
+
+
+def alternative_routes(
+    catalog: CityCatalog,
+    body: RouteAlternativesRequest,
+    *,
+    excluded_slugs: tuple[str, ...] = (),
+) -> tuple[tuple[Place, GeneratedRoute], ...]:
+    """Shortlist server-verified substitutions outside the canonical route."""
+    original = edited_miniapp_route(
+        catalog, body, excluded_slugs=excluded_slugs
+    )
+    if body.stop_index >= len(original.places):
+        raise ValueError("Invalid stop index")
+    baseline = build_miniapp_route(
+        catalog, body, excluded_slugs=excluded_slugs
+    )
+    if baseline is None:
+        raise ValueError("The original route is no longer available")
+    baseline_slugs = {place.slug for place in baseline.places}
+    excluded = set(excluded_slugs) if body.exclude_visited else set()
+    previous = original.places[body.stop_index]
+    proposals = []
+    for candidate in catalog.places:
+        if candidate.slug in baseline_slugs or candidate.slug in excluded:
+            continue
+        if not is_route_stop_available(candidate) or candidate.visit_minutes <= 0:
+            continue
+        revised_places = list(original.places)
+        revised_places[body.stop_index] = candidate
+        try:
+            revised = _validated_route(
+                body.interest, body.budget_minutes, tuple(revised_places)
+            )
+        except ValueError:
+            continue
+        rank = (
+            int(candidate.category != previous.category),
+            distance_km(candidate, previous),
+            abs(candidate.visit_minutes - previous.visit_minutes),
+            candidate.slug,
+        )
+        proposals.append((rank, candidate, revised))
+    proposals.sort(key=lambda item: item[0])
+    return tuple(
+        (candidate, route)
+        for _, candidate, route in proposals[:MAX_ALTERNATIVES]
+    )
+
+
+def replaced_miniapp_route(
+    catalog: CityCatalog,
+    body: RouteReplacementRequest,
+    *,
+    excluded_slugs: tuple[str, ...] = (),
+) -> GeneratedRoute:
+    for candidate, route in alternative_routes(
+        catalog, body, excluded_slugs=excluded_slugs
+    ):
+        if candidate.slug == body.candidate_slug:
+            return route
+    raise ValueError("Candidate is not among safe suggested alternatives")
 
 
 def route_preview(catalog: CityCatalog, route: GeneratedRoute) -> dict:
