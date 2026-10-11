@@ -24,6 +24,8 @@ jobs:
         run: python -m app.catalog_audit
       - name: Release catalog metadata consistency
         run: python -m app.release_consistency --check
+      - name: Top-100 population coverage contract
+        run: python -m app.top_city_coverage
       - name: Catalog coverage report
         run: |
           python -m app.catalog_coverage --format json > catalog-coverage.json
