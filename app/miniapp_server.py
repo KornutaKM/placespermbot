@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from app.catalog import get_catalog, has_catalog
 from app.catalog_service import CatalogService
+from app.city_discovery import DiscoveryCategory, discover_places
 from app.config import Settings, get_settings
 from app.maps import google_maps_place_url, google_maps_route_links
 from app.miniapp_auth import InvalidTelegramInitData, validate_init_data
@@ -108,6 +109,19 @@ def create_miniapp(settings: Settings | None = None) -> FastAPI:
                 for city in cities.available_catalogs()
             ]
         }
+
+    @app.get("/api/discover")
+    async def discover_catalog_places(
+        q: str = Query(min_length=2, max_length=80),
+        category: DiscoveryCategory = "all",
+        offset: int = Query(default=0, ge=0, le=1000),
+        limit: int = Query(default=12, ge=1, le=30),
+    ):
+        """Public catalog search. Does not read or modify private user data."""
+        try:
+            return discover_places(q, category=category, offset=offset, limit=limit)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     @app.get("/api/catalogs/{city_slug}")
     async def city_catalog(city_slug: str):

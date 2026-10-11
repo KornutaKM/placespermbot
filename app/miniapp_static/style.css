@@ -156,3 +156,18 @@
 .builder-replacement-notice{margin:11px 0;padding:12px;border-radius:12px;background:#e8f7ed;color:#1a7650;font-size:11px;line-height:1.55}
 @media(min-width:600px){.screen{padding:22px 30px 40px}.hero{min-height:275px}.quick-grid{grid-template-columns:repeat(4,1fr)}.quick-card{min-height:165px}.places-list,.routes-list{grid-template-columns:repeat(2,1fr)}.place-visual{flex-basis:120px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* MVP-124: cross-city discovery and searchable city chooser. */
+.discovery-entry{display:flex;justify-content:space-between;align-items:center;gap:14px;text-align:left;width:100%;border:1px solid #dae4fa;background:#eaf1ff;border-radius:17px;padding:15px 17px;margin:14px 0 0;color:#2448a8}
+.discovery-entry strong{font-size:14px;flex:1}.discovery-entry span{font-size:11px;max-width:45%;line-height:1.5}
+.discovery-list{display:grid;gap:12px;margin:10px 0}
+.discovery-result{border:1px solid var(--line);border-radius:18px;background:var(--surface);padding:17px;box-shadow:var(--shadow)}
+.discovery-city{display:inline-block;color:var(--blue);font-size:11px;font-weight:850;margin-bottom:9px}
+.discovery-place{display:flex;align-items:center;gap:11px}
+.discovery-icon{flex:none;width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:#edf2ff;font-size:24px}
+.discovery-place strong{display:block;font-size:15px;line-height:1.35}
+.discovery-place small{display:block;color:var(--muted);margin-top:5px;font-size:11px;line-height:1.5}
+.discovery-result p{color:#53627a;font-size:12px;line-height:1.55}
+.discovery-result button{border:0;background:#ebf1ff;color:var(--blue);padding:9px 12px;border-radius:10px;font-size:12px;font-weight:750}
+#city-choices{max-height:55dvh;overflow:auto}
+@media(max-width:420px){.discovery-entry{flex-direction:column;align-items:flex-start}.discovery-entry span{max-width:none}}
