@@ -23,9 +23,12 @@ REPORT = Path("docs/osm-seed-research.md")
 USER_AGENT = "PlacesRussiaBot/1.0 (https://github.com/KornutaKM/placespermbot; research snapshot)"
 NOMINATIM = "https://nominatim.openstreetmap.org/search"
 OVERPASS = (
-    "https://overpass.kumi.systems/api/interpreter",
-    "https://overpass.private.coffee/api/interpreter",
+    # Global-data instances, documented in the OpenStreetMap Overpass wiki.
+    # The retired overpass.kumi.systems address is intentionally excluded.
+    "https://overpass.osm.jp/api/interpreter",
     "https://overpass-api.de/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 )
 RADIUS = 9000
 MIN_REQUEST_GAP_SECONDS = 2.0
@@ -291,14 +294,20 @@ def valid_city(places: list, meta: dict) -> list[str]:
         "family": [p for p in places if "с детьми" in p["tags"]],
     }
     for theme, selected in groups.items():
+        other = places if theme == "overview" else [
+            p for p in places if p not in selected
+        ]
+        within_reach = lambda a, b: 0.08 <= distance_km(  # noqa: E731
+            a["latitude"], a["longitude"], b["latitude"], b["longitude"]
+        ) <= 5.0
         has_pair = any(
-            0.08 <= distance_km(
-                a["latitude"], a["longitude"], b["latitude"], b["longitude"]
-            ) <= 5.0
+            within_reach(a, b)
             for i, a in enumerate(selected) for b in selected[i + 1:]
+        ) or any(
+            within_reach(a, b) for a in selected for b in other if a is not b
         )
         if not has_pair:
-            issues.append(f"{theme}: no two distinct mapped stops within 5 km")
+            issues.append(f"{theme}: no themed mapped stop close to other POIs")
     return issues
 
 def seed_one(name: str, slug: str) -> dict:
