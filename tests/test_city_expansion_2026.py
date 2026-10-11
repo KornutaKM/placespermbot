@@ -180,3 +180,38 @@ def test_kursk_archaeology_and_theatre_map_pins_match_named_city_venues():
     ).place_slugs
     assert city.place_by_slug("kursk-pushkin") is not None
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_kursk_memorial_alley_identity_and_dated_public_space_caveats():
+    city = get_catalog("kursk")
+    memorial = city.place_by_slug("kursk-pobeda")
+    alley = city.place_by_slug("kursk-heroes")
+    garden = city.place_by_slug("kursk-city-garden")
+    pioneers = city.place_by_slug("kursk-park-pioneers")
+    street = city.place_by_slug("kursk-street-lenin")
+    square = city.place_by_slug("kursk-red-square")
+    assert all((memorial, alley, garden, pioneers, street, square))
+    memorial_url = (
+        "https://bitva.kursk.ru/routes/"
+        "peshekhodnaya-ekskursiya-po-memorialnomu-kompleksu-kurskaya-duga/"
+    )
+    assert memorial.source.url == alley.source.url == memorial_url
+    assert alley.title == "Аллея военной техники мемориала «Курская дуга»"
+    assert "проектируемой Аллеей Героев" in alley.summary
+    assert "24 сентября 2026" in pioneers.summary
+    assert "временном ограничении" in pioneers.summary
+    assert pioneers.source.url == "https://gi-kursk.ru/news/city/92519/"
+    assert "октябре 2026" in garden.summary
+    assert "может быть ограничена" in garden.summary
+    assert "утверждён проект" in street.summary
+    assert "не доказывает начала работ" in street.summary
+    assert square.source.url == (
+        "https://bitva.kursk.ru/routes/"
+        "marshrut-po-severnomu-fasu-kurskoy-dugi/"
+    )
+    assert all(p.source.url != "https://www.culture.ru/s/kursk/"
+               for p in city.places)
+    assert alley.source.url != street.source.url
+    assert "kursk-heroes" in {p.slug for p in city.places}
+    assert "kursk-heroes" in city.route_by_slug("kursk-walk").place_slugs
+    assert not hard_route_findings(inspect_routes(city))
