@@ -445,3 +445,38 @@ def test_ulan_ude_datsan_and_cathedral_are_mapped_to_real_buildings():
         as_of=date(2026, 10, 11)
     )["status"] == "not_independently_checked"
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_ulan_ude_lenin_head_and_tsar_gates_pins_are_place_specific():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("ulan-ude")
+    head = city.place_by_slug("ulan-ude-lenin-head")
+    gates = city.place_by_slug("ulan-ude-tsar-gates")
+    assert head is not None and gates is not None
+    assert (head.latitude, head.longitude) == (51.834827, 107.585206)
+    assert head.district == "Площадь Советов"
+    assert head.source.url == (
+        "https://xn--80aabjhkiabkj9b0amel2g.xn--p1ai/post/"
+        "pamyatnik-leninu-4378"
+    )
+    assert (gates.latitude, gates.longitude) == (51.832567, 107.58415)
+    assert gates.district == "Ленина, 50"
+    assert gates.source.url == (
+        "https://www.culture.ru/institutes/26891/"
+        "triumfalnaya-arka-carskie-vorota-v-ulan-ude"
+    )
+    assert "Пин ориентировочный" in gates.summary
+    assert "2006 году" in gates.summary
+    for place in (head, gates):
+        assert place.source.checked_at == date(2026, 10, 11)
+        evidence = public_evidence(
+            "ulan-ude", place.slug, as_of=date(2026, 10, 11)
+        )
+        assert evidence["status"] == "not_independently_checked"
+    assert not hard_route_findings(inspect_routes(city))
+    intro = city.route_by_slug("ulan-ude-first")
+    assert "ulan-ude-lenin-head" in intro.place_slugs
+    assert "ulan-ude-tsar-gates" in intro.place_slugs
