@@ -477,8 +477,6 @@ def test_ulan_ude_lenin_head_and_tsar_gates_pins_are_place_specific():
         )
         assert evidence["status"] == "not_independently_checked"
     assert not hard_route_findings(inspect_routes(city))
-    assert "ulan-ude-lenin-head" in city.route_by_slug(
-        "ulan-ude-historic"
-    ).place_slugs or "ulan-ude-lenin-head" in {
-        p.slug for p in city.places
-    }
+    intro = city.route_by_slug("ulan-ude-first")
+    assert "ulan-ude-lenin-head" in intro.place_slugs
+    assert "ulan-ude-tsar-gates" in intro.place_slugs
