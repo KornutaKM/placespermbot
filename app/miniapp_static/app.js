@@ -11,7 +11,7 @@ const state = {
   visitPending: new Set(), routePending: new Set(),
   builder: { budget_minutes: 240, interest: "classic", exclude_visited: false,
     result: null, busy: false, saving: false, saved: false, version: 0,
-    showMap: false, mapController: null }
+    showMap: false, mapController: null, baseRouteId: null, edited: false }
 };
 const screen = document.getElementById("screen");
 const sheetRoot = document.getElementById("sheet-root");
@@ -667,17 +667,33 @@ function updateBuilderOption(key, value) {
   state.builder.version++;
   state.builder.result = null;
   state.builder.saved = false;
+  state.builder.baseRouteId = null;
+  state.builder.edited = false;
   state.builder.showMap = false;
   renderBuilder();
 }
 
 function builderResultMarkup(route, saved) {
   if (!route) return "";
+  const controlsEnabled = !state.builder.busy && !state.builder.saving &&
+    !state.builder.saved;
   const stops = route.places.map((place, index) =>
     '<li><b>' + (index + 1) + '</b><span><strong>' +
     escapeText(place.emoji) + ' ' + escapeText(place.title) +
     '</strong><small>' + escapeText(place.district) + ' · осмотр ~' +
-    escapeText(place.visit_minutes) + ' мин</small></span></li>'
+    escapeText(place.visit_minutes) + ' мин</small></span>' +
+    '<div class="builder-stop-actions">' +
+    '<button type="button" data-builder-move-up="' + index +
+    '" aria-label="Переместить выше: ' + escapeText(place.title) + '"' +
+    (!controlsEnabled || index === 0 ? " disabled" : "") + '>↑</button>' +
+    '<button type="button" data-builder-move-down="' + index +
+    '" aria-label="Переместить ниже: ' + escapeText(place.title) + '"' +
+    (!controlsEnabled || index === route.places.length - 1 ? " disabled" : "") +
+    '>↓</button>' +
+    '<button type="button" class="builder-stop-remove" data-builder-remove="' +
+    index + '" aria-label="Удалить остановку: ' + escapeText(place.title) + '"' +
+    (!controlsEnabled || route.places.length < 2 ? " disabled" : "") +
+    '>×</button></div></li>'
   ).join("");
   const links = route.map_links.map((link, index) =>
     '<a class="builder-map-link" target="_blank" rel="noopener noreferrer" href="' +
@@ -700,6 +716,11 @@ function builderResultMarkup(route, saved) {
       '<div><strong>' + escapeText(minutes) + '</strong><span>' +
       escapeText(label) + '</span></div>'
     ).join("") + '</div>' +
+    '<div class="builder-edit-head"><strong>✎ Настроить остановки</strong>' +
+    '<span>↑ ↓ порядок · × убрать</span></div>' +
+    (state.builder.edited
+      ? '<p class="builder-edited-note">Маршрут изменён и пересчитан. ' +
+        'Можно сохранить как отдельный вариант.</p>' : "") +
     '<ol class="builder-stops">' + stops + '</ol>' +
     '<button class="builder-map-toggle" type="button" ' +
     'data-builder-map-toggle="yes">' +
@@ -802,6 +823,8 @@ async function buildPreview() {
   b.busy = true;
   b.saved = false;
   b.result = null;
+  b.baseRouteId = null;
+  b.edited = false;
   b.showMap = false;
   const version = ++b.version;
   renderBuilder();
@@ -816,12 +839,73 @@ async function buildPreview() {
       throw new Error("Invalid route preview");
     }
     b.result = preview;
+    b.baseRouteId = preview.route_id;
+    b.edited = false;
   } catch (_) {
     if (state.catalog.slug === city && b.version === version) {
       notify("Не удалось построить маршрут. Выберите другой интерес или время.");
     }
   } finally {
     if (b.version === version) {
+      b.busy = false;
+      if (state.tab === "builder" && state.catalog.slug === city) renderBuilder();
+    }
+  }
+}
+
+async function editBuilderStop(kind, rawIndex) {
+  const b = state.builder;
+  if (state.tab !== "builder" || !b.result ||
+    b.busy || b.saving || b.saved || !b.baseRouteId) return;
+  const index = Number(rawIndex);
+  const stops = b.result.places.map(place => place.slug);
+  if (!Number.isInteger(index) || index < 0 || index >= stops.length) return;
+  if (kind === "remove") {
+    if (stops.length < 2) return;
+    stops.splice(index, 1);
+  } else if (kind === "up") {
+    if (index === 0) return;
+    [stops[index - 1], stops[index]] = [stops[index], stops[index - 1]];
+  } else if (kind === "down") {
+    if (index === stops.length - 1) return;
+    [stops[index + 1], stops[index]] = [stops[index], stops[index + 1]];
+  } else {
+    return;
+  }
+  const city = state.catalog.slug;
+  b.busy = true;
+  const version = ++b.version;
+  renderBuilder();
+  try {
+    const preview = await api(
+      "/api/routes/" + encodeURIComponent(city) + "/edit",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          ...builderBody(), base_route_id: b.baseRouteId,
+          place_slugs: stops
+        })
+      }
+    );
+    if (state.catalog.slug !== city || state.builder !== b ||
+      b.version !== version) return;
+    if (preview.city_slug !== city || !preview.route_id ||
+      !Array.isArray(preview.places) || !Array.isArray(preview.map_links) ||
+      preview.places.map(place => place.slug).join("|") !== stops.join("|")) {
+      throw new Error("Invalid edited preview");
+    }
+    b.result = preview;
+    b.edited = true;
+    b.saved = false;
+    b.showMap = false;
+    notify("Маршрут пересчитан");
+  } catch (_) {
+    if (state.catalog.slug === city && state.builder === b &&
+      b.version === version) {
+      notify("Изменение недоступно: проверьте время или расстояние перехода (до 5 км).");
+    }
+  } finally {
+    if (state.builder === b && b.version === version) {
       b.busy = false;
       if (state.tab === "builder" && state.catalog.slug === city) renderBuilder();
     }
@@ -842,14 +926,17 @@ async function saveBuiltRoute() {
   b.saving = true;
   renderBuilder();
   try {
+    const endpoint = b.edited ? "/save-edited" : "/save";
+    const payload = {
+      ...builderBody(), expected_route_id: expectedId
+    };
+    if (b.edited) {
+      payload.base_route_id = b.baseRouteId;
+      payload.place_slugs = b.result.places.map(place => place.slug);
+    }
     const reply = await api(
-      "/api/me/routes/" + encodeURIComponent(city) + "/save",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          ...builderBody(), expected_route_id: expectedId
-        })
-      }
+      "/api/me/routes/" + encodeURIComponent(city) + endpoint,
+      { method: "POST", body: JSON.stringify(payload) }
     );
     if (state.catalog.slug !== city || b.version !== version) return;
     if (!reply.saved || reply.city_slug !== city || reply.route_id !== expectedId) {
@@ -861,6 +948,8 @@ async function saveBuiltRoute() {
   } catch (_) {
     if (state.catalog.slug === city && b.version === version) {
       b.result = null;
+      b.baseRouteId = null;
+      b.edited = false;
       notify("Маршрут изменился или сохранение недоступно. Постройте его заново.");
     }
   } finally {
@@ -1027,7 +1116,7 @@ async function loadCity(slug) {
   state.builder = { budget_minutes: 240, interest: "classic",
     exclude_visited: false, result: null, busy: false, saving: false,
     saved: false, version: state.builder.version + 1,
-    showMap: false, mapController: null };
+    showMap: false, mapController: null, baseRouteId: null, edited: false };
   if (state.mapController) {
     state.mapController.destroy();
     state.mapController = null;
@@ -1078,6 +1167,18 @@ screen.addEventListener("click", event => {
   }
   if (trigger.dataset.guideHistory) {
     openCompletedGuideRoute(trigger.dataset.guideHistory);
+    return;
+  }
+  if (trigger.dataset.builderMoveUp !== undefined) {
+    void editBuilderStop("up", trigger.dataset.builderMoveUp);
+    return;
+  }
+  if (trigger.dataset.builderMoveDown !== undefined) {
+    void editBuilderStop("down", trigger.dataset.builderMoveDown);
+    return;
+  }
+  if (trigger.dataset.builderRemove !== undefined) {
+    void editBuilderStop("remove", trigger.dataset.builderRemove);
     return;
   }
   if (trigger.dataset.builderBudget) {
