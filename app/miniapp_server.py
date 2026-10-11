@@ -31,6 +31,7 @@ from app.miniapp_route_builder import (
     route_preview,
 )
 from app.route_completion import complete_saved_route
+from app.top_city_coverage import coverage_summary
 from app.storage import (
     CompletedRoutesRepository,
     FavoritesRepository,
@@ -122,6 +123,11 @@ def create_miniapp(settings: Settings | None = None) -> FastAPI:
             return discover_places(q, category=category, offset=offset, limit=limit)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.get("/api/city-coverage")
+    async def top_100_city_coverage():
+        # Public metadata only. Pending slugs must not resolve as city catalogs.
+        return coverage_summary()
 
     @app.get("/api/catalogs/{city_slug}")
     async def city_catalog(city_slug: str):
