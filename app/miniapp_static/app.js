@@ -9,6 +9,8 @@ const state = {
   mapController: null, mapFilter: "all", mapSearch: "", mapSelected: null,
   guide: null, guideLoaded: false, guideSection: "favorites",
   visitPending: new Set(), routePending: new Set(),
+  discovery: { query: "", category: "all", places: [], total: 0,
+    hasMore: false, loading: false, error: false, version: 0, timer: null },
   builder: { budget_minutes: 240, interest: "classic", exclude_visited: false,
     result: null, busy: false, saving: false, saved: false, version: 0,
     showMap: false, mapController: null, baseRouteId: null, edited: false,
@@ -106,13 +108,148 @@ function renderHome() {
     '<button class="quick-card green" type="button" data-open="builder"><span class="symbol">〽</span><strong>Свой маршрут ↗</strong><small>Время, интересы и остановки</small></button>' +
     '<button class="quick-card peach" type="button" data-category="free"><span class="symbol">✳</span><strong>Бесплатно ↗</strong><small>Город без лишних расходов</small></button>' +
     '<button class="quick-card purple" type="button" data-open="guide"><span class="symbol">♡</span><strong>Мой гид ↗</strong><small>Избранное, прогулки и история</small></button>' +
-    '</div><div class="stats"><div class="stat"><strong>' +
+    '</div><button type="button" class="discovery-entry" data-open="discover">' +
+    '<strong>Поиск по всей России ↗</strong><span>Достопримечательности всех ' +
+    state.cities.length + ' городов в одном поиске</span></button>' +
+    '<div class="stats"><div class="stat"><strong>' +
     catalog.places.length + '</strong><span>мест</span></div><div class="stat"><strong>' +
     catalog.routes.length + '</strong><span>маршрутов</span></div><div class="stat"><strong>' +
     state.cities.length + '</strong><span>городов</span></div></div>' +
     '<div class="section-title"><div><h2>Открой сейчас</h2><p class="tiny">Начни знакомство с городом</p></div>' +
     '<button type="button" data-open="places">Все места →</button></div>' +
     '<div class="places-list">' + topPlaces.map(placeCard).join("") + '</div>';
+}
+
+
+function drawDiscoveryResults() {
+  if (state.tab !== "discover") return;
+  const d = state.discovery;
+  const counter = document.getElementById("discovery-count");
+  const results = document.getElementById("discovery-results");
+  if (!counter || !results) return;
+  counter.textContent = d.loading ? "Поиск…" : d.total + " мест";
+  if (d.query.trim().length < 2) {
+    results.innerHTML = '<div class="empty"><strong>Откройте всю Россию</strong>' +
+      'Введите минимум два символа названия, района, тега или города.</div>';
+    return;
+  }
+  if (d.error) {
+    results.innerHTML = '<div class="empty"><strong>Ошибка поиска</strong>' +
+      'Проверьте соединение и попробуйте ещё раз.</div>' +
+      '<button type="button" class="primary" data-discover-retry="true">Повторить поиск</button>';
+    return;
+  }
+  const cards = d.places.map(place =>
+    '<article class="discovery-result">' +
+    '<span class="discovery-city">' + escapeText(place.city_name) + '</span>' +
+    '<div class="discovery-place"><span class="discovery-icon">' +
+    escapeText(place.emoji) + '</span><div><strong>' +
+    escapeText(place.title) + '</strong><small>' +
+    escapeText(place.category_label) + ' · ' + escapeText(place.district) +
+    ' · ~' + escapeText(place.visit_minutes) + ' мин</small></div></div>' +
+    '<p>' + escapeText(place.summary) + '</p>' +
+    '<button type="button" data-discover-city="' + escapeText(place.city_slug) +
+    '" data-discover-place="' + escapeText(place.place_slug) +
+    '">Открыть место →</button></article>'
+  ).join("");
+  results.innerHTML = '<div class="discovery-list">' + cards + '</div>' +
+    (d.loading ? '<div class="loading">Ищем по каталогам…</div>' : "") +
+    (!d.loading && d.places.length === 0
+      ? '<div class="empty"><strong>Совпадений нет</strong>Попробуйте другой запрос или категорию.</div>'
+      : "") +
+    (!d.loading && d.hasMore
+      ? '<button class="primary" type="button" data-discover-more="true">Показать ещё</button>'
+      : "");
+}
+
+async function requestDiscovery(more = false) {
+  const d = state.discovery;
+  const query = d.query.trim();
+  if (d.loading || query.length < 2) return;
+  const offset = more ? d.places.length : 0;
+  const version = ++d.version;
+  d.loading = true;
+  d.error = false;
+  if (!more) {
+    d.places = [];
+    d.total = 0;
+    d.hasMore = false;
+  }
+  drawDiscoveryResults();
+  try {
+    const result = await api("/api/discover?q=" + encodeURIComponent(query) +
+      "&category=" + encodeURIComponent(d.category) +
+      "&offset=" + offset + "&limit=12");
+    if (d.version !== version) return;
+    if (!Array.isArray(result.places) || result.query !== query ||
+      result.category !== d.category || result.offset !== offset ||
+      !Number.isInteger(result.total) || typeof result.has_more !== "boolean") {
+      throw new Error("Invalid discovery response");
+    }
+    d.places = more ? d.places.concat(result.places) : result.places;
+    d.total = result.total;
+    d.hasMore = result.has_more;
+  } catch (_) {
+    if (d.version === version) d.error = true;
+  } finally {
+    if (d.version === version) {
+      d.loading = false;
+      drawDiscoveryResults();
+    }
+  }
+}
+
+function renderDiscover() {
+  const d = state.discovery;
+  const categories = [
+    ["all", "Все"], ["sights", "Достопримечательности"],
+    ["museums", "Музеи"], ["parks", "Парки"],
+    ["unusual", "Необычное"], ["free", "Бесплатно"],
+    ["family", "С детьми"]
+  ];
+  screen.innerHTML =
+    '<div class="page-heading"><div><h1>По всей России</h1>' +
+    '<p>Поиск по ' + state.cities.length +
+    ' городам без смены текущего города</p></div>' +
+    '<span class="counter" id="discovery-count">0 мест</span></div>' +
+    '<label class="search"><span>⌕</span><input id="discovery-query" type="search" ' +
+    'autocomplete="off" aria-label="Поиск по всем городам" ' +
+    'placeholder="Например, кремль, музей, Казань…"></label>' +
+    '<div class="chips" aria-label="Категория поиска">' +
+    categories.map(([key, name]) => '<button class="chip ' +
+      (d.category === key ? "active" : "") + '" type="button" ' +
+      'data-discover-category="' + key + '">' + name + '</button>').join("") +
+    '</div><div id="discovery-results"></div>' +
+    '<p class="sheet-caption">Сведения из городских каталогов. Перед визитом проверяйте часы и доступность.</p>';
+  const input = document.getElementById("discovery-query");
+  input.value = d.query;
+  input.addEventListener("input", event => {
+    d.query = event.target.value;
+    ++d.version;
+    d.loading = false;
+    d.error = false;
+    d.places = [];
+    d.total = 0;
+    d.hasMore = false;
+    clearTimeout(d.timer);
+    drawDiscoveryResults();
+    if (d.query.trim().length >= 2) {
+      d.timer = setTimeout(() => void requestDiscovery(), 250);
+    }
+  });
+  drawDiscoveryResults();
+}
+
+async function openDiscoveryPlace(citySlug, placeSlug) {
+  if (!state.cities.some(city => city.slug === citySlug)) return;
+  if (state.catalog?.slug !== citySlug ||
+      (initData && state.savedCity !== citySlug)) {
+    const success = await chooseCity(citySlug);
+    if (!success) return;
+  }
+  if (state.catalog?.slug !== citySlug) return;
+  navigate("places");
+  openPlace(placeSlug);
 }
 
 function drawPlaceResults() {
@@ -1147,6 +1284,7 @@ function navigate(tab) {
   else if (tab === "guide") renderGuide();
   else if (tab === "builder") renderBuilder();
   else if (tab === "favorites") renderFavorites();
+  else if (tab === "discover") renderDiscover();
   else renderRoutes();
   window.scrollTo({ top: 0, behavior: "instant" });
 }
@@ -1221,17 +1359,28 @@ function openRoute(slug) {
 }
 
 function openCities() {
-  const choices = state.cities.map(city =>
-    '<button type="button" class="city-choice ' +
-    (state.catalog?.slug === city.slug ? "active" : "") +
-    '" data-city="' + escapeText(city.slug) + '">' +
-    escapeText(city.name) + '</button>'
-  ).join("");
   openSheet('<div class="sheet-head"><div><h2>Выберите город</h2>' +
     '<p>Открывайте места и маршруты: ' + state.cities.length + ' городов</p></div>' +
     '<button class="sheet-close" type="button" data-close aria-label="Закрыть">×</button></div>' +
     (!initData ? '<div class="notice">Без Telegram выбор действует только в этом просмотре.</div>' : "") +
-    '<div class="city-list">' + choices + '</div>');
+    '<label class="search"><span>⌕</span><input id="city-filter" type="search" ' +
+    'autocomplete="off" aria-label="Поиск города" placeholder="Найти город…"></label>' +
+    '<div class="city-list" id="city-choices"></div>');
+  const field = document.getElementById("city-filter");
+  const redraw = () => {
+    const query = field.value.trim().toLocaleLowerCase("ru").replaceAll("ё", "е");
+    const matching = state.cities.filter(city =>
+      city.name.toLocaleLowerCase("ru").replaceAll("ё", "е").includes(query)
+    );
+    document.getElementById("city-choices").innerHTML = matching.length
+      ? matching.map(city => '<button type="button" class="city-choice ' +
+        (state.catalog?.slug === city.slug ? "active" : "") +
+        '" data-city="' + escapeText(city.slug) + '">' +
+        escapeText(city.name) + '</button>').join("")
+      : '<div class="empty">Город не найден</div>';
+  };
+  field.addEventListener("input", redraw);
+  redraw();
 }
 
 async function loadCity(slug) {
@@ -1274,14 +1423,41 @@ async function chooseCity(slug) {
     await loadCity(slug);
     closeSheet();
     notify(initData ? "Город сохранён" : "Город выбран для просмотра");
+    return true;
   } catch (_) {
     notify("Не удалось сохранить город. Перезапустите Mini App из Telegram.");
+    return false;
   }
 }
 
 screen.addEventListener("click", event => {
   const trigger = event.target.closest("button");
   if (!trigger) return;
+  if (trigger.dataset.discoverCity && trigger.dataset.discoverPlace) {
+    void openDiscoveryPlace(trigger.dataset.discoverCity, trigger.dataset.discoverPlace);
+    return;
+  }
+  if (trigger.dataset.discoverCategory) {
+    const d = state.discovery;
+    d.category = trigger.dataset.discoverCategory;
+    ++d.version;
+    d.loading = false;
+    clearTimeout(d.timer);
+    d.places = [];
+    d.total = 0;
+    d.hasMore = false;
+    renderDiscover();
+    if (d.query.trim().length >= 2) void requestDiscovery();
+    return;
+  }
+  if (trigger.dataset.discoverMore) {
+    void requestDiscovery(true);
+    return;
+  }
+  if (trigger.dataset.discoverRetry) {
+    void requestDiscovery();
+    return;
+  }
   if (trigger.dataset.favorite) {
     void toggleFavorite(trigger.dataset.favorite);
     return;
