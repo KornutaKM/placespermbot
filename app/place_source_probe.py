@@ -89,6 +89,32 @@ def _status(code: int, kind: str) -> str:
     return "probe_inconclusive"
 
 
+def redirect_review_signal(source_url: str, final_url: str) -> str | None:
+    """Review silently followed redirects; never infer that the venue closed.
+
+    Even a HTTP 200 response is not a valid source if it leads to an HTTP
+    downgrade, a CMS error endpoint, an unrelated domain or a generic home
+    page instead of an originally precise source article.
+    """
+    initial = urlsplit(http_transport_url(source_url))
+    final = urlsplit(final_url)
+    if final.scheme.casefold() != "https":
+        return "source_insecure_redirect_review_required"
+    last_path = final.path.rstrip("/").split("/")[-1].casefold()
+    if (
+        last_path in {"error", "404", "not-found", "notfound", "error.aspx"}
+        or "aspxerrorpath=" in final.query.casefold()
+    ):
+        return "source_error_page_review_required"
+    initial_host = (initial.hostname or "").removeprefix("www.")
+    final_host = (final.hostname or "").removeprefix("www.")
+    if initial_host != final_host:
+        return "source_cross_host_redirect_review_required"
+    if initial.path.strip("/") and not final.path.strip("/"):
+        return "source_generic_home_redirect_review_required"
+    return None
+
+
 def probe_page(url: str, *, timeout: float = 12) -> dict:
     """Reachability only: retry HEAD 403/405/501 once as GET, never 429.
 
@@ -114,11 +140,18 @@ def probe_page(url: str, *, timeout: float = 12) -> dict:
                     "probe_method": method,
                     "redirected_to": None,
                 }
+        redirected = final not in (url, transport_url)
+        base_signal = _status(status, "web")
+        signal = (
+            redirect_review_signal(url, final)
+            if redirected and base_signal == "source_reachable_not_venue_verified"
+            else None
+        )
         return {
-            "signal": _status(status, "web"),
+            "signal": signal or base_signal,
             "http_status": status,
             "probe_method": method,
-            "redirected_to": final if final not in (url, transport_url) else None,
+            "redirected_to": final if redirected else None,
         }
     except HTTPError as exc:
         return {
