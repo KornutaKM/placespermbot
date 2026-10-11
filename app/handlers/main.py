@@ -19,6 +19,7 @@ from app.catalog_context import get_current_catalog
 from app.catalog_service import CatalogService
 from app.config import get_settings
 from app.data.osm_seed_2026 import OSM_SEED_CITIES
+from app.data.wikidata_seed_2026 import WIKIDATA_SEED_CITIES
 from app.events import get_event_providers
 from app.excursions import get_excursion_providers
 from app.keyboards import (
@@ -157,7 +158,7 @@ def current_catalog() -> CityCatalog:
 
 
 def home_text(catalog: CityCatalog) -> str:
-    map_seed = catalog.slug in {city.slug for city in OSM_SEED_CITIES}
+    map_seed = catalog.slug in {city.slug for city in (*OSM_SEED_CITIES, *WIKIDATA_SEED_CITIES)}
     warning = (
         "\n\nℹ️ Точки получены из OpenStreetMap. "
         "Входы, доступность и пешеходные переходы не проверены; "
