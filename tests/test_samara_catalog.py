@@ -17,7 +17,11 @@ def test_samara_catalog_has_current_local_provenance() -> None:
     for place in city.places:
         assert 53.18 <= place.latitude <= 53.36
         assert 50.07 <= place.longitude <= 50.22
-        assert place.source.checked_at == date(2026, 10, 6)
+        assert place.source.checked_at == (
+            date(2026, 10, 11)
+            if "xn--80aaafzfb7a0bgk" in place.source.url
+            else date(2026, 10, 6)
+        )
         source = urlparse(place.source.url)
         assert source.scheme == "https"
         assert source.hostname
@@ -26,7 +30,7 @@ def test_samara_catalog_has_current_local_provenance() -> None:
 def test_samara_landmarks_use_specific_sources() -> None:
     city = catalog()
     expected_hosts = {
-        "stalin-bunker-samara": "samara.travel",
+        "stalin-bunker-samara": "xn--80aaafzfb7a0bgk.xn--p1ai",
         "alabin-museum-samara": "alabin.ru",
         "modern-museum-samara": "samaramodern.ru",
         "samara-art-museum": "artmus.ru",
