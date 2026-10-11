@@ -42,6 +42,7 @@ from app.data import (
 )
 from app.data.expansion_2026 import EXPANSION_CITIES
 from app.data.osm_seed_2026 import OSM_SEED_CITIES
+from app.data.wikidata_seed_2026 import WIKIDATA_SEED_CITIES
 from app.domain import Place, RoutePlan
 
 
@@ -141,6 +142,20 @@ CITY_MANIFESTS += tuple(
         quality=CatalogQualityProfile(12, 5, 5, 4, 5, 6, 2),
     )
     for city in OSM_SEED_CITIES
+)
+
+# Wikidata fallback snapshots are another explicit map-seed tier. Keep quality
+# minimums identical to OSM candidates; never register empty/failed records.
+CITY_MANIFESTS += tuple(
+    CityManifest(
+        slug=city.slug,
+        name=city.name,
+        category_labels=city.category_labels,
+        places=city.places,
+        routes=city.routes,
+        quality=CatalogQualityProfile(12, 5, 5, 4, 5, 6, 2),
+    )
+    for city in WIKIDATA_SEED_CITIES
 )
 
 
