@@ -171,3 +171,9 @@
 .discovery-result button{border:0;background:#ebf1ff;color:var(--blue);padding:9px 12px;border-radius:10px;font-size:12px;font-weight:750}
 #city-choices{max-height:55dvh;overflow:auto}
 @media(max-width:420px){.discovery-entry{flex-direction:column;align-items:flex-start}.discovery-entry span{max-width:none}}
+/* MVP-125: verified-format provenance in place details. */
+.source-details{border:1px solid #dce6f4;background:#f6f9ff;border-radius:14px;padding:14px 16px;margin:15px 0}
+.source-details strong{font-size:13px;color:#304566}
+.source-details p{font-size:13px;color:var(--ink);line-height:1.5;margin:7px 0}
+.source-details a{text-decoration:underline;text-underline-offset:3px;color:var(--blue);overflow-wrap:anywhere}
+.source-details small{display:block;font-size:11px;color:#586a82;line-height:1.5}
