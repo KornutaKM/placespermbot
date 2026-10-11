@@ -234,6 +234,8 @@ def seed_city(name: str, slug: str) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=59)
+    parser.add_argument("--refresh", action="store_true",
+                        help="Reclassify existing Wikidata seeds after taxonomy updates")
     args = parser.parse_args()
     if not 1 <= args.limit <= 59:
         parser.error("--limit must be 1..59")
@@ -246,7 +248,7 @@ def main() -> None:
     results = []
     for i, (name, slug) in enumerate(targets[:args.limit], 1):
         print(f"[Wikidata {i}/{min(args.limit, len(targets))}] {name}", flush=True)
-        if slug in existing:
+        if slug in existing and not args.refresh:
             item = existing[slug]
         else:
             try:
