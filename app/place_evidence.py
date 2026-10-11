@@ -74,6 +74,29 @@ EVIDENCE = (
         "статус «действующий» и адрес Александровский сад. "
         "Доступ в конкретный день и ограничения уточняйте у прихода.",
     ),
+    # This is an official regional tourist-information listing, NOT the
+    # attraction operator's own confirmation of hours or public access.
+    Evidence(
+        "omsk", "omsk-fortress", "official_tourism_listing",
+        date(2026, 10, 11),
+        "https://gotoomsk.ru/places/istoriko-kulturnyj-kompleks-omskaya-krepost/",
+        "Туристский информационный центр Омской области описывает действующий "
+        "исторический парк Омская крепость. Режим экскурсий уточняйте отдельно.",
+    ),
+    Evidence(
+        "omsk", "tobolsk-gate-omsk", "official_tourism_listing",
+        date(2026, 10, 11),
+        "https://gotoomsk.ru/places/istoriko-kulturnyj-kompleks-omskaya-krepost/",
+        "Туринфоцентр указывает Тобольские ворота как сохранившиеся подлинные "
+        "ворота крепости. Доступ к ним на сегодня отдельно не подтверждён.",
+    ),
+    Evidence(
+        "omsk", "tarsk-gate-omsk", "official_tourism_listing",
+        date(2026, 10, 11),
+        "https://gotoomsk.ru/places/istoriko-kulturnyj-kompleks-omskaya-krepost/",
+        "Туринфоцентр сообщает: Тарские ворота снесены в 1959 году и "
+        "восстановлены в 1991 году. Это реконструкция, а не исторический подлинник.",
+    ),
     Evidence(
         "yaroslavl", "yar-volkov-theatre", "operator_listed",
         date(2026, 10, 11),
@@ -127,11 +150,15 @@ def telegram_evidence_notice(
     """HTML-safe Telegram notice: source metadata != venue verified today."""
     evidence = public_evidence(city_slug, place_slug, as_of=as_of)
     status = evidence["status"]
-    if status == "operator_listed":
+    if status in {"operator_listed", "official_tourism_listing"}:
         date_text = escape(evidence["checked_on"] or "")
         evidence_link = escape(evidence["evidence_url"] or "", quote=True)
+        source_label = (
+            "сайте учреждения" if status == "operator_listed"
+            else "сайте официального туристского инфоцентра"
+        )
         return (
-            f"📋 Объект указан на сайте учреждения ({date_text}): "
+            f"📋 Объект указан на {source_label} ({date_text}): "
             f'<a href="{evidence_link}">подтверждающий источник</a>.'
             "\\n⚠️ Наличие места, часы и доступ в день посещения уточняйте."
         )
@@ -162,7 +189,7 @@ def validate_evidence(
         seen.add(key)
         if key not in known:
             errors.append(f"{key}: nonexistent or retired place")
-        if item.status != "operator_listed":
+        if item.status not in {"operator_listed", "official_tourism_listing"}:
             errors.append(f"{key}: unsupported evidence status")
         parsed = urlparse(item.evidence_url)
         if parsed.scheme != "https" or not parsed.hostname or parsed.username:
