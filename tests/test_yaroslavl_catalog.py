@@ -16,12 +16,15 @@ def test_yaroslavl_expanded_discovery_and_official_sources() -> None:
         "yar-john-baptist-tolchkov": "www.yarkremlin.ru",
         "yar-max-bogdanovich-museum": "mukmig.yaroslavl.ru",
         "yar-music-time-museum": "www.culture.ru",
-        "yar-volkov-theatre": "www.volkovteatr.ru",
+        "yar-volkov-theatre": "volkovteatr.ru",
     }
     for slug, host in sources.items():
         place = city.place_by_slug(slug)
         assert place is not None
-        assert place.source.checked_at == date(2026, 10, 8)
+        assert place.source.checked_at == (
+            date(2026, 10, 11) if slug == "yar-volkov-theatre"
+            else date(2026, 10, 8)
+        )
         assert urlparse(place.source.url).hostname == host
 
 
