@@ -61,6 +61,8 @@ jobs:
         run: node tests/node/test_miniapp_guide.cjs
       - name: Mini App route builder regression
         run: node tests/node/test_miniapp_builder.cjs
+      - name: Mini App route stop editor regression
+        run: node tests/node/test_miniapp_route_edit.cjs
       - name: Full test suite
         run: pytest -q
 
