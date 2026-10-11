@@ -78,7 +78,7 @@ def _compile_city(item: list) -> ExpansionCity:
         items = tuple(places[index] for index in indexes)
         straight = sum(
             _distance_km(a, b)
-            for a, b in zip(items, items[1:])
+            for a, b in pairwise(items)
         )
         walking_distance_km = max(0.5, round(straight * 1.35 + 0.3, 1))
         estimated_duration = sum(p.visit_minutes for p in items) + ceil(
