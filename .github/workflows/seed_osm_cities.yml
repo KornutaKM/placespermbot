@@ -18,12 +18,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: feature/mvp-127-osm-guides
+          fetch-depth: 0
           persist-credentials: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install -e .
-      - name: Collect verifiable OSM POIs (pilot batch)
+      - name: Retry missing cities from saved OpenStreetMap evidence
         run: python scripts/seed_city_guides.py --limit 59
       - name: Commit captured map evidence to feature branch
         run: |
