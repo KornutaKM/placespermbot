@@ -1228,7 +1228,7 @@ function openCities() {
     escapeText(city.name) + '</button>'
   ).join("");
   openSheet('<div class="sheet-head"><div><h2>Выберите город</h2>' +
-    '<p>Открывайте места и маршруты в любом из 35 городов</p></div>' +
+    '<p>Открывайте места и маршруты: ' + state.cities.length + ' городов</p></div>' +
     '<button class="sheet-close" type="button" data-close aria-label="Закрыть">×</button></div>' +
     (!initData ? '<div class="notice">Без Telegram выбор действует только в этом просмотре.</div>' : "") +
     '<div class="city-list">' + choices + '</div>');
