@@ -96,6 +96,16 @@ OBSERVATIONS = (
         ("https://archaeolog.ru/open-days/otkrytye-dni-arkheologii-2026/"
          "kurskiy-gosudarstvennyy-oblastnoy-muzey-arkheologii-14-08-26"),
     ),
+    PublishedObservation(
+        "ulan-ude", "ulan-ude-arbat", "2026-10-06",
+        "6 октября 2026 года городские журналисты сообщили, что "
+        "реконструкция пешеходной улицы Ленина ещё идёт: уложено "
+        "более 40% плитки. Это датированный сигнал возможных "
+        "временных ограничений прохода, а не подтверждение "
+        "полного закрытия или состояния на будущую дату.",
+        ("https://arigus.tv/news/city/"
+         "179399-pochti-polovinu-plitki-ulozhili-na-arbate-v-ulan-ude/"),
+    ),
 )
 
 
