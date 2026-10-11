@@ -511,3 +511,44 @@ def test_ulan_ude_musical_fountain_is_specific_free_seasonal_attraction():
         "ulan-ude", "ulan-ude-musical", as_of=date(2026, 10, 11)
     )["status"] == "not_independently_checked"
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_ulan_ude_arbat_map_pin_has_dated_construction_warning():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+    from app.place_freshness import build_inventory
+
+    city = get_catalog("ulan-ude")
+    arbat = city.place_by_slug("ulan-ude-arbat")
+    assert arbat is not None
+    assert arbat.title == "Пешеходная улица Ленина («Бурятский Арбат»)"
+    assert (arbat.latitude, arbat.longitude) == (
+        51.828777, 107.584451
+    )
+    assert arbat.district == "Ленина, между Кирова и Советской"
+    assert arbat.source.url == "https://uuportal.ru/attractions/arbat"
+    assert arbat.source.checked_at == date(2026, 10, 11)
+    assert "6 октября" in arbat.summary
+    assert "временные ограждения" in arbat.summary
+    assert "Проверяйте реальный пешеходный проход" in arbat.summary
+    assert public_evidence(
+        "ulan-ude", "ulan-ude-arbat", as_of=date(2026, 10, 11)
+    )["status"] == "not_independently_checked"
+    inventory = build_inventory(as_of=date(2026, 10, 11))
+    item = next(
+        row for row in inventory["places"]
+        if (row["city_slug"], row["place_slug"]) ==
+        ("ulan-ude", "ulan-ude-arbat")
+    )
+    assert item["past_published_observation"]["reported_on"] == "2026-10-06"
+    assert item["past_published_observation"]["source_url"] == (
+        "https://arigus.tv/news/city/"
+        "179399-pochti-polovinu-plitki-ulozhili-na-arbate-v-ulan-ude/"
+    )
+    assert item["review_status"] == "requires_current_independent_confirmation"
+    assert arbat.is_free
+    assert "ulan-ude-arbat" in city.route_by_slug(
+        "ulan-ude-walk"
+    ).place_slugs
+    assert not hard_route_findings(inspect_routes(city))
