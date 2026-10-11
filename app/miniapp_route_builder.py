@@ -20,9 +20,9 @@ from app.planner import (
     WALKING_SPEED_KMH,
     build_route,
 )
+from app.route_safety import is_route_stop_available
 from app.route_timing import route_timing
 from app.saved_routes import route_id_for
-from app.route_safety import is_route_stop_available
 
 
 class RouteBuildRequest(BaseModel):
