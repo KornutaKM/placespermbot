@@ -65,7 +65,7 @@ def test_expanded_cities_support_all_seven_planner_modes_without_fake_routes():
             if route is None:
                 continue
             assert route.estimated_minutes <= 360
-            assert set(p.slug for p in route.places).issubset(
+            assert {p.slug for p in route.places}.issubset(
                 {p.slug for p in catalog.places}
             )
             assert all(
