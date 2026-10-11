@@ -8,7 +8,7 @@ from app.catalog import distance_km, get_catalog
 from app.catalog_quality import validate_catalog_quality
 from app.catalog_validation import validate_catalog
 from app.city_manifest import list_city_manifests
-from app.data.osm_seed_2026 import OSM_SEED_CITIES, SNAPSHOT_FILE
+from app.data.osm_seed_2026 import OSM_REVIEW_ISSUES, OSM_SEED_CITIES, SNAPSHOT_FILE
 from app.route_review import hard_route_findings, inspect_routes
 from app.top_city_coverage import RESERVED_SLUGS
 
@@ -23,6 +23,7 @@ def test_all_promoted_seed_catalogs_are_sourced_and_geographically_consistent():
     expected = {
         c["slug"] for c in raw["cities"] if c.get("places") and not c.get("issues")
     }
+    assert not OSM_REVIEW_ISSUES, OSM_REVIEW_ISSUES
     assert expected == {c.slug for c in OSM_SEED_CITIES}
     assert expected.issubset(set(RESERVED_SLUGS.values()))
 
