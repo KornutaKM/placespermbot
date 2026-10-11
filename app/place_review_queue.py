@@ -10,6 +10,7 @@ import json
 from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 from app.catalog import CityCatalog, list_catalogs
 from app.withheld_places import WITHHELD_PLACES
@@ -18,6 +19,10 @@ CRITICAL_SIGNALS = frozenset({
     "mapped_inactive_review_required",
     "mapped_access_restriction_review_required",
     "wikidata_end_date_review_required",
+})
+LOCATION_SIGNALS = frozenset({
+    "mapped_coordinates_changed_review_required",
+    "mapped_invalid_coordinates_review_required",
 })
 MISSING_SIGNALS = frozenset({
     "source_missing_review_required",
@@ -35,13 +40,16 @@ PASSIVE_SIGNALS = frozenset({
     "not_probed",
 })
 ALLOWED_SIGNALS = (
-    CRITICAL_SIGNALS | MISSING_SIGNALS | RETRY_SIGNALS | PASSIVE_SIGNALS
+    CRITICAL_SIGNALS | LOCATION_SIGNALS | MISSING_SIGNALS | RETRY_SIGNALS
+    | PASSIVE_SIGNALS
 )
 
 
 def priority_for_signal(signal: str) -> str | None:
     if signal in CRITICAL_SIGNALS:
         return "P0_documentary_investigation"
+    if signal in LOCATION_SIGNALS:
+        return "P1_location_review"
     if signal in MISSING_SIGNALS:
         return "P1_source_identity_review"
     if signal in RETRY_SIGNALS:
@@ -98,6 +106,7 @@ def build_review_queue(
             "total": len(catalog.places),
             "critical": 0,
             "source_missing": 0,
+            "location_review": 0,
             "retry": 0,
             "operator_listings": 0,
             "not_documented_by_operator": 0,
@@ -124,6 +133,7 @@ def build_review_queue(
             continue
         metric = (
             "critical" if signal in CRITICAL_SIGNALS else
+            "location_review" if signal in LOCATION_SIGNALS else
             "source_missing" if signal in MISSING_SIGNALS else "retry"
         )
         by_city[catalog.slug][metric] += 1
@@ -137,6 +147,9 @@ def build_review_queue(
             "priority": priority,
             "signal": signal,
             "source_url": place.source.url,
+            "source_host": (
+                (urlparse(place.source.url).hostname or "").removeprefix("www.")
+            ),
             "route_slugs": routes,
             "route_count": len(routes),
             "probe_details": row["probe"],
@@ -173,6 +186,54 @@ def build_review_queue(
         q["priority"], not q["new_or_changed"], -q["route_count"],
         q["city_name"], q["title"],
     ))
+    # Group shared-host failures: dozens of failed POIs can mean one unreachable
+    # source domain, not dozens of physically closed sights.
+    retry_by_host = {}
+    for entry in queue:
+        if entry["priority"] != "P2_retry_or_manual_source":
+            continue
+        host = entry["source_host"]
+        group = retry_by_host.setdefault(host, {
+            "host": host,
+            "affected_places": 0,
+            "city_slugs": set(),
+            "route_keys": set(),
+            "signals": Counter(),
+            "error_types": Counter(),
+            "http_statuses": Counter(),
+        })
+        group["affected_places"] += 1
+        group["city_slugs"].add(entry["city_slug"])
+        group["route_keys"].update(
+            (entry["city_slug"], slug) for slug in entry["route_slugs"]
+        )
+        group["signals"][entry["signal"]] += 1
+        error_type = entry["probe_details"].get("error_type")
+        if error_type:
+            group["error_types"][error_type] += 1
+        code = entry["probe_details"].get("http_status")
+        if code is not None:
+            group["http_statuses"][str(code)] += 1
+    retry_host_summary = sorted(
+        (
+            {
+                "host": item["host"],
+                "affected_places": item["affected_places"],
+                "affected_city_count": len(item["city_slugs"]),
+                "affected_route_count": len(item["route_keys"]),
+                "city_slugs": sorted(item["city_slugs"]),
+                "signals": dict(sorted(item["signals"].items())),
+                "error_types": dict(sorted(item["error_types"].items())),
+                "http_statuses": dict(sorted(item["http_statuses"].items())),
+                "resolution": (
+                    "Investigate DNS, TLS, bot blocking or find another "
+                    "independent official source. Do not infer venue closure."
+                ),
+            }
+            for item in retry_by_host.values()
+        ),
+        key=lambda item: (-item["affected_places"], item["host"]),
+    )
     counts = Counter(entry["priority"] for entry in queue)
     return {
         "produced_at": datetime.now(UTC).isoformat(),
@@ -186,7 +247,10 @@ def build_review_queue(
         "review_queue_count": len(queue),
         "critical_review_count": counts["P0_documentary_investigation"],
         "source_identity_review_count": counts["P1_source_identity_review"],
+        "location_review_count": counts["P1_location_review"],
         "technical_retry_count": counts["P2_retry_or_manual_source"],
+        "technical_retry_host_count": len(retry_host_summary),
+        "technical_retry_hosts": retry_host_summary,
         "previous_scan_available": previous is not None,
         "new_or_changed_count": sum(q["new_or_changed"] for q in queue),
         "city_summary": sorted(by_city.values(), key=lambda city: city["name"]),
@@ -209,7 +273,9 @@ def render_markdown(result: dict, *, max_items: int = 30) -> str:
         "",
         (f"Documentary investigations: **{result['critical_review_count']}**; "
         f"source identity investigations: **{result['source_identity_review_count']}**; "
-        f"technical retries: **{result['technical_retry_count']}**."),
+        f"location review: **{result['location_review_count']}**; "
+        f"technical retries: **{result['technical_retry_count']}** "
+        f"across **{result['technical_retry_host_count']}** source hosts."),
         "",
         (f"Previous completed scan available: **{result['previous_scan_available']}**; "
         f"new/changed review signals: **{result['new_or_changed_count']}**."),
@@ -236,6 +302,34 @@ def render_markdown(result: dict, *, max_items: int = 30) -> str:
         )
     lines.extend([
         "",
+        "## Technical retry clusters by source host",
+        "",
+        "A single failing website may affect multiple places. Domain failures do "
+        "**not** imply these attractions are closed.",
+        "",
+        "| Source host | Affected POIs | Cities | Routes | Failures |",
+        "|---|---:|---:|---:|---|",
+    ])
+    for item in result["technical_retry_hosts"][:20]:
+        counts = ", ".join(
+            f"{code}: {number}" for code, number in item["http_statuses"].items()
+        )
+        counts += ", " if counts and item["error_types"] else ""
+        counts += ", ".join(
+            f"{error}: {number}" for error, number in item["error_types"].items()
+        )
+        lines.append(
+            f"| {_clean_cell(item['host'])} | {item['affected_places']} "
+            f"| {item['affected_city_count']} "
+            f"| {item['affected_route_count']} "
+            f"| {_clean_cell(counts or 'unspecified')} |"
+        )
+    if len(result["technical_retry_hosts"]) > 20:
+        lines.append(
+            "\\nComplete affected-host list is in the review-queue JSON artifact."
+        )
+    lines.extend([
+        "",
         "## Withheld objects (not automatically reinstated)",
         "",
     ])
@@ -249,14 +343,15 @@ def render_markdown(result: dict, *, max_items: int = 30) -> str:
         "",
         "## Full 104-city coverage",
         "",
-        "| City | Active | P0 | Missing | Retry | Operator listing | Undocumented | Withheld |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|",
+        "| City | Active | P0 | Location | Missing | Retry | Operator listing | Undocumented | Withheld |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
     ])
     for city in result["city_summary"]:
         lines.append(
             f"| {_clean_cell(city['name'])} | {city['total']} | "
-            f"{city['critical']} | {city['source_missing']} | "
-            f"{city['retry']} | {city['operator_listings']} | "
+            f"{city['critical']} | {city['location_review']} | "
+            f"{city['source_missing']} | {city['retry']} | "
+            f"{city['operator_listings']} | "
             f"{city['not_documented_by_operator']} | {city['withheld']} |"
         )
     return "\n".join(lines) + "\n"
@@ -286,7 +381,9 @@ def main() -> None:
         f"withheld={result['withheld_count']} "
         f"critical={result['critical_review_count']} "
         f"missing={result['source_identity_review_count']} "
-        f"retry={result['technical_retry_count']}"
+        f"location={result['location_review_count']} "
+        f"retry={result['technical_retry_count']} "
+        f"retry_hosts={result['technical_retry_host_count']}"
     )
 
 
