@@ -405,3 +405,43 @@ def test_ulan_ude_venues_have_true_operator_addresses_and_cautious_routes():
     assert "время пересадки" in museum_route.summary
     assert len(city.places) == 12 and len(city.routes) == 5
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_ulan_ude_datsan_and_cathedral_are_mapped_to_real_buildings():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("ulan-ude")
+    datsan = city.place_by_slug("ulan-ude-buddhist")
+    cathedral = city.place_by_slug("ulan-ude-odigitrievsky")
+    assert datsan is not None and cathedral is not None
+    assert (datsan.latitude, datsan.longitude) == (51.865491, 107.594168)
+    assert datsan.district == "Стрелецкая, 1 — Лысая гора"
+    assert datsan.source.url == (
+        "https://datsan-rinpoche-bagsha.ru/contacts"
+    )
+    assert "автобуса № 97" in datsan.summary
+    assert "не подтверждённый вход" in datsan.summary
+    documented = public_evidence(
+        "ulan-ude", "ulan-ude-buddhist", as_of=date(2026, 10, 11)
+    )
+    assert documented["status"] == "operator_listed"
+    assert documented["evidence_url"] == datsan.source.url
+    assert "уточняйте" in documented["finding"]
+
+    assert (cathedral.latitude, cathedral.longitude) == (
+        51.822391, 107.584987
+    )
+    assert cathedral.title == "Свято-Одигитриевский кафедральный собор"
+    assert cathedral.district == "Ленина, 2"
+    assert cathedral.source.url == (
+        "https://xn--80aabjhkiabkj9b0amel2g.xn--p1ai/post/"
+        "svyato-odigitrievskiy-kafedralnyy-sobor-4340"
+    )
+    assert "в мае 2021 года" in cathedral.summary
+    assert public_evidence(
+        "ulan-ude", "ulan-ude-odigitrievsky",
+        as_of=date(2026, 10, 11)
+    )["status"] == "not_independently_checked"
+    assert not hard_route_findings(inspect_routes(city))
