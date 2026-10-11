@@ -34,6 +34,7 @@ def test_all_promoted_seed_catalogs_are_sourced_and_geographically_consistent():
         assert catalog.name == entry["name"]
         assert len(catalog.places) >= 12
         assert len(catalog.routes) == 5
+        assert len({route.place_slugs for route in catalog.routes}) == 5
         assert not validate_catalog(catalog)
         assert not validate_catalog_quality(catalog, manifests[city.slug].quality)
         assert not hard_route_findings(inspect_routes(catalog))
