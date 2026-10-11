@@ -19,8 +19,8 @@
 - **Чебоксары** (cheboksary): READY; 18 POI; issues: none
 - **Липецк** (lipetsk): READY; 18 POI; issues: none
 - **Киров** (kirov): READY; 18 POI; issues: none
-- **Сургут** (surgut): REVIEW; 0 POI; issues: OSM query failed: bbox/https://overpass-api.de/api/interpreter: HTTP Error 504: Gateway Timeout; bbox/https://maps.mail.ru/osm/tools/overpass/api/interpreter: The read operation timed out; bbox/https:
-- **Тверь** (tver): REVIEW; 0 POI; issues: OSM query failed: bbox/https://overpass-api.de/api/interpreter: HTTP Error 504: Gateway Timeout; bbox/https://maps.mail.ru/osm/tools/overpass/api/interpreter: The read operation timed out; bbox/https:
+- **Сургут** (surgut): READY; 18 POI; issues: none
+- **Тверь** (tver): REVIEW; 0 POI; issues: OSM query failed: 9000m/bbox/https://overpass-api.de/api/interpreter: HTTP Error 504: Gateway Timeout; 9000m/bbox/https://maps.mail.ru/osm/tools/overpass/api/interpreter: HTTP Error 504: Gateway Time-
 - **Магнитогорск** (magnitogorsk): READY; 18 POI; issues: none
 - **Грозный** (grozny): READY; 18 POI; issues: none
 - **Якутск** (yakutsk): READY; 18 POI; issues: none
