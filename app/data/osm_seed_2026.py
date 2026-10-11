@@ -112,6 +112,8 @@ def _compile_city(item: dict) -> OsmSeedCity:
             and source["url"].endswith(f"/{raw['osm_type']}/{raw['osmid']}")
         ):
             raise ValueError(f"{slug}: invalid OSM provenance")
+        if any(ch in raw["title"] + raw["district"] for ch in "<>&"):
+            raise ValueError(f"{slug}: unsafe OSM text for Telegram HTML")
         if raw["slug"] in used_slugs:
             raise ValueError(f"{slug}: duplicate imported point")
         used_slugs.add(raw["slug"])
