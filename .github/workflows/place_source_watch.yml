@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   source-watch:
@@ -30,12 +31,32 @@ jobs:
       - run: pip install -e .
       - name: Check every place against current primary source and map metadata
         run: python -m app.place_source_probe --live --output place-source-scan.json
+      - name: Retrieve last successful source scan as comparison baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          previous_run="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/place_source_watch.yml/runs?status=success&per_page=10" --jq '.workflow_runs[0].id // ""' 2>/dev/null || true)"
+          if [ -n "$previous_run" ]; then
+            mkdir -p previous
+            if gh run download "$previous_run" --repo "$GITHUB_REPOSITORY" --name place-source-scan --dir previous; then
+              echo "Loaded comparison baseline from workflow run $previous_run"
+            else
+              echo "Historical artifact unavailable; preserving complete current scan without a baseline"
+            fi
+          else
+            echo "No prior successful source scan exists"
+          fi
       - name: Build route-aware editorial review queue
         run: |
+          if [ -s previous/place-source-scan.json ]; then
+            previous_arg=(--previous previous/place-source-scan.json)
+          else
+            previous_arg=()
+          fi
           python -m app.place_review_queue \
             --scan place-source-scan.json \
             --output place-review-queue.json \
-            --markdown place-review-queue.md
+            --markdown place-review-queue.md "${previous_arg[@]}"
           cat place-review-queue.md >> "$GITHUB_STEP_SUMMARY"
       - name: Upload prioritized review queue with affected routes
         if: always()
