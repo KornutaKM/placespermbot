@@ -16,12 +16,17 @@ from app.maps import google_maps_place_url, google_maps_route_links
 from app.miniapp_auth import InvalidTelegramInitData, validate_init_data
 from app.miniapp_profile import my_guide_snapshot
 from app.miniapp_route_builder import (
+    RouteAlternativesRequest,
     RouteBuildRequest,
     RouteEditRequest,
+    RouteReplacementRequest,
     SaveBuiltRouteRequest,
     SaveEditedRouteRequest,
+    SaveReplacedRouteRequest,
+    alternative_routes,
     build_miniapp_route,
     edited_miniapp_route,
+    replaced_miniapp_route,
     route_preview,
 )
 from app.route_completion import complete_saved_route
@@ -329,6 +334,117 @@ def create_miniapp(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(
                 status_code=409,
                 detail="The edited route changed; preview it again",
+            )
+        saved = await saved_routes.save(
+            user_id, city_slug, route.interest, route.budget_minutes,
+            tuple(place.slug for place in route.places),
+        )
+        return {
+            "city_slug": city_slug,
+            "route_id": saved.route_id,
+            "saved": True,
+            "place_count": len(saved.place_slugs),
+        }
+
+    async def _replacement_exclusions(
+        city_slug: str,
+        *,
+        exclude_visited: bool,
+        init_data: str | None,
+    ) -> tuple[str, ...]:
+        if not has_catalog(city_slug):
+            raise HTTPException(status_code=404, detail="City not found")
+        if not exclude_visited:
+            return ()
+        user_id = authenticated_user(init_data)
+        await require_active_city(user_id, city_slug)
+        return await visited.list_place_slugs(user_id, city_slug)
+
+    @app.post("/api/routes/{city_slug}/alternatives")
+    async def route_stop_alternatives(
+        city_slug: str,
+        body: RouteAlternativesRequest,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        excluded = await _replacement_exclusions(
+            city_slug,
+            exclude_visited=body.exclude_visited,
+            init_data=x_telegram_init_data,
+        )
+        catalog = get_catalog(city_slug)
+        try:
+            proposals = alternative_routes(
+                catalog, body, excluded_slugs=excluded
+            )
+        except ValueError as exc:
+            status = 409 if "original route" in str(exc) else 422
+            raise HTTPException(status_code=status, detail=str(exc)) from exc
+        return {
+            "city_slug": city_slug,
+            "base_route_id": body.base_route_id,
+            "stop_index": body.stop_index,
+            "alternatives": [
+                {
+                    "slug": candidate.slug,
+                    "title": candidate.title,
+                    "emoji": candidate.emoji,
+                    "district": candidate.district,
+                    "category": candidate.category,
+                    "visit_minutes": candidate.visit_minutes,
+                    "estimated_minutes": route.estimated_minutes,
+                    "distance_km": route.distance_km,
+                }
+                for candidate, route in proposals
+            ],
+        }
+
+    @app.post("/api/routes/{city_slug}/replace")
+    async def preview_replaced_route(
+        city_slug: str,
+        body: RouteReplacementRequest,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        excluded = await _replacement_exclusions(
+            city_slug,
+            exclude_visited=body.exclude_visited,
+            init_data=x_telegram_init_data,
+        )
+        catalog = get_catalog(city_slug)
+        try:
+            route = replaced_miniapp_route(
+                catalog, body, excluded_slugs=excluded
+            )
+        except ValueError as exc:
+            status = 409 if "original route" in str(exc) else 422
+            raise HTTPException(status_code=status, detail=str(exc)) from exc
+        return route_preview(catalog, route)
+
+    @app.post("/api/me/routes/{city_slug}/save-replaced")
+    async def save_replaced_route(
+        city_slug: str,
+        body: SaveReplacedRouteRequest,
+        x_telegram_init_data: str | None = Header(default=None),
+    ):
+        user_id = authenticated_user(x_telegram_init_data)
+        await require_active_city(user_id, city_slug)
+        excluded = (
+            await visited.list_place_slugs(user_id, city_slug)
+            if body.exclude_visited else ()
+        )
+        catalog = get_catalog(city_slug)
+        try:
+            route = replaced_miniapp_route(
+                catalog, body, excluded_slugs=excluded
+            )
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=409, detail="Rebuild the route before saving"
+            ) from exc
+        preview = route_preview(catalog, route)
+        if preview["route_id"] != body.expected_route_id:
+            raise HTTPException(
+                status_code=409,
+                detail="The replacement changed; preview it again",
             )
         saved = await saved_routes.save(
             user_id, city_slug, route.interest, route.budget_minutes,
