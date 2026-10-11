@@ -207,13 +207,13 @@ def render_markdown(report: dict) -> str:
         "",
         "## По городам",
         "",
-        "| Город | Карточек | Есть ссылка оператора | Высокий приоритет проверки |",
-        "|---|---:|---:|---:|",
+        "| Город | Карточек | Сайт оператора | Официальный ТИЦ | Высокий приоритет |",
+        "|---|---:|---:|---:|---:|",
     ]
     for city in report["cities"]:
         lines.append(
             f"| {city['name']} | {city['total']} | {city['operator_listed']} "
-            f"| {city['high_priority']} |"
+            f"| {city['official_tourism_listed']} | {city['high_priority']} |"
         )
     lines.extend([
         "",
