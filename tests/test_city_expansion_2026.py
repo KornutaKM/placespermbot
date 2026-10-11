@@ -10,6 +10,7 @@ from app.catalog_quality import validate_catalog_quality
 from app.catalog_validation import validate_catalog
 from app.city_manifest import list_city_manifests
 from app.config import Settings
+from app.data.osm_seed_2026 import OSM_SEED_CITIES
 from app.miniapp_route_builder import RouteBuildRequest, build_miniapp_route
 from app.miniapp_server import create_miniapp
 from app.route_review import hard_route_findings, inspect_routes
@@ -22,8 +23,8 @@ NEW_CITY_SLUGS = (
 
 def test_ten_new_cities_have_genuine_places_and_itineraries():
     catalogs = list_catalogs()
-    assert len(catalogs) == 45
-    assert len({city.slug for city in catalogs}) == 45
+    assert len(catalogs) == 45 + len(OSM_SEED_CITIES)
+    assert len({city.slug for city in catalogs}) == 45 + len(OSM_SEED_CITIES)
     manifests = {item.slug: item for item in list_city_manifests()}
     for slug in NEW_CITY_SLUGS:
         assert has_catalog(slug)
@@ -82,7 +83,7 @@ def test_new_city_catalogs_are_available_in_public_miniapp_api(tmp_path):
     ))) as client:
         cities = client.get("/api/cities")
         assert cities.status_code == 200
-        assert len(cities.json()["cities"]) == 45
+        assert len(cities.json()["cities"]) == 45 + len(OSM_SEED_CITIES)
         assert set(NEW_CITY_SLUGS).issubset(
             {item["slug"] for item in cities.json()["cities"]}
         )
