@@ -45,6 +45,21 @@ def test_samara_landmarks_use_specific_sources() -> None:
         assert urlparse(place.source.url).hostname == expected_host
 
 
+def test_samara_tourist_office_alias_is_resolved_but_not_place_verification() -> None:
+    city = catalog()
+    sourced = tuple(
+        place for place in city.places
+        if "туристичес" in place.source.name.casefold()
+    )
+    assert len(sourced) == 13
+    assert all(
+        urlparse(place.source.url).hostname == "xn--80aaafzfb7a0bgk.xn--p1ai"
+        for place in sourced
+    )
+    assert all(place.source.checked_at == date(2026, 10, 11)
+               for place in sourced)
+
+
 def test_samara_search_and_virtual_categories() -> None:
     city = catalog()
 
