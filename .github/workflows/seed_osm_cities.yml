@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e .
-      - name: Final 10-city recovery via bbox-first Overpass
+      - name: Last Surgut attempt using narrow, quality-gated Overpass boxes
         run: python scripts/seed_city_guides.py --limit 59
       - name: Commit captured map evidence to feature branch
         run: |
