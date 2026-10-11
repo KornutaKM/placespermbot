@@ -71,6 +71,8 @@ jobs:
         run: node tests/node/test_miniapp_discovery.cjs
       - name: Mini App source provenance regression
         run: node tests/node/test_miniapp_sources.cjs
+      - name: Mini App top-100 city registry regression
+        run: node tests/node/test_miniapp_top100.cjs
       - name: Full test suite
         run: pytest -q
 
