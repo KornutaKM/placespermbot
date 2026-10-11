@@ -42,6 +42,35 @@ RETIRED = (
 
 
 @dataclass(frozen=True, slots=True)
+class CorrectedMislocation:
+    city_slug: str
+    old_place_slug: str
+    old_title: str
+    corrected_on: str
+    reason: str
+    evidence_urls: tuple[str, ...]
+
+
+# A bad city-coordinate entry is not a demolished venue.
+CORRECTED_MISLOCATIONS = (
+    CorrectedMislocation(
+        "astrakhan", "astrakhan-aquarium", "Музей истории рыболовства",
+        "2026-10-11",
+        "Музеи истории рыболовства находятся в сёлах Икряное и Оранжереи, "
+        "а не в центре Астрахани на улице Советской; ложная точка исключена "
+        "и заменена Музеем истории города по адресу Ульяновых, 9.",
+        (
+            "https://travel30.ru/map/81/",
+            "https://www.culture.ru/institutes/20718/"
+            "muzei-istorii-rybolovstva-s-oranzherei",
+            "https://www.culture.ru/institutes/20501/"
+            "muzei-istorii-goroda-astrakhani",
+        ),
+    ),
+)
+
+
+@dataclass(frozen=True, slots=True)
 class PublishedObservation:
     city_slug: str
     place_slug: str
@@ -73,15 +102,25 @@ def source_type(url: str) -> str:
 
 def check_retirements(catalogs: tuple[CityCatalog, ...]) -> tuple[str, ...]:
     forbidden = {(entry.city_slug, entry.place_slug) for entry in RETIRED}
+    mislocated = {(entry.city_slug, entry.old_place_slug)
+                  for entry in CORRECTED_MISLOCATIONS}
     problems = []
     for city in catalogs:
         for place in city.places:
             if (city.slug, place.slug) in forbidden:
                 problems.append(f"{city.slug}/{place.slug}: removed object is active")
+            if (city.slug, place.slug) in mislocated:
+                problems.append(
+                    f"{city.slug}/{place.slug}: known false city location is active"
+                )
         for route in city.routes:
             for slug in route.place_slugs:
                 if (city.slug, slug) in forbidden:
                     problems.append(f"{city.slug}/{route.slug}: visits removed {slug}")
+                if (city.slug, slug) in mislocated:
+                    problems.append(
+                        f"{city.slug}/{route.slug}: visits mislocated {slug}"
+                    )
     return tuple(problems)
 
 
@@ -168,6 +207,7 @@ def build_inventory(
             for p in places
         ),
         "historically_removed_count": len(RETIRED),
+        "corrected_mislocations_count": len(CORRECTED_MISLOCATIONS),
         "withheld_pending_review_count": len(WITHHELD_PLACES),
         "documented_past_observations": sum(
             p["past_published_observation"] is not None for p in places
@@ -179,6 +219,9 @@ def build_inventory(
             *validate_evidence(catalogs, as_of=today),
         ],
         "retired": [asdict(item) for item in RETIRED],
+        "corrected_mislocations": [
+            asdict(item) for item in CORRECTED_MISLOCATIONS
+        ],
         "withheld_pending_review": withheld_metadata(),
         "cities": cities,
         "places": places,
@@ -216,6 +259,17 @@ def render_markdown(report: dict) -> str:
             f"| {city['official_tourism_listed']} | {city['high_priority']} |"
         )
     lines.extend([
+        "",
+        "## Ранее ошибочно размещённые объекты",
+        "",
+        (f"Исправлено ложных городских точек: "
+         f"{report['corrected_mislocations_count']}."),
+        "",
+        *(
+            f"- {item['old_title']} ({item['city_slug']}/"
+            f"{item['old_place_slug']}): {item['reason']}"
+            for item in report["corrected_mislocations"]
+        ),
         "",
         "## Исключённые объекты с документальным подтверждением",
         "",
