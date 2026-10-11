@@ -41,8 +41,8 @@ YAR_PLANET = PlaceSource(
 
 YAR_VOLKOV = PlaceSource(
     name="Театр имени Фёдора Волкова — официальный сайт",
-    url="https://www.volkovteatr.ru/theatre/basic-information/",
-    checked_at=EDITORIAL_CHECKED_AT,
+    url="https://volkovteatr.ru/theatre/basic-information/",
+    checked_at=date(2026, 10, 11),
 )
 
 YAR_IOANN = PlaceSource(
