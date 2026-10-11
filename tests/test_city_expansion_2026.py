@@ -363,8 +363,8 @@ def test_ulan_ude_venues_have_true_operator_addresses_and_cautious_routes():
             51.8329, 107.5834, "Ленина, 51",
         ),
         "ulan-ude-history-museum": (
-            "https://catalog.muzeyrb.ru/listing/"
-            "музей-истории-бурятии-имени-м-н-хангал/",
+            ("https://catalog.muzeyrb.ru/listing/"
+             "музей-истории-бурятии-имени-м-н-хангал/"),
             51.832009, 107.588356, "Профсоюзная, 29",
         ),
         "ulan-ude-art-museum": (
