@@ -40,6 +40,7 @@ from app.data import (
     yaroslavl,
     yekaterinburg,
 )
+from app.data.expansion_2026 import EXPANSION_CITIES
 from app.domain import Place, RoutePlan
 
 
@@ -111,6 +112,20 @@ CITY_MANIFESTS = (
     _city(voronezh, CatalogQualityProfile(23, 7, 9, 5, 16, 15, 6)),
     _city(yaroslavl, CatalogQualityProfile(28, 10, 10, 5, 13, 10, 8)),
     _city(yekaterinburg, CatalogQualityProfile(28, 13, 10, 5, 15, 12, 10)),
+)
+
+# First-stage guides: each has 12 real destinations and five walking itineraries.
+# Keep the declared thresholds explicit, not inferred from existing contents.
+CITY_MANIFESTS += tuple(
+    CityManifest(
+        slug=city.slug,
+        name=city.name,
+        category_labels=city.category_labels,
+        places=city.places,
+        routes=city.routes,
+        quality=CatalogQualityProfile(12, 5, 5, 4, 5, 6, 2),
+    )
+    for city in EXPANSION_CITIES
 )
 
 
