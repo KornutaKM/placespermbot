@@ -88,6 +88,14 @@ OBSERVATIONS = (
         "v-permi-sostoyalos-torzhestvennoe-otkrytie-"
         "novoj-hudozhestvennoj-galerei-na-zavode-shpagina",
     ),
+    PublishedObservation(
+        "kursk", "kursk-archaeology", "2026-08-14",
+        "Институт археологии РАН анонсировал интерактивную программу "
+        "музея по адресу Пионеров, 6 на 14 августа 2026 года. Это "
+        "свидетельство о прошлом мероприятии, не о режиме работы сегодня.",
+        ("https://archaeolog.ru/open-days/otkrytye-dni-arkheologii-2026/"
+         "kurskiy-gosudarstvennyy-oblastnoy-muzey-arkheologii-14-08-26"),
+    ),
 )
 
 
