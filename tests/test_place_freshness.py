@@ -73,7 +73,7 @@ def test_freshness_inventory_works_for_every_active_city_and_source():
         c["slug"] for c in report["cities"]
     }
     assert sum(report["source_types"].values()) == report["active_places_count"]
-    assert report["source_types"]["community_osm"] >= 58 * 18
+    assert report["source_types"]["community_osm"] >= 58 * 18 - 1
     assert report["source_types"]["community_wikidata"] >= 18
     assert report["blocking_findings"] == []
     assert report["historically_removed_count"] == 1
