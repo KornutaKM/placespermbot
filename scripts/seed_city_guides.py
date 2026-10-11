@@ -131,7 +131,7 @@ def as_place(item: dict, lat: float, lon: float, city_slug: str) -> dict | None:
     title = (tags.get("name:ru") or tags.get("name") or "").strip()
     if not (5 <= len(title) <= 110) or title.casefold() in SKIP_NAMES:
         return None
-    if any(ch in title for ch in "<>\\\n\r"):
+    if any(ch in title for ch in "<>&\\\n\r"):
         return None
     if tags.get("access") in ("private", "no") or tags.get("disused") == "yes":
         return None
@@ -161,6 +161,10 @@ def as_place(item: dict, lat: float, lon: float, city_slug: str) -> dict | None:
             district = "Севернее центра" if d_lat > 0 else "Южнее центра"
         else:
             district = "Восточнее центра" if d_lon > 0 else "Западнее центра"
+    # Map names/addresses can be edited by untrusted contributors. Telegram
+    # text is HTML; do not promote unsafe characters into catalog records.
+    if any(ch in district for ch in "<>&"):
+        return None
     if cat == "museums":
         subject = "Культурный объект"
     elif cat == "parks":
