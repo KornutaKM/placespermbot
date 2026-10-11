@@ -349,3 +349,59 @@ def test_syktyvkar_park_pin_is_not_confused_with_western_urban_square():
         "syktyvkar-walk"
     ).place_slugs
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_ulan_ude_venues_have_true_operator_addresses_and_cautious_routes():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("ulan-ude")
+    institutions = {
+        "ulan-ude-opera": (
+            "https://uuopera.ru/contacts/",
+            51.8329, 107.5834, "Ленина, 51",
+        ),
+        "ulan-ude-history-museum": (
+            "https://catalog.muzeyrb.ru/listing/"
+            "музей-истории-бурятии-имени-м-н-хангал/",
+            51.832009, 107.588356, "Профсоюзная, 29",
+        ),
+        "ulan-ude-art-museum": (
+            "https://catalog.muzeyrb.ru/listing/художественный-музей/",
+            51.825453, 107.589551, "Куйбышева, 29",
+        ),
+        "ulan-ude-ethnographic": (
+            "https://xn--80akfjmebi8an4c6c.xn--p1ai/",
+            51.8835, 107.6514, "Верхняя Берёзовка, 17б",
+        ),
+    }
+    for slug, (url, lat, lon, address) in institutions.items():
+        place = city.place_by_slug(slug)
+        assert place is not None
+        assert place.source.url == url
+        assert place.source.checked_at == date(2026, 10, 11)
+        assert place.latitude == lat and place.longitude == lon
+        assert place.district == address
+        evidence = public_evidence("ulan-ude", slug, as_of=date(2026, 10, 11))
+        assert evidence["status"] == "operator_listed"
+        assert evidence["evidence_url"] == url
+        assert "уточняйте" in evidence["finding"]
+    theatre = city.place_by_slug("ulan-ude-opera")
+    history = city.place_by_slug("ulan-ude-history-museum")
+    art = city.place_by_slug("ulan-ude-art-museum")
+    ethno = city.place_by_slug("ulan-ude-ethnographic")
+    assert "режим кассы" in theatre.summary.lower()
+    assert "Хангалова" in history.title
+    assert "Сампилова" in art.title
+    assert "Точка ориентировочная" in ethno.summary
+    assert "автобус № 37" in ethno.summary
+    assert distance_km(art, ethno) > 7.0
+
+    museum_route = city.route_by_slug("ulan-ude-museums")
+    assert {"ulan-ude-history-museum", "ulan-ude-art-museum",
+            "ulan-ude-ethnographic"}.issubset(museum_route.place_slugs)
+    assert "нужен транспорт" in museum_route.summary
+    assert "время пересадки" in museum_route.summary
+    assert len(city.places) == 12 and len(city.routes) == 5
+    assert not hard_route_findings(inspect_routes(city))
