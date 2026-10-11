@@ -391,7 +391,7 @@ def test_ulan_ude_venues_have_true_operator_addresses_and_cautious_routes():
     history = city.place_by_slug("ulan-ude-history-museum")
     art = city.place_by_slug("ulan-ude-art-museum")
     ethno = city.place_by_slug("ulan-ude-ethnographic")
-    assert "режим кассы" in theatre.summary.lower()
+    assert "часы работы кассы не подтверждают свободный вход" in theatre.summary.lower()
     assert "Хангалова" in history.title
     assert "Сампилова" in art.title
     assert "Точка ориентировочная" in ethno.summary
