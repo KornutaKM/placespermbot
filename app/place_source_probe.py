@@ -90,35 +90,48 @@ def _status(code: int, kind: str) -> str:
 
 
 def probe_page(url: str, *, timeout: float = 12) -> dict:
-    """URL-level availability only. Treat 403/5xx and timeouts as inconclusive."""
+    """Reachability only: retry HEAD 403/405/501 once as GET, never 429.
+
+    Some sites reject HEAD but serve the same URL to ordinary GET clients.
+    Even a successful GET must never certify the attraction itself.
+    """
+    method = "HEAD"
     try:
         transport_url = http_transport_url(url)
         try:
-            status, final, _ = http_request(url, timeout=timeout, method="HEAD")
-            if status == 405:
+            status, final, _ = http_request(url, timeout=timeout, method=method)
+            if status in (403, 405, 501):
+                method = "GET"
                 status, final, _ = http_request(url, timeout=timeout)
         except HTTPError as exc:
-            if exc.code == 405:
+            if exc.code in (403, 405, 501) and method == "HEAD":
+                method = "GET"
                 status, final, _ = http_request(url, timeout=timeout)
             else:
                 return {
                     "signal": _status(exc.code, "web"),
                     "http_status": exc.code,
+                    "probe_method": method,
                     "redirected_to": None,
                 }
         return {
             "signal": _status(status, "web"),
             "http_status": status,
+            "probe_method": method,
             "redirected_to": final if final not in (url, transport_url) else None,
         }
     except HTTPError as exc:
         return {
             "signal": _status(exc.code, "web"),
-            "http_status": exc.code, "redirected_to": None,
+            "http_status": exc.code,
+            "probe_method": method,
+            "redirected_to": None,
         }
     except (OSError, URLError, ValueError) as exc:
         return {
-            "signal": "probe_inconclusive", "http_status": None,
+            "signal": "probe_inconclusive",
+            "http_status": None,
+            "probe_method": method,
             "error_type": type(exc).__name__,
         }
 
