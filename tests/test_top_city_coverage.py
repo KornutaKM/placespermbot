@@ -27,6 +27,9 @@ def test_rank_and_coverage_contract():
     check_coverage_registry()
     ranked = top_city_coverage()
     assert len(TOP_100_NAMES) == len(ranked) == 100
+    assert all(city.guide_available for city in ranked)
+    assert MAP_CANDIDATE_COUNT == 59
+    assert len(list_catalogs()) == 104
     assert len({city.name for city in ranked}) == 100
     assert len({city.slug for city in ranked}) == 100
     assert [(city.rank, city.name) for city in ranked[:3]] == [
