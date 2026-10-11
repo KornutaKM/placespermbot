@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 
 from app.catalog import CityCatalog, list_catalogs
 from app.place_evidence import public_evidence, validate_evidence
+from app.withheld_places import WITHHELD_PLACES, check_withheld, withheld_metadata
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,15 +160,18 @@ def build_inventory(
             for p in places
         ),
         "historically_removed_count": len(RETIRED),
+        "withheld_pending_review_count": len(WITHHELD_PLACES),
         "documented_past_observations": sum(
             p["past_published_observation"] is not None for p in places
         ),
         "source_types": source_counts,
         "blocking_findings": [
             *check_retirements(catalogs),
+            *check_withheld(catalogs),
             *validate_evidence(catalogs, as_of=today),
         ],
         "retired": [asdict(item) for item in RETIRED],
+        "withheld_pending_review": withheld_metadata(),
         "cities": cities,
         "places": places,
     }
@@ -190,6 +194,9 @@ def render_markdown(report: dict) -> str:
         (f"Подтверждённо исчезнувших объектов исключено: "
         f"**{report['historically_removed_count']}**."),
         "",
+        (f"Временно исключены до подтверждения открытия: "
+        f"**{report['withheld_pending_review_count']}**."),
+        "",
         "## По городам",
         "",
         "| Город | Карточек | Есть ссылка оператора | Высокий приоритет проверки |",
@@ -210,6 +217,16 @@ def render_markdown(report: dict) -> str:
             f"- {item['title']} ({item['city_slug']}/{item['place_slug']}), "
             f"{item['event_date']}: {item['reason']} "
             + ", ".join(item["sources"])
+        )
+    lines.extend([
+        "",
+        "## Временно исключены из посещения: требуется перепроверка",
+        "",
+    ])
+    for item in report["withheld_pending_review"]:
+        lines.append(
+            f"- {item['title']} ({item['city_slug']}/{item['place_slug']}): "
+            f"{item['reason']} Источник: {item['map_url']}"
         )
     lines.extend([
         "",
