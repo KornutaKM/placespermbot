@@ -7,8 +7,12 @@ from app.catalog import get_catalog, list_catalogs
 from app.place_evidence import EVIDENCE, public_evidence, validate_evidence
 from app.place_freshness import build_inventory
 from app.place_source_probe import (
-    classify_url, osm_lifecycle_signal, probe_osm_batch,
-    probe_page, probe_wikidata, run_audit,
+    classify_url,
+    osm_lifecycle_signal,
+    probe_osm_batch,
+    probe_page,
+    probe_wikidata,
+    run_audit,
 )
 
 
@@ -20,7 +24,7 @@ def test_all_documentary_evidence_points_exist_and_sources_are_independent():
         "perm-art-gallery", "perm-zoo", "permm",
         "perm-childrens-museum-center", "perm-antiquities-museum",
     } <= {item.place_slug for item in EVIDENCE}
-    assert len(set((e.city_slug, e.place_slug) for e in EVIDENCE)) == 14
+    assert len({(e.city_slug, e.place_slug) for e in EVIDENCE}) == 14
 
 
 def test_evidence_is_a_operator_listing_not_guaranteed_access():
@@ -106,10 +110,10 @@ def test_source_probe_osm_batch_parses_entities_not_merely_url_ok(monkeypatch):
         assert "/nodes?nodes=" in url
         assert method == "GET"
         return (200, url,
-                b'<osm><node id="1" lat="58.0" lon="56.0" '
-                b'timestamp="2026-08-01T00:00:00Z">'
-                b'<tag k="name" v="Example"/>'
-                b'</node></osm>')
+                (b'<osm><node id="1" lat="58.0" lon="56.0" '
+                 b'timestamp="2026-08-01T00:00:00Z">'
+                 b'<tag k="name" v="Example"/>'
+                 b'</node></osm>'))
 
     monkeypatch.setattr(place_source_probe, "http_request", fake_http)
     result = probe_osm_batch("node", ["1", "2"])
@@ -123,8 +127,8 @@ def test_source_probe_wikidata_marks_dissolution_only_for_review(monkeypatch):
 
     def fake_http(url, *, timeout, method="GET"):
         assert "wbgetentities" in url
-        return (200, url, b'{"entities":{"Q1":{"claims":{"P576":[{}]},'
-                b'"lastrevid":20},"Q2":{"claims":{},"lastrevid":30}}}')
+        return (200, url, (b'{"entities":{"Q1":{"claims":{"P576":[{}]},'
+                            b'"lastrevid":20},"Q2":{"claims":{},"lastrevid":30}}}'))
 
     monkeypatch.setattr(place_source_probe, "http_request", fake_http)
     result = probe_wikidata(["Q1", "Q2"])
