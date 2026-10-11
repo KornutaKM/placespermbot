@@ -1402,6 +1402,11 @@ async function openTopCities() {
       '<div class="notice">Готовы ' + coverage.ready_count +
       ' путеводителей из 100, ' + coverage.pending_count +
       ' в подготовке. Остальные туристические города сохраняются.</div>' +
+      '<p class="sheet-caption">Редакционных гидов: ' +
+      escapeText(coverage.editorial_count ?? coverage.ready_count) +
+      '; картографических подборок OpenStreetMap без полевой проверки: ' +
+      escapeText(coverage.map_seed_count ?? 0) +
+      '. Построенные по этим данным прогулки необходимо проверять самостоятельно.</p>' +
       '<label class="search"><span>⌕</span><input id="top100-filter" type="search" ' +
       'autocomplete="off" aria-label="Найти город в топ-100" placeholder="Найти город…"></label>' +
       '<div class="top100-list" id="top100-results"></div>' +
@@ -1419,7 +1424,9 @@ async function openTopCities() {
           return '<div class="top100-item"><span class="top100-rank">' +
             escapeText(city.rank) + '</span><div><strong>' +
             escapeText(city.name) + '</strong><small>' +
-            (ready ? 'Путеводитель доступен' : 'Каталог готовится') +
+            (ready && city.guide_status === "map_seed"
+              ? 'Подборка OSM · переходы не проверены'
+              : ready ? 'Путеводитель доступен' : 'Каталог готовится') +
             '</small></div>' + (ready
               ? '<button type="button" data-city="' + escapeText(city.slug) +
                 '">Выбрать ↗</button>'
