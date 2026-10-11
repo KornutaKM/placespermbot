@@ -269,6 +269,24 @@ def valid_city(places: list, meta: dict) -> list[str]:
     for key, (actual, minimum) in checks.items():
         if actual < minimum:
             issues.append(f"{key}: {actual} < {minimum}")
+    # A map entry does not make a sensible itinerary without two distinct
+    # real nearby markers in each promised theme.
+    groups = {
+        "overview": places,
+        "heritage": [p for p in places if p["category"] == "sights"],
+        "culture": [p for p in places if p["category"] == "museums"],
+        "green": [p for p in places if p["category"] == "parks"],
+        "family": [p for p in places if "с детьми" in p["tags"]],
+    }
+    for theme, selected in groups.items():
+        has_pair = any(
+            0.08 <= distance_km(
+                a["latitude"], a["longitude"], b["latitude"], b["longitude"]
+            ) <= 3.5
+            for i, a in enumerate(selected) for b in selected[i + 1:]
+        )
+        if not has_pair:
+            issues.append(f"{theme}: no two distinct nearby mapped stops")
     return issues
 
 def seed_one(name: str, slug: str) -> dict:
