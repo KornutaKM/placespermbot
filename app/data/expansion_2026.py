@@ -9,9 +9,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import date
-from math import ceil
-
-from app.catalog import coordinates_distance_km
+from math import asin, ceil, cos, radians, sin, sqrt
 from app.domain import Place, PlaceSource, RoutePlan
 
 CATEGORY_LABELS = {
@@ -30,6 +28,16 @@ class ExpansionCity:
     category_labels: dict[str, str]
     places: tuple[Place, ...]
     routes: tuple[RoutePlan, ...]
+
+def _distance_km(a: Place, b: Place) -> float:
+    lat1, lat2 = radians(a.latitude), radians(b.latitude)
+    delta_lat = lat2 - lat1
+    delta_lon = radians(b.longitude - a.longitude)
+    haversine = sin(delta_lat / 2) ** 2 + (
+        cos(lat1) * cos(lat2) * sin(delta_lon / 2) ** 2
+    )
+    return 2 * 6371.0088 * asin(sqrt(haversine))
+
 
 def _compile_city(item: list) -> ExpansionCity:
     slug, name, url, specs = item
@@ -67,7 +75,7 @@ def _compile_city(item: list) -> ExpansionCity:
             raise ValueError(f"{slug}: insufficient route points for {key}")
         items = tuple(places[index] for index in indexes)
         straight = sum(
-            coordinates_distance_km(a.latitude, a.longitude, b.latitude, b.longitude)
+            _distance_km(a, b)
             for a, b in zip(items, items[1:])
         )
         walking_distance_km = max(0.5, round(straight * 1.35 + 0.3, 1))
