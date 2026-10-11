@@ -8,13 +8,13 @@ SOURCE_CHECKED_AT = date(2026, 10, 6)
 
 SAMARA_TRAVEL = PlaceSource(
     name="Туристический портал Самарской области — достопримечательности",
-    url="https://samara.travel/products/dostoprimechatelnosti/",
-    checked_at=SOURCE_CHECKED_AT,
+    url="https://xn--80aaafzfb7a0bgk.xn--p1ai/products/dostoprimechatelnosti/",
+    checked_at=date(2026, 10, 11),
 )
 STALIN_BUNKER = PlaceSource(
     name="Туристический портал Самарской области — музей «Бункер Сталина»",
-    url="https://samara.travel/products/muzei/muzey-bunker-stalina/",
-    checked_at=SOURCE_CHECKED_AT,
+    url="https://xn--80aaafzfb7a0bgk.xn--p1ai/products/muzei/muzey-bunker-stalina/",
+    checked_at=date(2026, 10, 11),
 )
 ALABIN_MUSEUM = PlaceSource(
     name="Самарский областной историко-краеведческий музей им. П.В. Алабина",
