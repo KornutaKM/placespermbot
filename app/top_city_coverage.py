@@ -249,7 +249,11 @@ def check_coverage_registry() -> None:
         raise RuntimeError("Ranking must contain 100 unique city names")
     if not set(RESERVED_SLUGS).issubset(TOP_100_NAMES):
         raise RuntimeError("Reserved slug is not present in top 100")
-    top_city_coverage()
+    ranked = top_city_coverage()
+    if sum(city.guide_available for city in ranked) != 100:
+        raise RuntimeError("Top-100 release requires 100 active city guide catalogs")
+    if len(list_city_manifests()) != 104:
+        raise RuntimeError("Top-100 release requires 104 catalogs including 4 extras")
 
 
 if __name__ == "__main__":
