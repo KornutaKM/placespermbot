@@ -16,7 +16,6 @@ from app.config import Settings, get_settings
 from app.data.osm_seed_2026 import OSM_SEED_CITIES
 from app.data.wikidata_seed_2026 import WIKIDATA_SEED_CITIES
 from app.maps import google_maps_place_url, google_maps_route_links
-from app.place_evidence import public_evidence
 from app.miniapp_auth import InvalidTelegramInitData, validate_init_data
 from app.miniapp_profile import my_guide_snapshot
 from app.miniapp_route_builder import (
@@ -33,6 +32,7 @@ from app.miniapp_route_builder import (
     replaced_miniapp_route,
     route_preview,
 )
+from app.place_evidence import public_evidence
 from app.route_completion import complete_saved_route
 from app.storage import (
     CompletedRoutesRepository,
