@@ -93,17 +93,14 @@ def distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
         math.sin(dy / 2) ** 2 + math.cos(a) * math.cos(b) * math.sin(dx / 2) ** 2
     ))
 
-def osm_query(lat: float, lon: float) -> dict:
-    # A spatial bounding-box index may be cheaper than a large around scan
-    # for an overloaded Overpass instance. Filter all returned features back
-    # to <=9.2km in as_place() independently of this query strategy.
-    delta_lat = RADIUS / 111_200
-    delta_lon = RADIUS / (111_200 * max(0.15, math.cos(math.radians(lat))))
-    bbox = (
-        f"({lat - delta_lat:.6f},{lon - delta_lon:.6f},"
-        f"{lat + delta_lat:.6f},{lon + delta_lon:.6f})"
-    )
-    around = f"(around:{RADIUS},{lat:.6f},{lon:.6f})"
+def osm_query(lat: float, lon: float, *, city_slug: str = "") -> dict:
+    """Get candidate evidence; make progressively wider, bounded OSM queries.
+
+    Surgut's 9km scan regularly times out on shared servers. A smaller bbox
+    retrieves precisely the same type of source-linked real OSM objects.
+    Never accept a failed-quality small response as a complete city guide.
+    """
+    radii = (3500, 5000, 7000, RADIUS) if city_slug == "surgut" else (RADIUS,)
 
     def request_ql(geofence: str) -> str:
         lines = [
@@ -115,23 +112,49 @@ def osm_query(lat: float, lon: float) -> dict:
         return "[out:json][timeout:60];(" + "".join(lines) + ");out center tags;"
 
     errors = []
-    for label, query in (("bbox", request_ql(bbox)), ("around", request_ql(around))):
-        for endpoint in OVERPASS:
-            try:
-                data = fetch_json(endpoint, post=query, timeout=50)
-                if not isinstance(data, dict) or "elements" not in data:
-                    raise ValueError("No Overpass elements in response")
-                time.sleep(MIN_REQUEST_GAP_SECONDS)
-                return data
-            except (HTTPError, URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
-                errors.append(f"{label}/{endpoint}: {str(exc)[:100]}")
-                # Respect public server backoff; move to another endpoint,
-                # never skip HTTPS certificate checks.
-                if isinstance(exc, HTTPError) and exc.code == 429:
-                    time.sleep(30)
-                else:
-                    time.sleep(2)
+    for radius in radii:
+        delta_lat = radius / 111_200
+        delta_lon = radius / (111_200 * max(0.15, math.cos(math.radians(lat))))
+        bbox = (
+            f"({lat - delta_lat:.6f},{lon - delta_lon:.6f},"
+            f"{lat + delta_lat:.6f},{lon + delta_lon:.6f})"
+        )
+        geofences = [("bbox", bbox)]
+        if radius == RADIUS:
+            geofences.append(("around", f"(around:{radius},{lat:.6f},{lon:.6f})"))
+        for label, geofence in geofences:
+            query = request_ql(geofence)
+            for endpoint in OVERPASS:
+                try:
+                    data = fetch_json(endpoint, post=query, timeout=45)
+                    if not isinstance(data, dict) or "elements" not in data:
+                        raise ValueError("No Overpass elements in response")
+                    time.sleep(MIN_REQUEST_GAP_SECONDS)
+                    if city_slug == "surgut":
+                        places, meta = choose_places(data, lat, lon, city_slug)
+                        issues = valid_city(places, meta)
+                        if issues:
+                            errors.append(
+                                f"{radius}m: valid POI gate: {', '.join(issues)}"
+                            )
+                            # Widen the box instead of repeatedly asking
+                            # alternate servers for the same deficient region.
+                            break
+                    return data
+                except (HTTPError, URLError, TimeoutError, ValueError,
+                        json.JSONDecodeError) as exc:
+                    errors.append(f"{radius}m/{label}/{endpoint}: {str(exc)[:90]}")
+                    if isinstance(exc, HTTPError) and exc.code == 429:
+                        time.sleep(30)
+                    else:
+                        time.sleep(2)
+            else:
+                continue
+            # The query succeeded but lacked enough distinct mapped POIs.
+            continue
     raise RuntimeError("OSM query failed: " + "; ".join(errors))
+
+
 
 def category_for(tags: dict) -> str | None:
     tourism = tags.get("tourism")
@@ -340,7 +363,7 @@ def valid_city(places: list, meta: dict) -> list[str]:
 def seed_one(name: str, slug: str) -> dict:
     lat, lon, geocode_label = geocode(name)
     print(f"  Geocoded {name}: {lat},{lon} ({geocode_label})", flush=True)
-    raw = osm_query(lat, lon)
+    raw = osm_query(lat, lon, city_slug=slug)
     places, meta = choose_places(raw, lat, lon, slug)
     issues = valid_city(places, meta)
     return {
