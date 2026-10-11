@@ -169,7 +169,10 @@ def build_review_queue(
                 "OSM tag change alone does not authorize reinstatement"
             ),
         })
-    queue.sort(key=lambda q: (q["priority"], -q["route_count"], q["city_name"], q["title"]))
+    queue.sort(key=lambda q: (
+        q["priority"], not q["new_or_changed"], -q["route_count"],
+        q["city_name"], q["title"],
+    ))
     counts = Counter(entry["priority"] for entry in queue)
     return {
         "produced_at": datetime.now(UTC).isoformat(),
@@ -207,6 +210,9 @@ def render_markdown(result: dict, *, max_items: int = 30) -> str:
         (f"Documentary investigations: **{result['critical_review_count']}**; "
         f"source identity investigations: **{result['source_identity_review_count']}**; "
         f"technical retries: **{result['technical_retry_count']}**."),
+        "",
+        (f"Previous completed scan available: **{result['previous_scan_available']}**; "
+        f"new/changed review signals: **{result['new_or_changed_count']}**."),
         "",
         "## Priority cases and affected prebuilt routes",
         "",
