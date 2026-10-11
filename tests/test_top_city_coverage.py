@@ -72,6 +72,9 @@ def test_directory_api_is_public_but_pending_cities_are_not_catalogs():
         payload = response.json()
         assert payload == coverage_summary()
         assert payload["target_count"] == 100
+        assert payload["ready_count"] == 100
+        assert payload["pending_count"] == 0
+        assert payload["catalog_city_count"] == 104
         assert payload["ready_count"] == 41 + MAP_CANDIDATE_COUNT
         assert payload["pending_count"] == 59 - MAP_CANDIDATE_COUNT
         assert payload["catalog_city_count"] == 45 + MAP_CANDIDATE_COUNT
