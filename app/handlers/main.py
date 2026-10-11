@@ -1,3 +1,5 @@
+from html import escape
+
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
@@ -99,6 +101,7 @@ from app.saved_routes import (
 )
 from app.search_ui import search_not_found_text, search_prompt, search_results_text
 from app.similarity import find_similar_places
+from app.top_city_coverage import coverage_summary
 from app.storage import (
     CompletedRoutesRepository,
     DismissedRepository,
@@ -163,7 +166,7 @@ def home_text(catalog: CityCatalog) -> str:
 def help_text() -> str:
     return (
         "❓ <b>Как пользоваться городским гидом</b>\n\n"
-        "1. Выберите город через /city.\n"
+        "1. Выберите город через /city; /top100 — рейтинг и статус покрытия.\n"
         "2. «Куда сходить» — категории и карточки мест; «Поиск» — по названию.\n"
         "3. «Маршруты» — готовые прогулки; «Собрать маршрут» — "
         "вариант на 2, 4 или 6 часов по интересам.\n"
@@ -236,6 +239,30 @@ async def miniapp_command(message: Message) -> None:
             ]
         ),
     )
+
+
+def top100_text() -> str:
+    """Population-ranked directory, with unavailable guides explicitly marked."""
+    summary = coverage_summary()
+    rows = [
+        f"{item['rank']}. {'✓' if item['guide_available'] else '·'} "
+        f"{escape(item['name'])}"
+        for item in summary["cities"]
+    ]
+    return (
+        "<b>100 крупнейших городов России</b>\n"
+        "По населению на 01.01.2025, в границах города.\n"
+        f"Готовы путеводители: {summary['ready_count']} из 100; "
+        f"в подготовке: {summary['pending_count']}.\n"
+        "✓ — доступен через /city; · — ещё не добавлен в путеводитель.\n\n"
+        + "\n".join(rows)
+        + "\n\nЧетыре дополнительных туристических города сохранены."
+    )
+
+
+@router.message(Command("top100"))
+async def top100_command(message: Message) -> None:
+    await message.answer(top100_text())
 
 
 @router.message(Command("help"))
