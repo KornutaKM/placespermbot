@@ -30,11 +30,12 @@ QID = re.compile(r"^https?://www\.wikidata\.org/entity/(Q[1-9][0-9]*)$")
 CATEGORIES = {
     "museums": (
         "музей", "museum", "галере", "gallery", "театр", "theatre", "theater",
-        "филармони", "концерт", "concert", "культурн", "cultural centre",
+        "филармони", "концерт", "concert", "центр культуры", "cultural centre",
     ),
     "parks": (
         "парк", "park", "сквер", "сад", "garden", "бульвар", "boulevard",
         "пляж", "beach", "набережн", "promenade", "зелёная зона",
+        "площадь", "square", "памятник природы", "natural monument",
     ),
     "unusual": ("скульптур", "sculpture", "статуя", "statue", "арт-объект",
                 "artwork", "смотров", "viewpoint", "обелиск", "obelisk"),
@@ -44,8 +45,9 @@ CATEGORIES = {
         "памятник", "монумент", "monument", "memorial", "церковь", "church",
         "собор", "cathedral", "храм", "temple", "крепость", "fortress",
         "замок", "castle", "усадьб", "manor", "дворец", "palace",
-        "мечеть", "mosque", "площадь", "square", "мост", "bridge",
-        "историческ", "historic", "архитектур", "architectur",
+        "мечеть", "mosque", "мост", "bridge",
+        "памятник архитектуры", "памятник истории", "культурная ценность",
+        "культурного наследия", "cultural heritage", "architectur",
     ),
 }
 EMOJI = {"sights": "🏛", "museums": "🖼", "parks": "🌿",
@@ -54,6 +56,17 @@ EMOJI = {"sights": "🏛", "museums": "🖼", "parks": "🌿",
 
 def category(type_name: str) -> str | None:
     text = type_name.casefold().replace("ё", "е")
+    # Public outdoor squares and nature sites belong to the walking category;
+    # historic buildings are not automatically museums.
+    if "памятник природы" in text or "natural monument" in text:
+        return "parks"
+    if any(term in text for term in (
+        "памятник архитектуры", "памятник истории", "культурная ценность",
+        "культурного наследия", "cultural heritage",
+    )):
+        return "sights"
+    if text in {"памятник", "монумент", "monument", "memorial"}:
+        return "unusual"
     for name, markers in CATEGORIES.items():
         if any(marker in text for marker in markers):
             return name
