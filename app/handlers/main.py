@@ -18,6 +18,8 @@ from app.catalog import CityCatalog
 from app.catalog_context import get_current_catalog
 from app.catalog_service import CatalogService
 from app.config import get_settings
+from app.data.osm_seed_2026 import OSM_SEED_CITIES
+from app.data.wikidata_seed_2026 import WIKIDATA_SEED_CITIES
 from app.events import get_event_providers
 from app.excursions import get_excursion_providers
 from app.keyboards import (
@@ -156,10 +158,18 @@ def current_catalog() -> CityCatalog:
 
 
 def home_text(catalog: CityCatalog) -> str:
+    map_seed = catalog.slug in {city.slug for city in (*OSM_SEED_CITIES, *WIKIDATA_SEED_CITIES)}
+    warning = (
+        "\n\nℹ️ Точки получены из OpenStreetMap. "
+        "Входы, доступность и пешеходные переходы не проверены; "
+        "перед поездкой изучите карту и условия посещения."
+        if map_seed else ""
+    )
     return (
         f"📍 <b>{catalog.name}</b>\n\n"
         "Что хотите сделать?\n\n"
         "Можно выбрать места, готовую прогулку или собрать маршрут под себя."
+        + warning
     )
 
 
@@ -245,7 +255,8 @@ def top100_text() -> str:
     """Population-ranked directory, with unavailable guides explicitly marked."""
     summary = coverage_summary()
     rows = [
-        f"{item['rank']}. {'✓' if item['guide_available'] else '·'} "
+        f"{item['rank']}. "
+        f"{'✓' if item['guide_status'] == 'editorial' else '≈' if item['guide_status'] == 'map_seed' else '·'} "
         f"{escape(item['name'])}"
         for item in summary["cities"]
     ]
@@ -254,7 +265,8 @@ def top100_text() -> str:
         "По населению на 01.01.2025, в границах города.\n"
         f"Готовы путеводители: {summary['ready_count']} из 100; "
         f"в подготовке: {summary['pending_count']}.\n"
-        "✓ — доступен через /city; · — ещё не добавлен в путеводитель.\n\n"
+        "✓ — редакционный гид; ≈ — точки OpenStreetMap без проверки переходов; "
+        "· — ещё нет каталога. Рабочие города доступны через /city.\n\n"
         + "\n".join(rows)
         + "\n\nЧетыре дополнительных туристических города сохранены."
     )

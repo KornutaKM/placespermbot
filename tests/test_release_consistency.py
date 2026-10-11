@@ -39,13 +39,13 @@ def test_current_release_metadata_consistent() -> None:
         root / "README.md", root / "docs/production-deployment.md"
     )
     assert report.status == "ready"
-    assert report.registered_cities == 45
-    assert report.documented_cities == 45
-    assert len(report.documented_city_names or ()) == 45
+    assert report.registered_cities == 104
+    assert report.documented_cities == 104
+    assert len(report.documented_city_names or ()) == 104
     assert "Рязань" in (report.documented_city_names or ())
     assert "Петрозаводск" in (report.documented_city_names or ())
-    assert report.production_minimum_cities == 45
-    assert report.deployment_guide_minimum_cities == 45
+    assert report.production_minimum_cities == 104
+    assert report.deployment_guide_minimum_cities == 104
     assert report.issues == ()
 
 

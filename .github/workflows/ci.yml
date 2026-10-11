@@ -104,7 +104,7 @@ jobs:
           trap 'docker rm -f places-miniapp-ci >/dev/null 2>&1 || true' EXIT
           for attempt in $(seq 1 15); do
             if docker exec places-miniapp-ci python -m app.miniapp_healthcheck; then
-              docker exec places-miniapp-ci python -c 'import json, urllib.request; r=json.load(urllib.request.urlopen("http://127.0.0.1:8080/api/cities")); assert len(r["cities"]) >= 45'
+              docker exec places-miniapp-ci python -c 'import json, urllib.request; r=json.load(urllib.request.urlopen("http://127.0.0.1:8080/api/cities")); assert len(r["cities"]) >= 104'
               exit 0
             fi
             sleep 2

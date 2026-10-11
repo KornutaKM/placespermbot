@@ -1,0 +1,40 @@
+name: One-time OSM catalog evidence acquisition
+
+on:
+  push:
+    branches:
+      - feature/mvp-127-osm-guides
+    paths:
+      - .github/workflows/seed_osm_cities.yml
+
+permissions:
+  contents: write
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/mvp-127-osm-guides
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: Last Surgut attempt using narrow, quality-gated Overpass boxes
+        run: python scripts/seed_city_guides.py --limit 59
+      - name: Commit captured map evidence to feature branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/data/osm_seed_2026.json docs/osm-seed-research.md
+          git diff --cached --stat
+          if ! git diff --cached --quiet; then
+            git commit -m "MVP-127: commit sourced OSM candidate evidence"
+            git fetch origin feature/mvp-127-osm-guides
+            git rebase origin/feature/mvp-127-osm-guides
+            git push origin HEAD:feature/mvp-127-osm-guides
+          fi

@@ -42,13 +42,29 @@ function sourceDetails(place) {
   const safeUrl = /^https:\/\/[^\/\s@?#<>"']+(?:[\/?#][^\s<>"']*)?$/i.test(url);
   const checkedAt = /^\d{4}-\d{2}-\d{2}$/.test(String(source.checked_at ?? ""))
     ? source.checked_at : "не указана";
+  const isOsm = safeUrl && url.startsWith("https://www.openstreetmap.org/");
+  const isWikidata = safeUrl && /^https:\/\/www\.wikidata\.org\/wiki\/Q[1-9][0-9]*$/.test(url);
   return '<div class="source-details"><strong>Откуда сведения</strong>' +
     '<p>' + (safeUrl
       ? '<a href="' + escapeText(url) +
         '" target="_blank" rel="noopener noreferrer">' + escapeText(name) + ' ↗</a>'
       : escapeText(name)) + '</p>' +
-    '<small>Дата редакционной записи: ' + escapeText(checkedAt) +
-    '. Не гарантирует актуальность часов, цен и доступности.</small></div>';
+    '<small>' + (isOsm ? 'Дата выгрузки данных OSM: ' :
+      isWikidata ? 'Дата выгрузки Wikidata: ' : 'Дата редакционной записи: ') +
+    escapeText(checkedAt) +
+    '. Не гарантирует актуальность часов, цен и доступности.</small>' +
+    (isOsm
+      ? '<small>Картографические данные: © OpenStreetMap contributors, ' +
+        '<a href="https://www.openstreetmap.org/copyright" target="_blank" ' +
+        'rel="noopener noreferrer">Open Database License (ODbL)</a>. ' +
+        'Объект и доступность не проверены на месте.</small>'
+      : "") +
+    (isWikidata
+      ? '<small>Данные: Wikidata contributors, ' +
+        '<a href="https://www.wikidata.org/wiki/Wikidata:Licensing" ' +
+        'target="_blank" rel="noopener noreferrer">CC0</a>. ' +
+        'Объект и доступность не проверены на месте.</small>'
+      : "") + '</div>';
 }
 
 function notify(message) {
@@ -116,6 +132,11 @@ function renderHome() {
     '<p>Находи атмосферные места, выбирай готовые прогулки и смотри город по-новому.</p>' +
     '<div class="hero-mark"><span>⌖ ' + escapeText(catalog.name) + '</span> ' +
     escapeText(catalog.places.length) + ' мест для открытий</div></div></section>' +
+    (catalog.guide_status === "map_seed"
+      ? '<div class="notice">Это географическая подборка OpenStreetMap, ' +
+        'а не проверенный редакционный путеводитель. Названия, входы, цены и ' +
+        'пешеходные переходы требуют самостоятельной проверки перед визитом.</div>'
+      : "") +
     (!state.signed
       ? '<div class="notice">Режим просмотра: откройте Mini App из Telegram, чтобы сохранять избранное и выбор города.</div>'
       : state.savedCity !== catalog.slug
@@ -1402,6 +1423,11 @@ async function openTopCities() {
       '<div class="notice">Готовы ' + coverage.ready_count +
       ' путеводителей из 100, ' + coverage.pending_count +
       ' в подготовке. Остальные туристические города сохраняются.</div>' +
+      '<p class="sheet-caption">Редакционных гидов: ' +
+      escapeText(coverage.editorial_count ?? coverage.ready_count) +
+      '; картографических подборок OpenStreetMap без полевой проверки: ' +
+      escapeText(coverage.map_seed_count ?? 0) +
+      '. Построенные по этим данным прогулки необходимо проверять самостоятельно.</p>' +
       '<label class="search"><span>⌕</span><input id="top100-filter" type="search" ' +
       'autocomplete="off" aria-label="Найти город в топ-100" placeholder="Найти город…"></label>' +
       '<div class="top100-list" id="top100-results"></div>' +
@@ -1419,7 +1445,9 @@ async function openTopCities() {
           return '<div class="top100-item"><span class="top100-rank">' +
             escapeText(city.rank) + '</span><div><strong>' +
             escapeText(city.name) + '</strong><small>' +
-            (ready ? 'Путеводитель доступен' : 'Каталог готовится') +
+            (ready && city.guide_status === "map_seed"
+              ? 'Подборка OSM · переходы не проверены'
+              : ready ? 'Путеводитель доступен' : 'Каталог готовится') +
             '</small></div>' + (ready
               ? '<button type="button" data-city="' + escapeText(city.slug) +
                 '">Выбрать ↗</button>'

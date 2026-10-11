@@ -26,7 +26,7 @@ dev = [
 include = ["app*"]
 
 [tool.setuptools.package-data]
-"app" = ["miniapp_static/*.html", "miniapp_static/*.css", "miniapp_static/*.js"]
+"app" = ["miniapp_static/*.html", "miniapp_static/*.css", "miniapp_static/*.js", "data/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

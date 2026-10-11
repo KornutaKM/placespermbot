@@ -59,6 +59,17 @@ assert.doesNotMatch(dangerous, /<script>|<img src/);
 assert.match(dangerous, /не указана/);
 assert.match(sourceDetails({}), /Источник не указан/);
 
+const wikidata = sourceDetails({ source: {
+  name: "Wikidata contributors (CC0)",
+  url: "https://www.wikidata.org/wiki/Q123456",
+  checked_at: "2026-10-11"
+} });
+assert.match(wikidata, /Дата выгрузки Wikidata: 2026-10-11/);
+assert.match(wikidata, /www\.wikidata\.org\/wiki\/Q123456/);
+assert.match(wikidata, /Wikidata:Licensing/);
+assert.match(wikidata, /не проверены на месте/);
+
+
 const injected = sourceDetails({ source: {
   name: "Safe", url: 'https://museum.example/" onclick="alert(1)',
   checked_at: "2026-10-11"

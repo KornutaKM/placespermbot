@@ -17,6 +17,10 @@ def test_all_city_data_modules_are_declared_in_manifest() -> None:
             discovered.add(city_slug)
         expansion = getattr(module, "EXPANSION_CITIES", ())
         discovered.update(city.slug for city in expansion)
+        imported = getattr(module, "OSM_SEED_CITIES", ())
+        discovered.update(city.slug for city in imported)
+        wikidata = getattr(module, "WIKIDATA_SEED_CITIES", ())
+        discovered.update(city.slug for city in wikidata)
 
     declared = {manifest.slug for manifest in list_city_manifests()}
 

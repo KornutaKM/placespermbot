@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 
 from app.catalog import list_catalogs
 from app.config import Settings
+from app.data.osm_seed_2026 import OSM_SEED_CITIES
+from app.data.wikidata_seed_2026 import WIKIDATA_SEED_CITIES
 from app.handlers.main import top100_text
 from app.miniapp_server import create_miniapp
 from app.top_city_coverage import (
@@ -18,11 +20,16 @@ from app.top_city_coverage import (
     top_city_coverage,
 )
 
+MAP_CANDIDATE_COUNT = len(OSM_SEED_CITIES) + len(WIKIDATA_SEED_CITIES)
+
 
 def test_rank_and_coverage_contract():
     check_coverage_registry()
     ranked = top_city_coverage()
     assert len(TOP_100_NAMES) == len(ranked) == 100
+    assert all(city.guide_available for city in ranked)
+    assert MAP_CANDIDATE_COUNT == 59
+    assert len(list_catalogs()) == 104
     assert len({city.name for city in ranked}) == 100
     assert len({city.slug for city in ranked}) == 100
     assert [(city.rank, city.name) for city in ranked[:3]] == [
@@ -35,10 +42,15 @@ def test_rank_and_coverage_contract():
 
     ready = [city for city in ranked if city.guide_available]
     pending = [city for city in ranked if not city.guide_available]
-    assert len(ready) == 41
-    assert len(pending) == 59
-    assert len(list_catalogs()) == 45
-    assert set(RESERVED_SLUGS) == {city.name for city in pending}
+    assert len(ready) == 41 + MAP_CANDIDATE_COUNT
+    assert len(pending) == 59 - MAP_CANDIDATE_COUNT
+    assert len(list_catalogs()) == 45 + MAP_CANDIDATE_COUNT
+    assert sum(c.guide_status == "editorial" for c in ranked) == 41
+    assert sum(c.guide_status == "map_seed" for c in ranked) == MAP_CANDIDATE_COUNT
+    assert all(c.guide_status == "pending" for c in pending)
+    assert set(RESERVED_SLUGS) == {
+        city.name for city in ranked if city.name in RESERVED_SLUGS
+    }
     for city in ready:
         catalog = next(c for c in list_catalogs() if c.slug == city.slug)
         assert catalog.name == city.name
@@ -60,9 +72,14 @@ def test_directory_api_is_public_but_pending_cities_are_not_catalogs():
         payload = response.json()
         assert payload == coverage_summary()
         assert payload["target_count"] == 100
-        assert payload["ready_count"] == 41
-        assert payload["pending_count"] == 59
-        assert payload["catalog_city_count"] == 45
+        assert payload["ready_count"] == 100
+        assert payload["pending_count"] == 0
+        assert payload["catalog_city_count"] == 104
+        assert payload["ready_count"] == 41 + MAP_CANDIDATE_COUNT
+        assert payload["pending_count"] == 59 - MAP_CANDIDATE_COUNT
+        assert payload["catalog_city_count"] == 45 + MAP_CANDIDATE_COUNT
+        assert payload["editorial_count"] == 41
+        assert payload["map_seed_count"] == MAP_CANDIDATE_COUNT
         assert payload["ranking_date"] == "2025-01-01"
         assert len(payload["ranking_sources"]) == 3
         assert "user_id" not in response.text
@@ -72,29 +89,34 @@ def test_directory_api_is_public_but_pending_cities_are_not_catalogs():
         # No fake empty catalogs or fallback places for cities awaiting curation.
         for name in ("Тольятти", "Севастополь", "Симферополь", "Абакан"):
             city = next(c for c in payload["cities"] if c["name"] == name)
-            assert city["guide_available"] is False
-            assert client.get(f"/api/catalogs/{city['slug']}").status_code == 404
+            status = client.get(f"/api/catalogs/{city['slug']}").status_code
+            assert status == (200 if city["guide_available"] else 404)
         assert client.get("/api/catalogs/moscow").status_code == 200
-        assert len(client.get("/api/cities").json()["cities"]) == 45
+        assert len(client.get("/api/cities").json()["cities"]) == 45 + MAP_CANDIDATE_COUNT
 
 
 def test_city_can_be_promoted_only_by_real_manifest_registration(monkeypatch):
     import app.top_city_coverage as target
 
     original = target.list_city_manifests()
+    was_ready = any(city.name == "Тверь" for city in original)
+    without_tver = tuple(city for city in original if city.name != "Тверь")
     monkeypatch.setattr(
         target, "list_city_manifests",
-        lambda: (*original, SimpleNamespace(name="Тверь", slug="tver")),
+        lambda: (*without_tver, SimpleNamespace(name="Тверь", slug="tver")),
     )
     summary = coverage_summary()
-    assert (summary["ready_count"], summary["pending_count"]) == (42, 58)
+    assert (summary["ready_count"], summary["pending_count"]) == (
+        41 + MAP_CANDIDATE_COUNT + (0 if was_ready else 1),
+        59 - MAP_CANDIDATE_COUNT - (0 if was_ready else 1),
+    )
     assert next(city for city in summary["cities"] if city["name"] == "Тверь")[
         "guide_available"
     ] is True
 
     monkeypatch.setattr(
         target, "list_city_manifests",
-        lambda: (*original, SimpleNamespace(name="Тверь", slug="wrong-slug")),
+        lambda: (*without_tver, SimpleNamespace(name="Тверь", slug="wrong-slug")),
     )
     with pytest.raises(RuntimeError, match="Reserved slug mismatch"):
         top_city_coverage()
@@ -102,10 +124,10 @@ def test_city_can_be_promoted_only_by_real_manifest_registration(monkeypatch):
 
 def test_chat_top100_message_is_safe_and_within_telegram_limit():
     message = top100_text()
-    assert "41 из 100" in message
-    assert "в подготовке: 59" in message
+    assert f"{coverage_summary()['ready_count']} из 100" in message
+    assert f"в подготовке: {coverage_summary()['pending_count']}" in message
     assert "✓ Москва" in message
-    assert "· Тольятти" in message
+    assert "Тольятти" in message
     assert "Севастополь" in message
     assert "Симферополь" in message
     assert "Абакан" in message
