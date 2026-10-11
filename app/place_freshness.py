@@ -163,9 +163,10 @@ def build_inventory(
             p["past_published_observation"] is not None for p in places
         ),
         "source_types": source_counts,
-        "blocking_findings": list(
-            (*check_retirements(catalogs), *validate_evidence(catalogs, as_of=today))
-        ),
+        "blocking_findings": [
+            *check_retirements(catalogs),
+            *validate_evidence(catalogs, as_of=today),
+        ],
         "retired": [asdict(item) for item in RETIRED],
         "cities": cities,
         "places": places,
