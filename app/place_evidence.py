@@ -139,6 +139,14 @@ EVIDENCE = (
         "и общее расписание служб. Реальный доступ в конкретный день "
         "уточняйте в приходе.",
     ),
+    Evidence(
+        "kursk", "kursk-pushkin", "operator_listed",
+        date(2026, 10, 11),
+        "https://kurskdrama.ru/kontakty/",
+        "Официальный драмтеатр указывает Ленина, 26 и расписание кассы; "
+        "в афише на октябрь 2026 есть постановки. Осмотр фасада снаружи "
+        "не подтверждает свободного доступа в зал; билеты и правила уточняйте.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(
