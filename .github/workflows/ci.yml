@@ -35,6 +35,15 @@ jobs:
         with:
           name: catalog-coverage
           path: catalog-coverage.json
+      - name: Full catalog freshness inventory and retired-place guard
+        run: |
+          python -m app.place_freshness --format json --check > place-freshness.json
+          python -m app.place_freshness --format markdown >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload city-by-city place freshness inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: place-freshness-inventory
+          path: place-freshness.json
       - name: Route geography review
         run: |
           python -m app.route_review --format json > route-review.json

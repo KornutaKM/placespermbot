@@ -22,11 +22,6 @@ PERM_MUSEUM_SOURCE = PlaceSource(
     url="https://museumperm.ru/branches",
     checked_at=SOURCE_CHECKED_AT,
 )
-PERM_GATES_SOURCE = PlaceSource(
-    name="Пермь монументальная — Пермские ворота",
-    url="https://monuments.permartmuseum.ru/object/28",
-    checked_at=SOURCE_CHECKED_AT,
-)
 FRONT_REAR_SOURCE = PlaceSource(
     name="Пермь монументальная — Героям фронта и тыла",
     url="https://monuments.permartmuseum.ru/object/56",
@@ -219,23 +214,6 @@ PLACES: tuple[Place, ...] = (
         longitude=56.245460,
         source=PERM_MUSEUM_SOURCE,
         tags=("музей", "палеонтология", "пермский период", "с детьми"),
-    ),
-    Place(
-        slug="perm-gates",
-        title="Пермские ворота",
-        category="unusual",
-        summary=(
-            "Паблик-арт объект Николая Полисского из еловых брёвен в "
-            "саду имени 250-летия Перми."
-        ),
-        emoji="🪵",
-        district="Дзержинский район",
-        visit_minutes=30,
-        is_free=True,
-        latitude=58.004528,
-        longitude=56.193416,
-        source=PERM_GATES_SOURCE,
-        tags=("современное искусство", "городское искусство", "прогулка", "бесплатно"),
     ),
     Place(
         slug="front-and-rear-monument",
@@ -599,7 +577,7 @@ PLACES: tuple[Place, ...] = (
         "perm-station-garden",
         "Сад имени 250-летия Перми",
         "parks",
-        "Зелёная территория рядом с Пермскими воротами и железнодорожным вокзалом.",
+        "Исторический сад рядом с вокзалом Пермь II. Арт-объект «Пермские ворота», ранее расположенный здесь, демонтирован в июне 2024 года; перед посещением проверяйте доступность территории.",
         "🌳",
         "Дзержинский район",
         90,
@@ -777,12 +755,12 @@ ROUTES: tuple[RoutePlan, ...] = (
         ("perm-motovilikha-history-square", "perm-motovilikha-pond", "perm-diorama"),
     ),
     RoutePlan(
-        "perm-railway-garden",
-        "У железнодорожного вокзала",
-        "Открытые аллеи сада имени 250-летия Перми и деревянный арт-объект.",
-        205,
-        2.4,
-        ("perm-gates", "perm-station-garden"),
+        "perm-esplanade-memory",
+        "Эспланада: площадь и монумент",
+        "Прогулка по открытой центральной эспланаде с осмотром монумента «Героям фронта и тыла». Доступность дорожек проверяйте на месте.",
+        185,
+        1.1,
+        ("perm-esplanade-family", "front-and-rear-monument"),
     ),
     RoutePlan(
         "perm-history-cathedral",
