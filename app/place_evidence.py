@@ -74,6 +74,22 @@ EVIDENCE = (
         "статус «действующий» и адрес Александровский сад. "
         "Доступ в конкретный день и ограничения уточняйте у прихода.",
     ),
+    Evidence(
+        "murmansk", "murmansk-icebreaker-lenin", "operator_listed",
+        date(2026, 10, 11),
+        "https://www.rosatomflot.ru/atomnyy-ledokol-lenin/grafik-raboty/",
+        "Росатомфлот описывает экскурсионные сеансы и порядок покупки именных "
+        "электронных билетов. Наличие мест и допуск на конкретную дату "
+        "нужно уточнять у оператора.",
+    ),
+    Evidence(
+        "murmansk", "murmansk-crafts-house", "operator_listed",
+        date(2026, 10, 11),
+        "https://www.artmmuseum.ru/history/",
+        "Мурманский областной художественный музей перечисляет Дом ремёсел "
+        "как свой отдел на улице Книповича, 23А. Актуальное расписание "
+        "занятий и выставок уточняйте у музея.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(

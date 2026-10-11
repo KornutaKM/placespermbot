@@ -15,10 +15,19 @@ def test_murmansk_catalog_depth_provenance_and_bbox() -> None:
     assert len(city.places) >= 34
     assert len(city.routes) >= 10
     assert len({p.district for p in city.places}) >= 12
+    refreshed = {
+        "murmansk-icebreaker-lenin",
+        "murmansk-atom-and-arctic",
+        "murmansk-crafts-house",
+    }
     for place in city.places:
         assert 68.90 <= place.latitude <= 69.10
         assert 33.02 <= place.longitude <= 33.18
-        assert place.source.checked_at == date(2026, 10, 8)
+        expected_date = (
+            date(2026, 10, 11) if place.slug in refreshed
+            else date(2026, 10, 8)
+        )
+        assert place.source.checked_at == expected_date
         parsed = urlparse(place.source.url)
         assert parsed.scheme == "https" and parsed.hostname
 
@@ -27,7 +36,9 @@ def test_murmansk_institution_provenance() -> None:
     city = catalog()
     hosts = {
         "murmansk-sea-terminal": "www.murmansk.travel",
-        "murmansk-icebreaker-lenin": "murmansk.travel",
+        "murmansk-icebreaker-lenin": "www.rosatomflot.ru",
+        "murmansk-atom-and-arctic": "www.rosatomflot.ru",
+        "murmansk-crafts-house": "www.artmmuseum.ru",
         "murmansk-regional-museum": "www.murmansk.travel",
         "murmansk-regional-art-museum": "artmmuseum.ru",
         "murmansk-russian-museum-center": "artmmuseum.ru",
