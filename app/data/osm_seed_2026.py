@@ -53,12 +53,12 @@ def _candidate_route(
             (_distance_km(a, b), a.slug, b.slug, a, b)
             for i, a in enumerate(candidates)
             for b in candidates[i + 1:]
-            if 0.08 <= _distance_km(a, b) <= 3.5
+            if 0.08 <= _distance_km(a, b) <= 5.0
         ),
         key=lambda item: (item[0], item[1], item[2]),
     )
     if not possible:
-        raise ValueError(f"{slug}/{key}: no nearby pair within 3.5 km")
+        raise ValueError(f"{slug}/{key}: no nearby pair within 5 km")
     _, _, _, first, second = possible[0]
     visits = [first, second]
     # A third nearby point makes an itinerary more informative without
