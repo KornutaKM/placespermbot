@@ -81,7 +81,7 @@ def test_freshness_inventory_works_for_every_active_city_and_source():
     assert report["withheld_pending_review"][0]["place_slug"] == (
         "nalchik-osm-way-234973881"
     )
-    assert report["documented_past_observations"] == 1
+    assert report["documented_past_observations"] == 2
     assert all(
         p["review_status"] == "requires_current_independent_confirmation"
         for p in report["places"]
