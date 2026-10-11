@@ -9,7 +9,9 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import date
+from itertools import pairwise
 from math import asin, ceil, cos, radians, sin, sqrt
+
 from app.domain import Place, PlaceSource, RoutePlan
 
 CATEGORY_LABELS = {
