@@ -244,8 +244,8 @@ def test_syktyvkar_operator_entrances_replace_generic_map_pins():
             61.669566, 50.825026, "Первомайская, 56",
         ),
         "syktyvkar-opera": (
-            "https://komiopera.ru/",
-            61.669, 50.8205, "Коммунистическая, 32",
+            "https://komiopera.ru/kontakty/",
+            61.666167, 50.819313, "Коммунистическая, 32",
         ),
         "syktyvkar-geology": (
             "https://geo.komisc.ru/museum/museum-contacts",
@@ -303,7 +303,7 @@ def test_syktyvkar_cathedral_and_two_monuments_have_safe_grounded_pins():
     assert evidence["evidence_url"] == cathedral.source.url
     assert "уточняйте" in evidence["finding"]
 
-    assert (kuratov.latitude, kuratov.longitude) == (61.665245, 50.8204)
+    assert (kuratov.latitude, kuratov.longitude) == (61.665251, 50.820102)
     assert "Театральная площадь" == kuratov.district
     assert kuratov.source.url == (
         "https://tourism.rkomi.ru/travel-guide/pamyatnik-ia-kuratovu"
@@ -324,4 +324,28 @@ def test_syktyvkar_cathedral_and_two_monuments_have_safe_grounded_pins():
         "syktyvkar", "syktyvkar-stefan-monument", as_of=date(2026, 10, 11)
     )["status"] == "not_independently_checked"
     assert len(city.places) == 12 and len(city.routes) == 5
+    assert not hard_route_findings(inspect_routes(city))
+
+
+def test_syktyvkar_park_pin_is_not_confused_with_western_urban_square():
+    city = get_catalog("syktyvkar")
+    park = city.place_by_slug("syktyvkar-kirov-park")
+    opera = city.place_by_slug("syktyvkar-opera")
+    kuratov = city.place_by_slug("syktyvkar-kurator")
+    assert park is not None and opera is not None and kuratov is not None
+    assert park.title == "Парк имени С. М. Кирова"
+    assert (park.latitude, park.longitude) == (61.6722, 50.8421)
+    assert "ориентир внутри парка" in park.summary
+    assert "не отдельный вход" in park.summary
+    assert park.source.url == "https://drki-kirova21.ru/page/661"
+    assert (opera.latitude, opera.longitude) == (61.666167, 50.819313)
+    assert opera.source.url == "https://komiopera.ru/kontakty/"
+    assert "режим кассы не равен" in opera.summary
+    assert kuratov.source.url == (
+        "https://tourism.rkomi.ru/travel-guide/pamyatnik-ia-kuratovu"
+    )
+    assert "реестровому описанию" in kuratov.summary
+    assert "syktyvkar-kirov-park" in city.route_by_slug(
+        "syktyvkar-walk"
+    ).place_slugs
     assert not hard_route_findings(inspect_routes(city))
