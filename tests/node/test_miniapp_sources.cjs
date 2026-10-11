@@ -91,4 +91,21 @@ const detail = doc.getElementById("sheet-root").innerHTML;
 assert.match(detail, /Откуда сведения/);
 assert.match(detail, /museum.example/);
 assert.match(detail, /Уточните|уточните/);
+place.evidence = {
+  status: "official_tourism_listing",
+  checked_on: "2026-10-11",
+  evidence_url: "https://gotoomsk.ru/places/istoriko-kulturnyj-kompleks-omskaya-krepost/",
+  finding: "Туринфоцентр перечисляет объект."
+};
+openPlace("a");
+const tourismDetail = doc.getElementById("sheet-root").innerHTML;
+assert.match(tourismDetail, /официального туристского инфоцентра/);
+assert.match(tourismDetail, /Это не гарантия доступа/);
+assert.doesNotMatch(tourismDetail, /сайте оператора/);
+
+place.evidence.evidence_url = 'javascript:alert("unsafe")';
+openPlace("a");
+const blockedLinkDetail = doc.getElementById("sheet-root").innerHTML;
+assert.doesNotMatch(blockedLinkDetail, /href="javascript:/);
+
 console.log("Mini App provenance UI regression passed");
