@@ -16,6 +16,7 @@ from app.config import Settings, get_settings
 from app.data.osm_seed_2026 import OSM_SEED_CITIES
 from app.data.wikidata_seed_2026 import WIKIDATA_SEED_CITIES
 from app.maps import google_maps_place_url, google_maps_route_links
+from app.place_evidence import public_evidence
 from app.miniapp_auth import InvalidTelegramInitData, validate_init_data
 from app.miniapp_profile import my_guide_snapshot
 from app.miniapp_route_builder import (
@@ -151,6 +152,7 @@ def create_miniapp(settings: Settings | None = None) -> FastAPI:
                 "longitude": place.longitude,
                 "tags": list(place.tags),
                 "map_url": google_maps_place_url(place),
+                "evidence": public_evidence(city.slug, place.slug),
                 "source": {
                     "name": place.source.name,
                     "url": place.source.url,
