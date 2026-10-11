@@ -143,6 +143,11 @@ def create_miniapp(settings: Settings | None = None) -> FastAPI:
                 "longitude": place.longitude,
                 "tags": list(place.tags),
                 "map_url": google_maps_place_url(place),
+                "source": {
+                    "name": place.source.name,
+                    "url": place.source.url,
+                    "checked_at": place.source.checked_at.isoformat(),
+                },
             }
             for place in city.places
         ]

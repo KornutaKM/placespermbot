@@ -67,6 +67,8 @@ jobs:
         run: node tests/node/test_miniapp_alternatives.cjs
       - name: Mini App cross-city search regression
         run: node tests/node/test_miniapp_discovery.cjs
+      - name: Mini App source provenance regression
+        run: node tests/node/test_miniapp_sources.cjs
       - name: Full test suite
         run: pytest -q
 

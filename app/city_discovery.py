@@ -94,6 +94,11 @@ def discover_places(
             "emoji": place.emoji,
             "visit_minutes": place.visit_minutes,
             "is_free": place.is_free,
+            "source": {
+                "name": place.source.name,
+                "url": place.source.url,
+                "checked_at": place.source.checked_at.isoformat(),
+            },
         })
     return {
         "query": query.strip(),

@@ -29,6 +29,28 @@ function escapeText(value) {
   }[symbol]));
 }
 
+
+function sourceDetails(place) {
+  const source = place.source;
+  if (!source || typeof source !== "object") {
+    return '<div class="source-details"><strong>Источник не указан</strong>' +
+      '<p>Сведения из редакционного каталога; проверьте объект перед визитом.</p></div>';
+  }
+  const name = String(source.name ?? "").trim() || "Редакционный источник";
+  const url = String(source.url ?? "").trim();
+  // Reject active schemes, credentials and malformed hosts even if API data changes.
+  const safeUrl = /^https:\/\/[^\/\s@?#<>"']+(?:[\/?#][^\s<>"']*)?$/i.test(url);
+  const checkedAt = /^\d{4}-\d{2}-\d{2}$/.test(String(source.checked_at ?? ""))
+    ? source.checked_at : "не указана";
+  return '<div class="source-details"><strong>Откуда сведения</strong>' +
+    '<p>' + (safeUrl
+      ? '<a href="' + escapeText(url) +
+        '" target="_blank" rel="noopener noreferrer">' + escapeText(name) + ' ↗</a>'
+      : escapeText(name)) + '</p>' +
+    '<small>Дата редакционной записи: ' + escapeText(checkedAt) +
+    '. Не гарантирует актуальность часов, цен и доступности.</small></div>';
+}
+
 function notify(message) {
   toast.textContent = message;
   toast.classList.add("show");
@@ -1321,6 +1343,7 @@ function openPlace(slug) {
     '<span>Сохранить место в избранном</span></div>' +
     '<div class="detail-visited">' + visitedButton(place) +
     '<span>Отметить посещение в «Моём гиде»</span></div>' +
+    sourceDetails(place) +
     '<p class="sheet-caption">Перед посещением уточните часы работы и условия доступа.</p>' +
     '<a class="map-link" target="_blank" rel="noopener noreferrer" href="' +
     escapeText(place.map_url) + '">Открыть на карте ↗</a>');

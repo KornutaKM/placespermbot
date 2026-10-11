@@ -50,7 +50,7 @@ To set a different private backup location:
    against the live database and snapshot: validate expected Git SHA,
    freshness, independence, schema, SQLite integrity and catalog count.
    This container does **not** start Telegram polling.
-5. Replace only the Compose `bot` service, then verify health and the
+5. Replace both Compose services (`bot` and `web`), then verify health and the
    reported `build_sha` from diagnostics.
 
 Failures before step 5 leave the previous polling container running; no
