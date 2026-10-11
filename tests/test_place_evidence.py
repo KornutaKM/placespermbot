@@ -17,14 +17,14 @@ from app.place_source_probe import (
 
 
 def test_all_documentary_evidence_points_exist_and_sources_are_independent():
-    assert len(EVIDENCE) == 27
+    assert len(EVIDENCE) == 28
     assert sum(item.city_slug == "perm" for item in EVIDENCE) == 14
     assert validate_evidence(as_of=date(2026, 10, 11)) == ()
     assert {
         "perm-art-gallery", "perm-zoo", "permm",
         "perm-childrens-museum-center", "perm-antiquities-museum",
     } <= {item.place_slug for item in EVIDENCE}
-    assert len({(e.city_slug, e.place_slug) for e in EVIDENCE}) == 27
+    assert len({(e.city_slug, e.place_slug) for e in EVIDENCE}) == 28
 
 
 def test_evidence_is_a_operator_listing_not_guaranteed_access():
@@ -56,14 +56,14 @@ def test_evidence_validation_catches_missing_place_in_altered_catalog():
 def test_all_city_inventory_annotates_every_source_without_false_claims():
     report = build_inventory(as_of=date(2026, 10, 11))
     assert report["active_places_count"] == 2141
-    assert report["documented_operator_listings"] == 24
+    assert report["documented_operator_listings"] == 25
     assert report["documented_official_tourism_listings"] == 3
     assert report["blocking_findings"] == []
     checked = [
         p for p in report["places"]
         if p["documentary_evidence"]["status"] == "operator_listed"
     ]
-    assert len(checked) == 24
+    assert len(checked) == 25
     assert {p["city_slug"] for p in checked} == {"perm", "yaroslavl", "volgograd", "murmansk", "sochi", "kursk"}
     assert all(p["review_status"] == "requires_current_independent_confirmation"
                for p in report["places"])

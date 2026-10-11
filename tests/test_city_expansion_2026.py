@@ -137,3 +137,46 @@ def test_kursk_operator_sources_and_gallery_geolocation_are_documented():
         "kursk-museums"
     ).place_slugs
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_kursk_archaeology_and_theatre_map_pins_match_named_city_venues():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+    from app.place_freshness import build_inventory
+
+    city = get_catalog("kursk")
+    museum = city.place_by_slug("kursk-archaeology")
+    theatre = city.place_by_slug("kursk-pushkin")
+    assert museum is not None and theatre is not None
+    assert (museum.latitude, museum.longitude) == (51.72053, 36.18591)
+    assert museum.district == "Пионеров, 6"
+    assert "Пионеров, 6" in museum.summary
+    assert museum.source.url == (
+        "https://welcomekursk.ru/places/485/"
+        "kurskii-gosudarstvennyi-oblastnoi-muzei-arkheologii"
+    )
+    assert (theatre.latitude, theatre.longitude) == (51.739, 36.19163)
+    assert theatre.district == "Ленина, 26"
+    assert theatre.source.url == "https://kurskdrama.ru/kontakty/"
+    evidence = public_evidence("kursk", "kursk-pushkin",
+                               as_of=date(2026, 10, 11))
+    assert evidence["status"] == "operator_listed"
+    assert "уточняйте" in evidence["finding"]
+    assert public_evidence("kursk", "kursk-archaeology",
+                           as_of=date(2026, 10, 11))["status"] == (
+        "not_independently_checked"
+    )
+    history = build_inventory(as_of=date(2026, 10, 11))
+    record = next(
+        row for row in history["places"]
+        if (row["city_slug"], row["place_slug"]) ==
+        ("kursk", "kursk-archaeology")
+    )
+    assert record["past_published_observation"]["reported_on"] == "2026-08-14"
+    assert record["review_status"] == "requires_current_independent_confirmation"
+    assert "kursk-archaeology" in city.route_by_slug(
+        "kursk-museums"
+    ).place_slugs
+    assert city.place_by_slug("kursk-pushkin") is not None
+    assert not hard_route_findings(inspect_routes(city))
