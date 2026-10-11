@@ -11,6 +11,11 @@ VOLGOGRAD_TOURISM = PlaceSource(
     url="https://www.volgadmin.ru/d/about/Tourism",
     checked_at=SOURCE_CHECKED_AT,
 )
+PAVLOV_HOUSE_SOURCE = PlaceSource(
+    name="Администрация Волгограда — Дом Павлова, отдельная страница памятника",
+    url="https://monument.volgadmin.ru/start.asp?np=3",
+    checked_at=date(2026, 10, 11),
+)
 VISIT_VLG = PlaceSource(
     name="Туристический портал Волгограда — достопримечательности",
     url="https://visitvlg.ru/?bcs=156&menu=9",
@@ -124,7 +129,7 @@ PLACES = (
         True,
         48.7164,
         44.5304,
-        VOLGOGRAD_TOURISM,
+        PAVLOV_HOUSE_SOURCE,
         ("история", "Сталинградская битва", "мемориал", "бесплатно"),
     ),
     Place(
