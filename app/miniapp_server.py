@@ -31,7 +31,6 @@ from app.miniapp_route_builder import (
     route_preview,
 )
 from app.route_completion import complete_saved_route
-from app.top_city_coverage import coverage_summary
 from app.storage import (
     CompletedRoutesRepository,
     FavoritesRepository,
@@ -39,6 +38,7 @@ from app.storage import (
     UserCityRepository,
     VisitedRepository,
 )
+from app.top_city_coverage import coverage_summary
 
 STATIC_DIR = Path(__file__).resolve().parent / "miniapp_static"
 
