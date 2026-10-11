@@ -9,6 +9,7 @@ from typing import Literal
 
 from app.catalog import CityCatalog, list_catalogs
 from app.domain import Place
+from app.place_evidence import public_evidence
 
 DiscoveryCategory = Literal[
     "all", "sights", "unusual", "museums", "parks", "family", "free"
@@ -94,6 +95,7 @@ def discover_places(
             "emoji": place.emoji,
             "visit_minutes": place.visit_minutes,
             "is_free": place.is_free,
+            "evidence": public_evidence(city.slug, place.slug),
             "source": {
                 "name": place.source.name,
                 "url": place.source.url,

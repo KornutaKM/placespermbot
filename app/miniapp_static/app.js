@@ -30,6 +30,26 @@ function escapeText(value) {
 }
 
 
+function evidenceSummary(place) {
+  const evidence = place.evidence;
+  if (!evidence || evidence.status === "not_independently_checked") {
+    return '<small class="place-evidence">Актуальность объекта не подтверждена отдельно. Проверьте перед визитом.</small>';
+  }
+  if (evidence.status === "evidence_stale") {
+    return '<small class="place-evidence">Предыдущая проверка устарела; условия посещения уточняйте.</small>';
+  }
+  if (evidence.status === "operator_listed") {
+    const link = String(evidence.evidence_url || "");
+    const safe = /^https:\/\/[^\/\s@?#<>"']+(?:[\/?#][^\s<>"']*)?$/i.test(link);
+    return '<small class="place-evidence">Объект указан на сайте оператора' +
+      (safe ? ': <a href="' + escapeText(link) +
+       '" target="_blank" rel="noopener noreferrer">проверка ↗</a>' : '') +
+      ' (сверено ' + escapeText(evidence.checked_on || "") +
+      '). Это не гарантия доступа в конкретный день.</small>';
+  }
+  return '<small class="place-evidence">Условия посещения уточняйте перед визитом.</small>';
+}
+
 function sourceDetails(place) {
   const source = place.source;
   if (!source || typeof source !== "object") {
@@ -115,7 +135,8 @@ function placeCard(place) {
     '<div class="place-info"><span class="kicker">' +
     escapeText(place.category_label) + '</span><h3>' +
     escapeText(place.title) + '</h3><p>' +
-    escapeText(place.summary) + '</p><div class="place-footer"><span>' +
+    escapeText(place.summary) + '</p>' + evidenceSummary(place) +
+    '<div class="place-footer"><span>' +
     escapeText(place.district) + ' · ~' +
     escapeText(place.visit_minutes) +
     ' мин</span><div class="place-actions">' + favoriteButton(place) +
@@ -1367,7 +1388,7 @@ function openPlace(slug) {
     '<span>Сохранить место в избранном</span></div>' +
     '<div class="detail-visited">' + visitedButton(place) +
     '<span>Отметить посещение в «Моём гиде»</span></div>' +
-    sourceDetails(place) +
+    sourceDetails(place) + evidenceSummary(place) +
     '<p class="sheet-caption">Перед посещением уточните часы работы и условия доступа.</p>' +
     '<a class="map-link" target="_blank" rel="noopener noreferrer" href="' +
     escapeText(place.map_url) + '">Открыть на карте ↗</a>');

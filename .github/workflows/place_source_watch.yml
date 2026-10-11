@@ -1,0 +1,86 @@
+name: Place Source Watch
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "app/data/**"
+      - "app/place_evidence.py"
+      - "app/place_source_probe.py"
+      - ".github/workflows/place_source_watch.yml"
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  source-watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -e .
+      - name: Check every place against current primary source and map metadata
+        run: python -m app.place_source_probe --live --output place-source-scan.json
+      - name: Summarize source risks for all 104 cities
+        run: |
+          python - <<'PY'
+          import json
+          from collections import Counter
+          from pathlib import Path
+
+          data = json.loads(Path("place-source-scan.json").read_text(encoding="utf-8"))
+          suspicious = (
+              "source_missing_review_required",
+              "map_feature_missing_review_required",
+              "mapped_inactive_review_required",
+              "mapped_access_restriction_review_required",
+              "wikidata_item_missing_review_required",
+              "wikidata_end_date_review_required",
+          )
+          lines = [
+              "# Place Source Watch — source drift signals only",
+              "",
+              "These checks do **not** verify real-world opening, map access or "
+              "visitable routes. A missing/broken URL is **not** proof of demolition. "
+              "HTTP 403/429 and timeouts are inconclusive.",
+              "",
+              f"Catalogs: {data['city_count']}; POIs covered: {data['place_count']}; "
+              f"distinct source links: {data['unique_source_urls']}",
+              "",
+              "| Signal | Count |", "|---|---:|",
+          ]
+          for signal, count in sorted(data["signal_counts"].items()):
+              lines.append(f"| {signal} | {count} |")
+          lines += [
+              "", "## City-level review queue", "",
+              "| City | Total | Potential changed/blocked POIs |",
+              "|---|---:|---:|",
+          ]
+          for city in data["city_summary"]:
+              issues = sum(city.get(k, 0) for k in suspicious)
+              lines.append(f"| {city['name']} | {city['total']} | {issues} |")
+          lines += [
+              "",
+              "Download `place-source-scan` to inspect every source URL, "
+              "response, OSM/Wikidata signal and point-specific evidence.",
+          ]
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"],
+                    "a", encoding="utf-8") as stream:
+              stream.write("\n".join(lines) + "\n")
+          print(dict(Counter(data["signal_counts"])))
+          PY
+      - name: Upload full public source comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: place-source-scan
+          path: place-source-scan.json
+          if-no-files-found: warn
+          retention-days: 90

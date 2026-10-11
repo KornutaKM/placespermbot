@@ -12,6 +12,7 @@ from datetime import UTC, date, datetime
 from urllib.parse import urlparse
 
 from app.catalog import CityCatalog, list_catalogs
+from app.place_evidence import public_evidence, validate_evidence
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,6 +122,9 @@ def build_inventory(
                 "source_age_days": age,
                 "review_priority": priority,
                 "review_status": "requires_current_independent_confirmation",
+                "documentary_evidence": public_evidence(
+                    city.slug, place.slug, as_of=today
+                ),
                 "past_published_observation": (
                     asdict(observation) if observation else None
                 ),
@@ -135,6 +139,10 @@ def build_inventory(
                 p["review_priority"] == "high" for p in city_places
             ),
             "not_verified_now": len(city_places),
+            "operator_listed": sum(
+                p["documentary_evidence"]["status"] == "operator_listed"
+                for p in city_places
+            ),
             "community_map_entries": sum(
                 p["source_type"].startswith("community_") for p in city_places
             ),
@@ -146,12 +154,19 @@ def build_inventory(
         "cities_count": len(cities),
         "active_places_count": len(places),
         "not_verified_now": len(places),
+        "documented_operator_listings": sum(
+            p["documentary_evidence"]["status"] == "operator_listed"
+            for p in places
+        ),
         "historically_removed_count": len(RETIRED),
         "documented_past_observations": sum(
             p["past_published_observation"] is not None for p in places
         ),
         "source_types": source_counts,
-        "blocking_findings": list(check_retirements(catalogs)),
+        "blocking_findings": [
+            *check_retirements(catalogs),
+            *validate_evidence(catalogs, as_of=today),
+        ],
         "retired": [asdict(item) for item in RETIRED],
         "cities": cities,
         "places": places,
@@ -177,12 +192,13 @@ def render_markdown(report: dict) -> str:
         "",
         "## По городам",
         "",
-        "| Город | Карточек | Высокий приоритет проверки |",
-        "|---|---:|---:|",
+        "| Город | Карточек | Есть ссылка оператора | Высокий приоритет проверки |",
+        "|---|---:|---:|---:|",
     ]
     for city in report["cities"]:
         lines.append(
-            f"| {city['name']} | {city['total']} | {city['high_priority']} |"
+            f"| {city['name']} | {city['total']} | {city['operator_listed']} "
+            f"| {city['high_priority']} |"
         )
     lines.extend([
         "",

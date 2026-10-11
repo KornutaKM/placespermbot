@@ -32,6 +32,7 @@ from app.miniapp_route_builder import (
     replaced_miniapp_route,
     route_preview,
 )
+from app.place_evidence import public_evidence
 from app.route_completion import complete_saved_route
 from app.storage import (
     CompletedRoutesRepository,
@@ -151,6 +152,7 @@ def create_miniapp(settings: Settings | None = None) -> FastAPI:
                 "longitude": place.longitude,
                 "tags": list(place.tags),
                 "map_url": google_maps_place_url(place),
+                "evidence": public_evidence(city.slug, place.slug),
                 "source": {
                     "name": place.source.name,
                     "url": place.source.url,
