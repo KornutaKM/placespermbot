@@ -127,3 +127,74 @@ def test_priority_categories_and_ranking():
     assert isinstance(report["produced_at"], str)
     assert datetime.fromisoformat(report["produced_at"]).tzinfo == UTC
     assert len(report["city_summary"]) == len(list_catalogs())
+
+
+def test_same_source_technical_error_recovery_is_not_venue_verification():
+    previous = run_audit(live=False)
+    current = deepcopy(previous)
+    old = next(p for p in previous["places"] if p["source_kind"] == "web")
+    now = next(
+        p for p in current["places"]
+        if (p["city_slug"], p["place_slug"]) ==
+        (old["city_slug"], old["place_slug"])
+    )
+    old["probe"] = {"signal": "probe_inconclusive", "error_type": "URLError"}
+    now["probe"] = {"signal": "source_reachable_not_venue_verified",
+                    "http_status": 200}
+    report = build_review_queue(current, previous=previous)
+    assert report["technical_retry_count"] == 0
+    assert report["recovered_technical_probe_count"] == 1
+    assert report["persistent_technical_retry_count"] == 0
+    assert report["source_url_change_count"] == 0
+    assert report["same_source_comparable_count"] == 2141
+    recovered = report["recovered_technical_probes"][0]
+    assert recovered["place_slug"] == now["place_slug"]
+    assert recovered["source_url"] == now["source_url"]
+    assert recovered["previous_signal"] == "probe_inconclusive"
+    assert recovered["current_signal"] == "source_reachable_not_venue_verified"
+    assert "NOT verified" in recovered["meaning"]
+    assert "technical probes no longer failing: **1**" in render_markdown(report)
+
+
+def test_source_url_changes_are_not_technical_recoveries():
+    previous = run_audit(live=False)
+    current = deepcopy(previous)
+    old = previous["places"][0]
+    now = current["places"][0]
+    old["source_url"] = "https://previous-source.example/place"
+    old["probe"] = {"signal": "probe_inconclusive"}
+    now["probe"] = {"signal": "probe_inconclusive"}
+    report = build_review_queue(current, previous=previous)
+    assert report["source_url_change_count"] == 1
+    assert report["recovered_technical_probe_count"] == 0
+    assert report["persistent_technical_retry_count"] == 0
+    assert report["same_source_comparable_count"] == 2140
+    flagged = report["queue"][0]
+    assert flagged["source_changed_since_previous"] is True
+    assert flagged["new_or_changed"] is True
+    assert report["new_or_changed_count"] == 1
+    changed = report["source_url_changes"][0]
+    assert changed["previous_url"] == "https://previous-source.example/place"
+    assert changed["current_url"] == now["source_url"]
+
+
+def test_repeated_technical_retry_is_reported_separately():
+    previous = run_audit(live=False)
+    current = deepcopy(previous)
+    old = previous["places"][0]
+    now = current["places"][0]
+    old["probe"] = {"signal": "probe_blocked_or_throttled", "http_status": 403}
+    now["probe"] = {"signal": "probe_inconclusive", "error_type": "URLError"}
+    report = build_review_queue(current, previous=previous)
+    assert report["persistent_technical_retry_count"] == 1
+    assert report["recovered_technical_probe_count"] == 0
+    assert report["new_or_changed_count"] == 1
+    assert report["queue"][0]["previous_signal"] == "probe_blocked_or_throttled"
+    assert report["queue"][0]["source_changed_since_previous"] is False
+
+
+def test_duplicate_previous_snapshot_does_not_silently_corrupt_transitions():
+    previous = run_audit(live=False)
+    previous["places"].append(deepcopy(previous["places"][0]))
+    with pytest.raises(ValueError, match="Duplicate place in previous scan"):
+        build_review_queue(run_audit(live=False), previous=previous)
