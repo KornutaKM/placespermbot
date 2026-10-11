@@ -17,7 +17,7 @@ from app.database_contract import validate_database_contract
 from app.release_identity import require_build_revision
 from app.runtime_checks import validate_health
 
-MINIMUM_CITY_COUNT = 96
+MINIMUM_CITY_COUNT = 104
 FUTURE_CLOCK_TOLERANCE_SECONDS = 300
 
 
