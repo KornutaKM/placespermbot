@@ -105,9 +105,6 @@ def test_kursk_operator_sources_and_gallery_geolocation_are_documented():
     city = get_catalog("kursk")
     sources = {
         "kursk-deineka": "https://deinekagallery.ru/posetitelyam/",
-        "kursk-museum-local": (
-            "https://kursk-museum.ru/ekskursiya-kurskij-detinec/"
-        ),
         "kursk-znamensky": "https://kursk-znamen-1.cerkov.ru/",
         "kursk-sergiev": "https://serge-kazan.cerkov.ru/",
     }
@@ -130,8 +127,18 @@ def test_kursk_operator_sources_and_gallery_geolocation_are_documented():
     assert "Луначарского, 6" in city.place_by_slug(
         "kursk-museum-local"
     ).summary
+    museum = city.place_by_slug("kursk-museum-local")
+    assert museum is not None
+    assert museum.source.url == (
+        "https://xn--46-6kc3bf4angc2g.xn--p1ai/organizations/"
+        "обук-курский-областной-краеведческ/"
+    )
+    assert public_evidence(
+        "kursk", "kursk-museum-local", as_of=date(2026, 10, 11)
+    )["status"] == "not_independently_checked"
     assert city.place_by_slug("kursk-red-square").source.url == (
-        "https://www.culture.ru/s/kursk/"
+        "https://bitva.kursk.ru/routes/"
+        "marshrut-po-severnomu-fasu-kurskoy-dugi/"
     )
     assert "kursk-deineka" in city.route_by_slug(
         "kursk-museums"
