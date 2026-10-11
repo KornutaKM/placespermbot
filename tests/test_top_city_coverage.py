@@ -20,7 +20,6 @@ from app.top_city_coverage import (
     top_city_coverage,
 )
 
-
 MAP_CANDIDATE_COUNT = len(OSM_SEED_CITIES) + len(WIKIDATA_SEED_CITIES)
 
 
