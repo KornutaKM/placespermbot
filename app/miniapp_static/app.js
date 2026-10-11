@@ -122,6 +122,11 @@ function renderHome() {
     '<p>Находи атмосферные места, выбирай готовые прогулки и смотри город по-новому.</p>' +
     '<div class="hero-mark"><span>⌖ ' + escapeText(catalog.name) + '</span> ' +
     escapeText(catalog.places.length) + ' мест для открытий</div></div></section>' +
+    (catalog.guide_status === "map_seed"
+      ? '<div class="notice">Это географическая подборка OpenStreetMap, ' +
+        'а не проверенный редакционный путеводитель. Названия, входы, цены и ' +
+        'пешеходные переходы требуют самостоятельной проверки перед визитом.</div>'
+      : "") +
     (!state.signed
       ? '<div class="notice">Режим просмотра: откройте Mini App из Telegram, чтобы сохранять избранное и выбор города.</div>'
       : state.savedCity !== catalog.slug
