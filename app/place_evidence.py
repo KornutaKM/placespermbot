@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from html import escape
 from urllib.parse import urlparse
 
 from app.catalog import CityCatalog, list_catalogs
@@ -103,6 +104,31 @@ def public_evidence(
         "evidence_url": entry.evidence_url,
         "finding": entry.finding,
     }
+
+
+def telegram_evidence_notice(
+    city_slug: str, place_slug: str, *, as_of: date | None = None,
+) -> str:
+    """HTML-safe Telegram notice: source metadata != venue verified today."""
+    evidence = public_evidence(city_slug, place_slug, as_of=as_of)
+    status = evidence["status"]
+    if status == "operator_listed":
+        date_text = escape(evidence["checked_on"] or "")
+        evidence_link = escape(evidence["evidence_url"] or "", quote=True)
+        return (
+            f"📋 Объект указан на сайте учреждения ({date_text}): "
+            f'<a href="{evidence_link}">подтверждающий источник</a>.'
+            "\\n⚠️ Наличие места, часы и доступ в день посещения уточняйте."
+        )
+    if status == "evidence_stale":
+        return (
+            "⚠️ Прежнее подтверждение учреждения устарело. "
+            "Фактическую доступность нужно перепроверить."
+        )
+    return (
+        "⚠️ Существование и текущая доступность не подтверждены "
+        "индивидуальной проверкой. Уточните перед поездкой."
+    )
 
 
 def validate_evidence(

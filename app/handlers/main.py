@@ -80,6 +80,7 @@ from app.pagination import PAGE_SIZE, Page, paginate
 from app.personal_route import build_explained_personal_route
 from app.personal_route_ui import personal_route_result_text
 from app.personalization_context import load_personalization_context
+from app.place_evidence import telegram_evidence_notice
 from app.place_route import build_place_route
 from app.planner import INTEREST_LABELS, build_route
 from app.profile import ProfileSummary, build_profile_summary, profile_text
@@ -814,7 +815,9 @@ async def place_card(
         f"{access}\n\n"
         f"{tags}\n\n"
         f"🔎 Источник: <a href=\"{place.source.url}\">{place.source.name}</a>\n"
-        f"Проверено: {place.source.checked_at.strftime('%d.%m.%Y')}",
+        f"Дата записи источника: {place.source.checked_at.strftime('%d.%m.%Y')} "
+        "(это не дата проверки доступности)\n\n"
+        f"{telegram_evidence_notice(catalog.slug, place.slug)}",
         reply_markup=place_keyboard(
             place,
             is_dismissed=is_dismissed,
