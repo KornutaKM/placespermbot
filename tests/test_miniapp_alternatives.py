@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import json
 import time
+from itertools import pairwise
 from urllib.parse import urlencode
 
 import pytest
@@ -97,7 +98,7 @@ def test_suggested_replacements_are_safe_and_deterministic_across_all_cities():
                 assert route.places[0].slug == candidate.slug
                 assert all(
                     distance_km(first, second) <= 5.0
-                    for first, second in zip(route.places, route.places[1:])
+                    for first, second in pairwise(route.places)
                 )
     assert explored >= 45
     assert found > 10
