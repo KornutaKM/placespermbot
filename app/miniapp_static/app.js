@@ -11,7 +11,8 @@ const state = {
   visitPending: new Set(), routePending: new Set(),
   builder: { budget_minutes: 240, interest: "classic", exclude_visited: false,
     result: null, busy: false, saving: false, saved: false, version: 0,
-    showMap: false, mapController: null, baseRouteId: null, edited: false }
+    showMap: false, mapController: null, baseRouteId: null, edited: false,
+    replacement: null, alternatives: null }
 };
 const screen = document.getElementById("screen");
 const sheetRoot = document.getElementById("sheet-root");
@@ -669,6 +670,8 @@ function updateBuilderOption(key, value) {
   state.builder.saved = false;
   state.builder.baseRouteId = null;
   state.builder.edited = false;
+  state.builder.replacement = null;
+  state.builder.alternatives = null;
   state.builder.showMap = false;
   renderBuilder();
 }
@@ -676,7 +679,7 @@ function updateBuilderOption(key, value) {
 function builderResultMarkup(route, saved) {
   if (!route) return "";
   const controlsEnabled = !state.builder.busy && !state.builder.saving &&
-    !state.builder.saved;
+    !state.builder.saved && !state.builder.replacement;
   const stops = route.places.map((place, index) =>
     '<li><b>' + (index + 1) + '</b><span><strong>' +
     escapeText(place.emoji) + ' ' + escapeText(place.title) +
@@ -693,7 +696,12 @@ function builderResultMarkup(route, saved) {
     '<button type="button" class="builder-stop-remove" data-builder-remove="' +
     index + '" aria-label="Удалить остановку: ' + escapeText(place.title) + '"' +
     (!controlsEnabled || route.places.length < 2 ? " disabled" : "") +
-    '>×</button></div></li>'
+    '>×</button>' +
+    '<button type="button" class="builder-stop-replace" ' +
+    'data-builder-alternatives="' + index +
+    '" aria-label="Подобрать замену: ' + escapeText(place.title) + '"' +
+    (!controlsEnabled ? " disabled" : "") +
+    '>⇄</button></div></li>'
   ).join("");
   const links = route.map_links.map((link, index) =>
     '<a class="builder-map-link" target="_blank" rel="noopener noreferrer" href="' +
@@ -721,7 +729,24 @@ function builderResultMarkup(route, saved) {
     (state.builder.edited
       ? '<p class="builder-edited-note">Маршрут изменён и пересчитан. ' +
         'Можно сохранить как отдельный вариант.</p>' : "") +
+    (state.builder.replacement
+      ? '<div class="builder-replacement-notice">✓ Остановка заменена. ' +
+        'Чтобы заменить ещё одну, сохраните вариант и постройте новый маршрут.</div>'
+      : "") +
     '<ol class="builder-stops">' + stops + '</ol>' +
+    (state.builder.alternatives
+      ? '<section class="builder-alternatives"><h3>Подходящие замены</h3>' +
+        '<p>Проверены время и пешие переходы до соседних остановок.</p>' +
+        (state.builder.alternatives.items.length
+          ? state.builder.alternatives.items.map(place =>
+              '<button type="button" data-builder-choose="' +
+              escapeText(place.slug) + '">' + escapeText(place.emoji) + ' ' +
+              '<strong>' + escapeText(place.title) + '</strong>' +
+              '<small>~' + escapeText(place.estimated_minutes) +
+              ' мин весь маршрут · ' + escapeText(place.district) + '</small></button>'
+            ).join("")
+          : '<div class="empty">Нет безопасных замен при этих настройках.</div>') +
+        '</section>' : "") +
     '<button class="builder-map-toggle" type="button" ' +
     'data-builder-map-toggle="yes">' +
     (state.builder.showMap ? "Скрыть карту" : "⌖ Показать остановки на карте") +
@@ -825,6 +850,8 @@ async function buildPreview() {
   b.result = null;
   b.baseRouteId = null;
   b.edited = false;
+  b.replacement = null;
+  b.alternatives = null;
   b.showMap = false;
   const version = ++b.version;
   renderBuilder();
@@ -856,7 +883,7 @@ async function buildPreview() {
 async function editBuilderStop(kind, rawIndex) {
   const b = state.builder;
   if (state.tab !== "builder" || !b.result ||
-    b.busy || b.saving || b.saved || !b.baseRouteId) return;
+    b.busy || b.saving || b.saved || b.replacement || !b.baseRouteId) return;
   const index = Number(rawIndex);
   const stops = b.result.places.map(place => place.slug);
   if (!Number.isInteger(index) || index < 0 || index >= stops.length) return;
@@ -897,12 +924,110 @@ async function editBuilderStop(kind, rawIndex) {
     b.result = preview;
     b.edited = true;
     b.saved = false;
+    b.alternatives = null;
     b.showMap = false;
     notify("Маршрут пересчитан");
   } catch (_) {
     if (state.catalog.slug === city && state.builder === b &&
       b.version === version) {
       notify("Изменение недоступно: проверьте время или расстояние перехода (до 5 км).");
+    }
+  } finally {
+    if (state.builder === b && b.version === version) {
+      b.busy = false;
+      if (state.tab === "builder" && state.catalog.slug === city) renderBuilder();
+    }
+  }
+}
+
+async function showBuilderAlternatives(rawIndex) {
+  const b = state.builder;
+  if (state.tab !== "builder" || !b.result || !b.baseRouteId ||
+    b.busy || b.saving || b.saved || b.replacement) return;
+  const index = Number(rawIndex);
+  if (!Number.isInteger(index) || index < 0 || index >= b.result.places.length) return;
+  const city = state.catalog.slug;
+  const slugs = b.result.places.map(place => place.slug);
+  b.busy = true;
+  b.alternatives = null;
+  const version = ++b.version;
+  renderBuilder();
+  try {
+    const reply = await api(
+      "/api/routes/" + encodeURIComponent(city) + "/alternatives", {
+        method: "POST",
+        body: JSON.stringify({
+          ...builderBody(), base_route_id: b.baseRouteId,
+          place_slugs: slugs, stop_index: index
+        })
+      }
+    );
+    if (state.builder !== b || b.version !== version ||
+      state.catalog.slug !== city) return;
+    if (reply.city_slug !== city || reply.base_route_id !== b.baseRouteId ||
+      reply.stop_index !== index || !Array.isArray(reply.alternatives)) {
+      throw new Error("Invalid alternative suggestions");
+    }
+    b.alternatives = { index, original_slugs: slugs, items: reply.alternatives };
+  } catch (_) {
+    if (state.builder === b && b.version === version &&
+      state.catalog.slug === city) {
+      notify("Не удалось подобрать замены. Попробуйте другой маршрут.");
+    }
+  } finally {
+    if (state.builder === b && b.version === version) {
+      b.busy = false;
+      if (state.tab === "builder" && state.catalog.slug === city) renderBuilder();
+    }
+  }
+}
+
+async function replaceBuilderStop(candidateSlug) {
+  const b = state.builder;
+  if (state.tab !== "builder" || !b.result || !b.alternatives ||
+    b.busy || b.saving || b.saved || b.replacement) return;
+  const choice = b.alternatives.items.find(place => place.slug === candidateSlug);
+  if (!choice) return;
+  const selection = b.alternatives;
+  const city = state.catalog.slug;
+  b.busy = true;
+  const version = ++b.version;
+  renderBuilder();
+  try {
+    const preview = await api(
+      "/api/routes/" + encodeURIComponent(city) + "/replace", {
+        method: "POST",
+        body: JSON.stringify({
+          ...builderBody(), base_route_id: b.baseRouteId,
+          place_slugs: selection.original_slugs,
+          stop_index: selection.index,
+          candidate_slug: candidateSlug
+        })
+      }
+    );
+    if (state.builder !== b || b.version !== version ||
+      state.catalog.slug !== city) return;
+    const expected = [...selection.original_slugs];
+    expected[selection.index] = candidateSlug;
+    if (preview.city_slug !== city || !preview.route_id ||
+      !Array.isArray(preview.places) || !Array.isArray(preview.map_links) ||
+      preview.places.map(place => place.slug).join("|") !== expected.join("|")) {
+      throw new Error("Invalid replacement preview");
+    }
+    b.result = preview;
+    b.replacement = {
+      original_slugs: selection.original_slugs,
+      stop_index: selection.index,
+      candidate_slug: candidateSlug
+    };
+    b.edited = true;
+    b.alternatives = null;
+    b.showMap = false;
+    notify("Остановка заменена, маршрут пересчитан");
+  } catch (_) {
+    if (state.builder === b && b.version === version &&
+      state.catalog.slug === city) {
+      notify("Замена недоступна: проверьте бюджет и длину переходов.");
     }
   } finally {
     if (state.builder === b && b.version === version) {
@@ -926,11 +1051,17 @@ async function saveBuiltRoute() {
   b.saving = true;
   renderBuilder();
   try {
-    const endpoint = b.edited ? "/save-edited" : "/save";
+    const endpoint = b.replacement ? "/save-replaced" :
+      (b.edited ? "/save-edited" : "/save");
     const payload = {
       ...builderBody(), expected_route_id: expectedId
     };
-    if (b.edited) {
+    if (b.replacement) {
+      payload.base_route_id = b.baseRouteId;
+      payload.place_slugs = b.replacement.original_slugs;
+      payload.stop_index = b.replacement.stop_index;
+      payload.candidate_slug = b.replacement.candidate_slug;
+    } else if (b.edited) {
       payload.base_route_id = b.baseRouteId;
       payload.place_slugs = b.result.places.map(place => place.slug);
     }
@@ -950,6 +1081,8 @@ async function saveBuiltRoute() {
       b.result = null;
       b.baseRouteId = null;
       b.edited = false;
+      b.replacement = null;
+      b.alternatives = null;
       notify("Маршрут изменился или сохранение недоступно. Постройте его заново.");
     }
   } finally {
@@ -1116,7 +1249,8 @@ async function loadCity(slug) {
   state.builder = { budget_minutes: 240, interest: "classic",
     exclude_visited: false, result: null, busy: false, saving: false,
     saved: false, version: state.builder.version + 1,
-    showMap: false, mapController: null, baseRouteId: null, edited: false };
+    showMap: false, mapController: null, baseRouteId: null, edited: false,
+    replacement: null, alternatives: null };
   if (state.mapController) {
     state.mapController.destroy();
     state.mapController = null;
@@ -1167,6 +1301,14 @@ screen.addEventListener("click", event => {
   }
   if (trigger.dataset.guideHistory) {
     openCompletedGuideRoute(trigger.dataset.guideHistory);
+    return;
+  }
+  if (trigger.dataset.builderAlternatives !== undefined) {
+    void showBuilderAlternatives(trigger.dataset.builderAlternatives);
+    return;
+  }
+  if (trigger.dataset.builderChoose !== undefined) {
+    void replaceBuilderStop(trigger.dataset.builderChoose);
     return;
   }
   if (trigger.dataset.builderMoveUp !== undefined) {
