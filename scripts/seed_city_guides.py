@@ -57,7 +57,10 @@ def fetch_json(url: str, *, params: dict | None = None, post: str | None = None)
 
 def geocode(name: str) -> tuple[float, float, str]:
     # Single-purpose, serial requests with a real project UA; do not bulk crawl.
-    for query in (f"{name}, Россия", f"{name}, Russia"):
+    queries = (f"{name}, Россия", f"{name}, Russia")
+    if name in ("Севастополь", "Симферополь"):
+        queries += (name,)
+    for query in queries:
         result = fetch_json(NOMINATIM, params={
             "q": query, "format": "jsonv2", "limit": 6,
             "addressdetails": 1, "accept-language": "ru",
