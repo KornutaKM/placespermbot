@@ -25,7 +25,7 @@ jobs:
           python-version: "3.12"
       - run: pip install -e .
       - name: Collect Wikidata fallback for all remaining OSM failures
-        run: python scripts/wikidata_fallback.py --limit 59
+        run: python scripts/wikidata_fallback.py --limit 59 --refresh
       - name: Commit sourced, reviewable Wikidata evidence to feature branch
         run: |
           git config user.name "github-actions[bot]"
