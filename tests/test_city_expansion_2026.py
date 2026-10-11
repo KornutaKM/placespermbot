@@ -222,3 +222,59 @@ def test_kursk_memorial_alley_identity_and_dated_public_space_caveats():
     assert "kursk-heroes" in {p.slug for p in city.places}
     assert "kursk-heroes" in city.route_by_slug("kursk-walk").place_slugs
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_syktyvkar_operator_entrances_replace_generic_map_pins():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("syktyvkar")
+    institutions = {
+        "syktyvkar-national-museum": (
+            "https://museumkomi.ru/?page_id=1609",
+            61.6695, 50.8382, "Коммунистическая, 6",
+        ),
+        "syktyvkar-national-gallery": (
+            "https://ngrkomi-art.ru/",
+            61.6696, 50.8426, "Кирова, 44",
+        ),
+        "syktyvkar-savin": (
+            "https://komidrama.ru/contacts",
+            61.669566, 50.825026, "Первомайская, 56",
+        ),
+        "syktyvkar-opera": (
+            "https://komiopera.ru/",
+            61.669, 50.8205, "Коммунистическая, 32",
+        ),
+        "syktyvkar-geology": (
+            "https://geo.komisc.ru/museum/museum-contacts",
+            61.670871, 50.823662, "Первомайская, 54",
+        ),
+    }
+    for slug, (url, lat, lon, address) in institutions.items():
+        place = city.place_by_slug(slug)
+        assert place is not None
+        assert place.source.url == url
+        assert place.source.checked_at == date(2026, 10, 11)
+        assert place.latitude == lat and place.longitude == lon
+        assert place.district == address
+        evidence = public_evidence(
+            "syktyvkar", slug, as_of=date(2026, 10, 11)
+        )
+        assert evidence["status"] == "operator_listed"
+        assert evidence["evidence_url"] == url
+    museum = city.place_by_slug("syktyvkar-national-museum")
+    assert "Отдел природы" in museum.title
+    assert "Отдел истории" in museum.summary
+    assert "закрытым на капитальный ремонт" in museum.summary
+    assert "предварительной записи" in city.place_by_slug(
+        "syktyvkar-geology"
+    ).summary
+    assert city.place_by_slug("syktyvkar-stefan-square").source.url == (
+        "https://tourism.rkomi.ru/about/cities/syktyvkar"
+    )
+    assert "syktyvkar-geology" in city.route_by_slug(
+        "syktyvkar-museums"
+    ).place_slugs
+    assert not hard_route_findings(inspect_routes(city))
