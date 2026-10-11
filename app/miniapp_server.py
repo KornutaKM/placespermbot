@@ -13,6 +13,7 @@ from app.catalog import get_catalog, has_catalog
 from app.catalog_service import CatalogService
 from app.city_discovery import DiscoveryCategory, discover_places
 from app.config import Settings, get_settings
+from app.data.osm_seed_2026 import OSM_SEED_CITIES
 from app.maps import google_maps_place_url, google_maps_route_links
 from app.miniapp_auth import InvalidTelegramInitData, validate_init_data
 from app.miniapp_profile import my_guide_snapshot
@@ -181,6 +182,10 @@ def create_miniapp(settings: Settings | None = None) -> FastAPI:
         return {
             "slug": city.slug,
             "name": city.name,
+            "guide_status": (
+                "map_seed" if city.slug in {item.slug for item in OSM_SEED_CITIES}
+                else "editorial"
+            ),
             "category_labels": city.category_labels,
             "places": places,
             "routes": routes,
