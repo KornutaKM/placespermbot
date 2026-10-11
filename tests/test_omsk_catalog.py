@@ -17,7 +17,7 @@ def test_omsk_catalog_has_current_local_provenance() -> None:
     for place in city.places:
         assert 54.93 <= place.latitude <= 55.06
         assert 73.27 <= place.longitude <= 73.43
-        assert place.source.checked_at == date(2026, 10, 6)
+        assert place.source.checked_at >= date(2026, 10, 6)
         source = urlparse(place.source.url)
         assert source.scheme == "https"
         assert source.hostname
@@ -26,7 +26,7 @@ def test_omsk_catalog_has_current_local_provenance() -> None:
 def test_omsk_landmarks_use_specific_sources() -> None:
     city = catalog()
     expected_hosts = {
-        "omsk-fortress": "omskkrepost.ru",
+        "omsk-fortress": "gotoomsk.ru",
         "omsk-local-history-museum": "sibmuseum.ru",
         "dostoevsky-museum-omsk": "lit-museum.ru",
         "vrubel-museum": "www.vrubel.ru",
@@ -76,3 +76,23 @@ def test_omsk_routes_cover_fortress_irtysh_museums_and_family() -> None:
     assert "dostoevsky-museum-omsk" in routes["omsk-dostoevsky"].place_slugs
     assert "green-island-omsk" in routes["omsk-irtysh"].place_slugs
     assert "bird-harbor-omsk" in routes["omsk-family"].place_slugs
+
+
+def test_omsk_fortress_and_gates_use_specific_official_https_page() -> None:
+    city = catalog()
+    expected = (
+        "https://gotoomsk.ru/places/"
+        "istoriko-kulturnyj-kompleks-omskaya-krepost/"
+    )
+    for slug in ("omsk-fortress", "tobolsk-gate-omsk", "tarsk-gate-omsk"):
+        place = city.place_by_slug(slug)
+        assert place is not None
+        assert place.source.url == expected
+        assert place.source.checked_at == date(2026, 10, 11)
+
+    reconstructed = city.place_by_slug("tarsk-gate-omsk")
+    preserved = city.place_by_slug("tobolsk-gate-omsk")
+    assert reconstructed is not None and preserved is not None
+    assert "Воссозданные" in reconstructed.summary
+    assert "Сохранившиеся" in preserved.summary
+    assert all("omskkrepost.ru" not in p.source.url for p in city.places)

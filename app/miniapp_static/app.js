@@ -38,10 +38,13 @@ function evidenceSummary(place) {
   if (evidence.status === "evidence_stale") {
     return '<small class="place-evidence">Предыдущая проверка устарела; условия посещения уточняйте.</small>';
   }
-  if (evidence.status === "operator_listed") {
+  if (evidence.status === "operator_listed" ||
+      evidence.status === "official_tourism_listing") {
     const link = String(evidence.evidence_url || "");
     const safe = /^https:\/\/[^\/\s@?#<>"']+(?:[\/?#][^\s<>"']*)?$/i.test(link);
-    return '<small class="place-evidence">Объект указан на сайте оператора' +
+    const sourceType = evidence.status === "operator_listed"
+      ? "сайте оператора" : "сайте официального туристского инфоцентра";
+    return '<small class="place-evidence">Объект указан на ' + sourceType +
       (safe ? ': <a href="' + escapeText(link) +
        '" target="_blank" rel="noopener noreferrer">проверка ↗</a>' : '') +
       ' (сверено ' + escapeText(evidence.checked_on || "") +

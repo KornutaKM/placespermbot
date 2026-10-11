@@ -144,6 +144,10 @@ def build_inventory(
                 p["documentary_evidence"]["status"] == "operator_listed"
                 for p in city_places
             ),
+            "official_tourism_listed": sum(
+                p["documentary_evidence"]["status"] == "official_tourism_listing"
+                for p in city_places
+            ),
             "community_map_entries": sum(
                 p["source_type"].startswith("community_") for p in city_places
             ),
@@ -157,6 +161,10 @@ def build_inventory(
         "not_verified_now": len(places),
         "documented_operator_listings": sum(
             p["documentary_evidence"]["status"] == "operator_listed"
+            for p in places
+        ),
+        "documented_official_tourism_listings": sum(
+            p["documentary_evidence"]["status"] == "official_tourism_listing"
             for p in places
         ),
         "historically_removed_count": len(RETIRED),
@@ -199,13 +207,13 @@ def render_markdown(report: dict) -> str:
         "",
         "## По городам",
         "",
-        "| Город | Карточек | Есть ссылка оператора | Высокий приоритет проверки |",
-        "|---|---:|---:|---:|",
+        "| Город | Карточек | Сайт оператора | Официальный ТИЦ | Высокий приоритет |",
+        "|---|---:|---:|---:|---:|",
     ]
     for city in report["cities"]:
         lines.append(
             f"| {city['name']} | {city['total']} | {city['operator_listed']} "
-            f"| {city['high_priority']} |"
+            f"| {city['official_tourism_listed']} | {city['high_priority']} |"
         )
     lines.extend([
         "",

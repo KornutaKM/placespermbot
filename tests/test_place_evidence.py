@@ -17,14 +17,14 @@ from app.place_source_probe import (
 
 
 def test_all_documentary_evidence_points_exist_and_sources_are_independent():
-    assert len(EVIDENCE) == 16
+    assert len(EVIDENCE) == 19
     assert sum(item.city_slug == "perm" for item in EVIDENCE) == 14
     assert validate_evidence(as_of=date(2026, 10, 11)) == ()
     assert {
         "perm-art-gallery", "perm-zoo", "permm",
         "perm-childrens-museum-center", "perm-antiquities-museum",
     } <= {item.place_slug for item in EVIDENCE}
-    assert len({(e.city_slug, e.place_slug) for e in EVIDENCE}) == 16
+    assert len({(e.city_slug, e.place_slug) for e in EVIDENCE}) == 19
 
 
 def test_evidence_is_a_operator_listing_not_guaranteed_access():
@@ -57,6 +57,7 @@ def test_all_city_inventory_annotates_every_source_without_false_claims():
     report = build_inventory(as_of=date(2026, 10, 11))
     assert report["active_places_count"] == 2141
     assert report["documented_operator_listings"] == 16
+    assert report["documented_official_tourism_listings"] == 3
     assert report["blocking_findings"] == []
     checked = [
         p for p in report["places"]
@@ -153,3 +154,27 @@ def test_http_error_not_proof_of_attraction_closed(monkeypatch):
     result = probe_page("https://example.com/", timeout=1)
     assert result["signal"] == "probe_blocked_or_throttled"
     assert result["http_status"] == 403
+
+
+def test_official_tourism_listing_is_not_operator_verification() -> None:
+    for slug in ("omsk-fortress", "tobolsk-gate-omsk", "tarsk-gate-omsk"):
+        evidence = public_evidence("omsk", slug, as_of=date(2026, 10, 11))
+        assert evidence["status"] == "official_tourism_listing"
+        assert evidence["checked_on"] == "2026-10-11"
+        assert evidence["evidence_url"] == (
+            "https://gotoomsk.ru/places/"
+            "istoriko-kulturnyj-kompleks-omskaya-krepost/"
+        )
+        assert public_evidence(
+            "omsk", slug, as_of=date(2027, 2, 1)
+        )["status"] == "evidence_stale"
+    from app.place_evidence import telegram_evidence_notice
+
+    text = telegram_evidence_notice(
+        "omsk", "omsk-fortress", as_of=date(2026, 10, 11)
+    )
+    assert "туристского инфоцентра" in text
+    assert "сайте учреждения" not in text
+    assert "уточняйте" in text
+    report = build_inventory(as_of=date(2026, 10, 11))
+    assert sum(c["official_tourism_listed"] for c in report["cities"]) == 3
