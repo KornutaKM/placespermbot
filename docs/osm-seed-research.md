@@ -1,0 +1,65 @@
+# OSM candidate city guide acquisition
+
+⚠️ Extracted OSM map data; not on-site verified. Routes are geometric suggestions and must be checked before field publication.
+
+© OpenStreetMap contributors, ODbL 1.0. See https://www.openstreetmap.org/copyright
+
+- **Тольятти** (tolyatti): READY; 18 POI; issues: none
+- **Махачкала** (makhachkala): READY; 18 POI; issues: none
+- **Барнаул** (barnaul): READY; 18 POI; issues: none
+- **Ижевск** (izhevsk): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Ульяновск** (ulyanovsk): READY; 18 POI; issues: none
+- **Ставрополь** (stavropol): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Набережные Челны** (naberezhnye-chelny): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Балашиха** (balashikha): READY; 18 POI; issues: none
+- **Кемерово** (kemerovo): READY; 18 POI; issues: none
+- **Оренбург** (orenburg): READY; 18 POI; issues: none
+- **Новокузнецк** (novokuznetsk): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Севастополь** (sevastopol): REVIEW; 0 POI; issues: Cannot locate Севастополь in Russia
+- **Чебоксары** (cheboksary): READY; 18 POI; issues: none
+- **Липецк** (lipetsk): READY; 18 POI; issues: none
+- **Киров** (kirov): READY; 18 POI; issues: none
+- **Сургут** (surgut): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Тверь** (tver): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Магнитогорск** (magnitogorsk): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Грозный** (grozny): READY; 18 POI; issues: none
+- **Якутск** (yakutsk): READY; 18 POI; issues: none
+- **Брянск** (bryansk): READY; 18 POI; issues: none
+- **Иваново** (ivanovo): READY; 18 POI; issues: none
+- **Чита** (chita): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Симферополь** (simferopol): REVIEW; 0 POI; issues: Cannot locate Симферополь in Russia
+- **Нижний Тагил** (nizhny-tagil): READY; 18 POI; issues: none
+- **Калуга** (kaluga): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Белгород** (belgorod): READY; 18 POI; issues: none
+- **Подольск** (podolsk): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Волжский** (volzhsky): READY; 18 POI; issues: none
+- **Смоленск** (smolensk): READY; 18 POI; issues: none
+- **Саранск** (saransk): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Курган** (kurgan): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Череповец** (cherepovets): READY; 18 POI; issues: none
+- **Владикавказ** (vladikavkaz): READY; 18 POI; issues: none
+- **Нижневартовск** (nizhnevartovsk): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Орёл** (oryol): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Стерлитамак** (sterlitamak): READY; 18 POI; issues: none
+- **Мытищи** (mytishchi): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Новороссийск** (novorossiysk): REVIEW; 0 POI; issues: districts: 4 < 5
+- **Химки** (khimki): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Тамбов** (tambov): READY; 18 POI; issues: none
+- **Нальчик** (nalchik): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Нижнекамск** (nizhnekamsk): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Таганрог** (taganrog): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Благовещенск** (blagoveshchensk): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Люберцы** (lyubertsy): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Комсомольск-на-Амуре** (komsomolsk-on-amur): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Королёв** (korolyov): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Энгельс** (engels): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Братск** (bratsk): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Шахты** (shakhty): READY; 18 POI; issues: none
+- **Ангарск** (angarsk): READY; 18 POI; issues: none
+- **Старый Оскол** (stary-oskol): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Дзержинск** (dzerzhinsk): READY; 18 POI; issues: none
+- **Красногорск** (krasnogorsk): READY; 18 POI; issues: none
+- **Одинцово** (odintsovo): READY; 18 POI; issues: none
+- **Орск** (orsk): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Армавир** (armavir): REVIEW; 0 POI; issues: OSM query failed: https://overpass.kumi.systems/api/interpreter: HTTP Error 500: Internal Server Error; https://overpass.private.coffee/api/interpreter: HTTP Error 500: Internal Server Error; https://
+- **Абакан** (abakan): READY; 18 POI; issues: none
