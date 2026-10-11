@@ -23,12 +23,12 @@ REPORT = Path("docs/osm-seed-research.md")
 USER_AGENT = "PlacesRussiaBot/1.0 (https://github.com/KornutaKM/placespermbot; research snapshot)"
 NOMINATIM = "https://nominatim.openstreetmap.org/search"
 OVERPASS = (
-    # Global-data instances, documented in the OpenStreetMap Overpass wiki.
-    # The retired overpass.kumi.systems address is intentionally excluded.
-    "https://overpass.osm.jp/api/interpreter",
+    # Globally covering instances documented by the OpenStreetMap Wiki.
+    # Japan endpoint is excluded after a verified TLS certificate mismatch;
+    # never disable TLS verification to access an OSM mirror.
     "https://overpass-api.de/api/interpreter",
-    "https://overpass.private.coffee/api/interpreter",
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
 )
 RADIUS = 9000
 MIN_REQUEST_GAP_SECONDS = 2.0
@@ -44,7 +44,10 @@ SKIP_NAMES = {"парк", "сквер", "музей", "памятник", "пл�
 EMOJI = {"sights": "🏛", "museums": "🖼", "parks": "🌿",
          "unusual": "✨", "family": "👨‍👩‍👧"}
 
-def fetch_json(url: str, *, params: dict | None = None, post: str | None = None) -> dict | list:
+def fetch_json(
+    url: str, *, params: dict | None = None, post: str | None = None,
+    timeout: float = 90,
+) -> dict | list:
     target = url + ("?" + urlencode(params) if params else "")
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json",
                "Accept-Language": "ru"}
@@ -52,7 +55,7 @@ def fetch_json(url: str, *, params: dict | None = None, post: str | None = None)
     if data is not None:
         headers["Content-Type"] = "application/x-www-form-urlencoded"
     request = Request(target, headers=headers, data=data)
-    with urlopen(request, timeout=90) as response:
+    with urlopen(request, timeout=timeout) as response:
         body = response.read(8_000_000)
     if len(body) >= 8_000_000:
         raise ValueError("Query response too large")
@@ -91,29 +94,43 @@ def distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     ))
 
 def osm_query(lat: float, lon: float) -> dict:
+    # A spatial bounding-box index may be cheaper than a large around scan
+    # for an overloaded Overpass instance. Filter all returned features back
+    # to <=9.2km in as_place() independently of this query strategy.
+    delta_lat = RADIUS / 111_200
+    delta_lon = RADIUS / (111_200 * max(0.15, math.cos(math.radians(lat))))
+    bbox = (
+        f"({lat - delta_lat:.6f},{lon - delta_lon:.6f},"
+        f"{lat + delta_lat:.6f},{lon + delta_lon:.6f})"
+    )
     around = f"(around:{RADIUS},{lat:.6f},{lon:.6f})"
-    lines = [
-        f'nwr{around}["name"]["tourism"~"^(museum|gallery|attraction|artwork|viewpoint|zoo|theme_park|aquarium)$"];',
-        f'nwr{around}["name"]["historic"~"^(monument|memorial|castle|fort|ruins|archaeological_site|manor)$"];',
-        f'nwr{around}["name"]["leisure"~"^(park|garden|nature_reserve)$"];',
-        f'nwr{around}["name"]["amenity"~"^(theatre|arts_centre|planetarium)$"];',
-    ]
-    query = "[out:json][timeout:70];(" + "".join(lines) + ");out center tags;"
+
+    def request_ql(geofence: str) -> str:
+        lines = [
+            f'nwr{geofence}["name"]["tourism"~"^(museum|gallery|attraction|artwork|viewpoint|zoo|theme_park|aquarium)$"];',
+            f'nwr{geofence}["name"]["historic"~"^(monument|memorial|castle|fort|ruins|archaeological_site|manor)$"];',
+            f'nwr{geofence}["name"]["leisure"~"^(park|garden|nature_reserve)$"];',
+            f'nwr{geofence}["name"]["amenity"~"^(theatre|arts_centre|planetarium)$"];',
+        ]
+        return "[out:json][timeout:60];(" + "".join(lines) + ");out center tags;"
+
     errors = []
-    for endpoint in OVERPASS:
-        try:
-            data = fetch_json(endpoint, post=query)
-            if not isinstance(data, dict) or "elements" not in data:
-                raise ValueError("No Overpass elements in response")
-            time.sleep(MIN_REQUEST_GAP_SECONDS)
-            return data
-        except (HTTPError, URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
-            errors.append(f"{endpoint}: {str(exc)[:100]}")
-            # Public Overpass instances ask for at least 30s after rate limiting.
-            if isinstance(exc, HTTPError) and exc.code in (406, 429):
-                time.sleep(30)
-            else:
-                time.sleep(2)
+    for label, query in (("bbox", request_ql(bbox)), ("around", request_ql(around))):
+        for endpoint in OVERPASS:
+            try:
+                data = fetch_json(endpoint, post=query, timeout=50)
+                if not isinstance(data, dict) or "elements" not in data:
+                    raise ValueError("No Overpass elements in response")
+                time.sleep(MIN_REQUEST_GAP_SECONDS)
+                return data
+            except (HTTPError, URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
+                errors.append(f"{label}/{endpoint}: {str(exc)[:100]}")
+                # Respect public server backoff; move to another endpoint,
+                # never skip HTTPS certificate checks.
+                if isinstance(exc, HTTPError) and exc.code == 429:
+                    time.sleep(30)
+                else:
+                    time.sleep(2)
     raise RuntimeError("OSM query failed: " + "; ".join(errors))
 
 def category_for(tags: dict) -> str | None:
