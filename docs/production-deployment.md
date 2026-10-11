@@ -53,7 +53,7 @@ docker compose build --build-arg "PLACES_BUILD_SHA=$APPROVED_SHA" bot
 docker compose run --rm --no-deps \
   -v "$PWD/backups:/backups:ro" bot \
   python -m app.deployment_preflight --backup "/backups/$SNAPSHOT" \
-  --expected-sha "$APPROVED_SHA" --max-age-hours 24 --min-cities 94
+  --expected-sha "$APPROVED_SHA" --max-age-hours 24 --min-cities 96
 ```
 
 The preflight also rejects hard links or aliases pointing at the live SQLite
