@@ -17,7 +17,11 @@ def test_volgograd_catalog_has_current_local_provenance() -> None:
     for place in city.places:
         assert 48.45 <= place.latitude <= 48.80
         assert 44.45 <= place.longitude <= 44.65
-        assert place.source.checked_at == date(2026, 10, 6)
+        expected_date = (
+            date(2026, 10, 11) if place.slug == "pavlov-house"
+            else date(2026, 10, 6)
+        )
+        assert place.source.checked_at == expected_date
         source = urlparse(place.source.url)
         assert source.scheme == "https"
         assert source.hostname
@@ -25,6 +29,10 @@ def test_volgograd_catalog_has_current_local_provenance() -> None:
 
 def test_volgograd_landmarks_use_specific_sources() -> None:
     city = catalog()
+    assert (
+        city.place_by_slug("pavlov-house").source.url
+        == "https://monument.volgadmin.ru/start.asp?np=3"
+    )
     expected_hosts = {
         "mamaev-kurgan": "stalingrad-battle.ru",
         "stalingrad-battle-panorama": "stalingrad-battle.ru",

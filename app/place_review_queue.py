@@ -29,6 +29,12 @@ MISSING_SIGNALS = frozenset({
     "map_feature_missing_review_required",
     "wikidata_item_missing_review_required",
 })
+REDIRECT_SIGNALS = frozenset({
+    "source_insecure_redirect_review_required",
+    "source_error_page_review_required",
+    "source_cross_host_redirect_review_required",
+    "source_generic_home_redirect_review_required",
+})
 RETRY_SIGNALS = frozenset({
     "probe_blocked_or_throttled",
     "probe_inconclusive",
@@ -40,8 +46,8 @@ PASSIVE_SIGNALS = frozenset({
     "not_probed",
 })
 ALLOWED_SIGNALS = (
-    CRITICAL_SIGNALS | LOCATION_SIGNALS | MISSING_SIGNALS | RETRY_SIGNALS
-    | PASSIVE_SIGNALS
+    CRITICAL_SIGNALS | LOCATION_SIGNALS | MISSING_SIGNALS | REDIRECT_SIGNALS
+    | RETRY_SIGNALS | PASSIVE_SIGNALS
 )
 
 
@@ -50,7 +56,7 @@ def priority_for_signal(signal: str) -> str | None:
         return "P0_documentary_investigation"
     if signal in LOCATION_SIGNALS:
         return "P1_location_review"
-    if signal in MISSING_SIGNALS:
+    if signal in MISSING_SIGNALS | REDIRECT_SIGNALS:
         return "P1_source_identity_review"
     if signal in RETRY_SIGNALS:
         return "P2_retry_or_manual_source"
@@ -106,6 +112,7 @@ def build_review_queue(
             "total": len(catalog.places),
             "critical": 0,
             "source_missing": 0,
+            "source_redirect": 0,
             "location_review": 0,
             "retry": 0,
             "operator_listings": 0,
@@ -134,7 +141,8 @@ def build_review_queue(
         metric = (
             "critical" if signal in CRITICAL_SIGNALS else
             "location_review" if signal in LOCATION_SIGNALS else
-            "source_missing" if signal in MISSING_SIGNALS else "retry"
+            "source_missing" if signal in MISSING_SIGNALS else
+            "source_redirect" if signal in REDIRECT_SIGNALS else "retry"
         )
         by_city[catalog.slug][metric] += 1
         routes = sorted(set(route_impact[key]))
@@ -250,6 +258,9 @@ def build_review_queue(
         "review_queue_count": len(queue),
         "critical_review_count": counts["P0_documentary_investigation"],
         "source_identity_review_count": counts["P1_source_identity_review"],
+        "redirect_review_count": sum(
+            item["signal"] in REDIRECT_SIGNALS for item in queue
+        ),
         "location_review_count": counts["P1_location_review"],
         "technical_retry_count": counts["P2_retry_or_manual_source"],
         "technical_retry_host_count": len(retry_host_summary),
@@ -346,14 +357,15 @@ def render_markdown(result: dict, *, max_items: int = 30) -> str:
         "",
         "## Full 104-city coverage",
         "",
-        "| City | Active | P0 | Location | Missing | Retry | Operator listing | Undocumented | Withheld |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| City | Active | P0 | Location | Missing | Redirect | Retry | Operator listing | Undocumented | Withheld |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ])
     for city in result["city_summary"]:
         lines.append(
             f"| {_clean_cell(city['name'])} | {city['total']} | "
             f"{city['critical']} | {city['location_review']} | "
-            f"{city['source_missing']} | {city['retry']} | "
+            f"{city['source_missing']} | {city['source_redirect']} "
+            f"| {city['retry']} | "
             f"{city['operator_listings']} | "
             f"{city['not_documented_by_operator']} | {city['withheld']} |"
         )

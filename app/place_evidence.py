@@ -66,6 +66,13 @@ EVIDENCE = (
     Evidence("perm", "perm-zoo", "operator_listed", date(2026, 10, 11),
              "https://zoo.perm.ru/news/2026/09/30/2115",
              "Официальное сообщение от 30 сентября 2026 года о зимнем режиме."),
+    Evidence(
+        "yaroslavl", "yar-volkov-theatre", "operator_listed",
+        date(2026, 10, 11),
+        "https://volkovteatr.ru/theatre/basic-information/",
+        "Официальный сайт театра подтверждает действующее учреждение "
+        "и его историческое здание; октябрьская афиша размещена на сайте.",
+    ),
 )
 
 
