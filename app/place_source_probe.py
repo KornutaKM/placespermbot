@@ -13,13 +13,15 @@ import re
 import time
 import xml.etree.ElementTree as ET
 from collections import Counter, defaultdict
+from math import isfinite
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
-from app.catalog import list_catalogs
+from app.catalog import coordinates_distance_km, list_catalogs
+from app.domain import Place
 from app.place_evidence import public_evidence
 from app.withheld_places import WITHHELD_PLACES
 
@@ -178,6 +180,42 @@ def probe_osm_batch(
     return result
 
 
+# Large movements of an OSM *node* can invalidate a saved POI/map pin.
+# Ways and relations have no node coordinate in the OSM multi-fetch response:
+# do not mistake way centroids or missing coordinates for an OSM move.
+NODE_DRIFT_REVIEW_METERS = 500
+
+
+def annotate_osm_node_position(place: Place, probe: dict) -> dict:
+    """Compare current OSM node coordinates with the catalog snapshot.
+
+    A 500m+ difference requests geolocation review. It never proves that the
+    attraction has moved, closed or reopened. Other OSM signals take precedence.
+    """
+    if not place.source.url.startswith("https://www.openstreetmap.org/node/"):
+        return probe
+    if probe.get("signal") != "map_feature_present_not_venue_verified":
+        return probe
+    try:
+        latitude = float(probe["map_lat"])
+        longitude = float(probe["map_lon"])
+    except (KeyError, ValueError, TypeError):
+        return probe
+    if not (isfinite(latitude) and isfinite(longitude)):
+        return probe
+    if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+        return {**probe, "signal": "mapped_invalid_coordinates_review_required"}
+    displacement = round(
+        coordinates_distance_km(
+            place.latitude, place.longitude, latitude, longitude,
+        ) * 1000
+    )
+    result = {**probe, "map_position_delta_m": displacement}
+    if displacement >= NODE_DRIFT_REVIEW_METERS:
+        result["signal"] = "mapped_coordinates_changed_review_required"
+    return result
+
+
 def probe_wikidata(qids: list[str], *, timeout: float = 35) -> dict[str, dict]:
     """Wikidata entity metadata; a historical P576 is a flag, not final proof."""
     results = {}
@@ -295,9 +333,9 @@ def run_audit(*, live: bool = False, timeout: float = 12) -> dict:
     for city in catalogs:
         for place in city.places:
             kind, _, _ = classify_url(place.source.url)
-            live_result = result_by_url.get(place.source.url, {
-                "signal": "not_probed"
-            })
+            live_result = annotate_osm_node_position(
+                place, result_by_url.get(place.source.url, {"signal": "not_probed"})
+            )
             row = {
                 "city_slug": city.slug,
                 "city_name": city.name,
