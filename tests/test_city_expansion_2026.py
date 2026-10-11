@@ -278,3 +278,50 @@ def test_syktyvkar_operator_entrances_replace_generic_map_pins():
         "syktyvkar-museums"
     ).place_slugs
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_syktyvkar_cathedral_and_two_monuments_have_safe_grounded_pins():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("syktyvkar")
+    cathedral = city.place_by_slug("syktyvkar-cathedral")
+    kuratov = city.place_by_slug("syktyvkar-kurator")
+    stefan = city.place_by_slug("syktyvkar-stefan-monument")
+    assert cathedral is not None and kuratov is not None and stefan is not None
+    assert (cathedral.latitude, cathedral.longitude) == (61.677794, 50.831536)
+    assert cathedral.district == "Свободы, 60"
+    assert cathedral.source.url == (
+        "https://syktyvkar-eparchia.ru/index/"
+        "prikhoda_svjato_stefanovskogo_kafedralnogo_sobora/0-24"
+    )
+    evidence = public_evidence(
+        "syktyvkar", "syktyvkar-cathedral", as_of=date(2026, 10, 11)
+    )
+    assert evidence["status"] == "operator_listed"
+    assert evidence["evidence_url"] == cathedral.source.url
+    assert "уточняйте" in evidence["finding"]
+
+    assert (kuratov.latitude, kuratov.longitude) == (61.665245, 50.8204)
+    assert "Театральная площадь" == kuratov.district
+    assert kuratov.source.url == (
+        "https://tourism.rkomi.ru/travel-guide/pamyatnik-ia-kuratovu"
+    )
+    assert public_evidence(
+        "syktyvkar", "syktyvkar-kurator", as_of=date(2026, 10, 11)
+    )["status"] == "not_independently_checked"
+
+    assert stefan.district == "Свободы, 60 — соборная территория"
+    assert (stefan.latitude, stefan.longitude) == (
+        cathedral.latitude, cathedral.longitude
+    )
+    assert "не подтверждённые координаты самой скульптуры" in stefan.summary
+    assert stefan.source.url == (
+        "https://tourism.rkomi.ru/travel-guide/pamyatnik-stefanu-permskomu"
+    )
+    assert public_evidence(
+        "syktyvkar", "syktyvkar-stefan-monument", as_of=date(2026, 10, 11)
+    )["status"] == "not_independently_checked"
+    assert len(city.places) == 12 and len(city.routes) == 5
+    assert not hard_route_findings(inspect_routes(city))
