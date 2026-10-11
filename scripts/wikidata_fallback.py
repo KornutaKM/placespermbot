@@ -16,7 +16,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from seed_city_guides import geocode, distance_km, valid_city
+from seed_city_guides import distance_km, geocode, valid_city
+
 from app.top_city_coverage import RESERVED_SLUGS, TOP_100_NAMES
 
 SOURCE = Path("app/data/osm_seed_2026.json")
