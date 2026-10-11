@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.catalog import list_catalogs
 from app.config import Settings
+from app.handlers.main import top100_text
 from app.miniapp_server import create_miniapp
 from app.top_city_coverage import (
     RANKING_DATE,
@@ -97,3 +98,15 @@ def test_city_can_be_promoted_only_by_real_manifest_registration(monkeypatch):
     )
     with pytest.raises(RuntimeError, match="Reserved slug mismatch"):
         top_city_coverage()
+
+
+def test_chat_top100_message_is_safe_and_within_telegram_limit():
+    message = top100_text()
+    assert "41 из 100" in message
+    assert "в подготовке: 59" in message
+    assert "✓ Москва" in message
+    assert "· Тольятти" in message
+    assert "Севастополь" in message
+    assert "Симферополь" in message
+    assert "Абакан" in message
+    assert len(message) < 4096
