@@ -253,6 +253,16 @@ def choose_places(data: dict, lat: float, lon: float, slug: str) -> tuple[list, 
             if place["slug"] not in taken:
                 selection.append(place)
                 taken.add(place["slug"])
+    # Route/category quotas alone can concentrate 18 POIs in one block.
+    # Prefer real additional neighborhoods before filling remaining slots.
+    districts = {p["district"] for p in selection}
+    for place in all_items:
+        if len(districts) >= 5 or len(selection) >= 18:
+            break
+        if place["slug"] not in taken and place["district"] not in districts:
+            selection.append(place)
+            taken.add(place["slug"])
+            districts.add(place["district"])
     for place in all_items:
         if len(selection) >= 18:
             break
