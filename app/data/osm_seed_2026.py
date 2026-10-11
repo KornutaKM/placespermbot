@@ -44,6 +44,7 @@ def _distance_km(a: Place, b: Place) -> float:
 
 def _candidate_route(
     slug: str, name: str, key: str, title: str, candidates: tuple[Place, ...],
+    *, adjacent: tuple[Place, ...] = (),
 ) -> RoutePlan:
     if len(candidates) < 2:
         raise ValueError(f"{slug}/{key}: not enough themed locations")
@@ -57,6 +58,17 @@ def _candidate_route(
         ),
         key=lambda item: (item[0], item[1], item[2]),
     )
+    if not possible:
+        # Keep a genuine themed stop, but add a real nearby attraction if the
+        # few mapped museums/parks are too far apart for a pedestrian route.
+        possible = sorted(
+            (
+                (_distance_km(a, b), a.slug, b.slug, a, b)
+                for a in candidates for b in adjacent
+                if 0.08 <= _distance_km(a, b) <= 5.0
+            ),
+            key=lambda item: (item[0], item[1], item[2]),
+        )
     if not possible:
         raise ValueError(f"{slug}/{key}: no nearby pair within 5 km")
     _, _, _, first, second = possible[0]
@@ -115,13 +127,17 @@ def _compile_city(item: dict) -> OsmSeedCity:
     routes = (
         _candidate_route(slug, name, "overview", "Знакомство с местами", placed),
         _candidate_route(slug, name, "heritage", "Исторические места",
-            tuple(p for p in placed if p.category == "sights")),
+            tuple(p for p in placed if p.category == "sights"),
+            adjacent=tuple(p for p in placed if p.category != "sights")),
         _candidate_route(slug, name, "culture", "Музеи и культура",
-            tuple(p for p in placed if p.category == "museums")),
+            tuple(p for p in placed if p.category == "museums"),
+            adjacent=tuple(p for p in placed if p.category != "museums")),
         _candidate_route(slug, name, "green", "Зелёные пространства",
-            tuple(p for p in placed if p.category == "parks")),
+            tuple(p for p in placed if p.category == "parks"),
+            adjacent=tuple(p for p in placed if p.category != "parks")),
         _candidate_route(slug, name, "family", "Семейные места",
-            tuple(p for p in placed if "с детьми" in p.tags)),
+            tuple(p for p in placed if "с детьми" in p.tags),
+            adjacent=tuple(p for p in placed if "с детьми" not in p.tags)),
     )
     return OsmSeedCity(slug, name, CATEGORY_LABELS, placed, routes)
 
