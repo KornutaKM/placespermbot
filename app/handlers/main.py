@@ -814,9 +814,9 @@ async def place_card(
         f"⏱ Ориентир на посещение: ~{place.visit_minutes} мин\n"
         f"{access}\n\n"
         f"{tags}\n\n"
-        f"🔎 Источник: <a href=\\\"{place.source.url}\\\">{place.source.name}</a>\\n"
+        f"🔎 Источник: <a href=\"{place.source.url}\">{place.source.name}</a>\n"
         f"Дата записи источника: {place.source.checked_at.strftime('%d.%m.%Y')} "
-        "(это не дата проверки доступности)\\n\\n"
+        "(это не дата проверки доступности)\n\n"
         f"{telegram_evidence_notice(catalog.slug, place.slug)}",
         reply_markup=place_keyboard(
             place,
