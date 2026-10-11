@@ -80,8 +80,8 @@ INDIVIDUAL_SOURCES: dict[tuple[str, str], PlaceSource] = {
         CHECKED_AT,
     ),
     ("kursk", "park-pioneers"): PlaceSource(
-        "ГТРК Курск — временно ограниченный проход после падения дерева",
-        "https://gtrkkursk.ru/news/78327-v-parke-pionerov-ubrali-upavshee-derevo",
+        "Городские известия — временное ограничение после падения дерева",
+        "https://gi-kursk.ru/news/city/92519/",
         CHECKED_AT,
     ),
     ("kursk", "city-garden"): PlaceSource(
