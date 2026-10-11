@@ -15,13 +15,13 @@
 - **Кемерово** (kemerovo): READY; 18 POI; issues: none
 - **Оренбург** (orenburg): READY; 18 POI; issues: none
 - **Новокузнецк** (novokuznetsk): READY; 18 POI; issues: none
-- **Севастополь** (sevastopol): REVIEW; 0 POI; issues: OSM query failed: https://overpass.osm.jp/api/interpreter: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certif; https://overpass-api.de/api/interpreter
+- **Севастополь** (sevastopol): READY; 18 POI; issues: none
 - **Чебоксары** (cheboksary): READY; 18 POI; issues: none
 - **Липецк** (lipetsk): READY; 18 POI; issues: none
 - **Киров** (kirov): READY; 18 POI; issues: none
-- **Сургут** (surgut): REVIEW; 0 POI; issues: OSM query failed: https://overpass.osm.jp/api/interpreter: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certif; https://overpass-api.de/api/interpreter
-- **Тверь** (tver): REVIEW; 0 POI; issues: districts: 4 < 5
-- **Магнитогорск** (magnitogorsk): REVIEW; 0 POI; issues: OSM query failed: https://overpass.osm.jp/api/interpreter: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certif; https://overpass-api.de/api/interpreter
+- **Сургут** (surgut): REVIEW; 0 POI; issues: OSM query failed: bbox/https://overpass-api.de/api/interpreter: HTTP Error 504: Gateway Timeout; bbox/https://maps.mail.ru/osm/tools/overpass/api/interpreter: The read operation timed out; bbox/https:
+- **Тверь** (tver): REVIEW; 0 POI; issues: OSM query failed: bbox/https://overpass-api.de/api/interpreter: HTTP Error 504: Gateway Timeout; bbox/https://maps.mail.ru/osm/tools/overpass/api/interpreter: The read operation timed out; bbox/https:
+- **Магнитогорск** (magnitogorsk): READY; 18 POI; issues: none
 - **Грозный** (grozny): READY; 18 POI; issues: none
 - **Якутск** (yakutsk): READY; 18 POI; issues: none
 - **Брянск** (bryansk): READY; 18 POI; issues: none
@@ -31,32 +31,32 @@
 - **Нижний Тагил** (nizhny-tagil): READY; 18 POI; issues: none
 - **Калуга** (kaluga): READY; 18 POI; issues: none
 - **Белгород** (belgorod): READY; 18 POI; issues: none
-- **Подольск** (podolsk): REVIEW; 0 POI; issues: OSM query failed: https://overpass.osm.jp/api/interpreter: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certif; https://overpass-api.de/api/interpreter
+- **Подольск** (podolsk): READY; 18 POI; issues: none
 - **Волжский** (volzhsky): READY; 18 POI; issues: none
 - **Смоленск** (smolensk): READY; 18 POI; issues: none
 - **Саранск** (saransk): READY; 18 POI; issues: none
 - **Курган** (kurgan): READY; 18 POI; issues: none
 - **Череповец** (cherepovets): READY; 18 POI; issues: none
 - **Владикавказ** (vladikavkaz): READY; 18 POI; issues: none
-- **Нижневартовск** (nizhnevartovsk): REVIEW; 0 POI; issues: OSM query failed: https://overpass.osm.jp/api/interpreter: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certif; https://overpass-api.de/api/interpreter
+- **Нижневартовск** (nizhnevartovsk): READY; 18 POI; issues: none
 - **Орёл** (oryol): READY; 18 POI; issues: none
 - **Стерлитамак** (sterlitamak): READY; 18 POI; issues: none
 - **Мытищи** (mytishchi): READY; 18 POI; issues: none
-- **Новороссийск** (novorossiysk): REVIEW; 0 POI; issues: OSM query failed: https://overpass.osm.jp/api/interpreter: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certif; https://overpass-api.de/api/interpreter
+- **Новороссийск** (novorossiysk): READY; 18 POI; issues: none
 - **Химки** (khimki): READY; 18 POI; issues: none
 - **Тамбов** (tambov): READY; 18 POI; issues: none
-- **Нальчик** (nalchik): REVIEW; 0 POI; issues: OSM query failed: https://overpass.osm.jp/api/interpreter: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certif; https://overpass-api.de/api/interpreter
+- **Нальчик** (nalchik): READY; 18 POI; issues: none
 - **Нижнекамск** (nizhnekamsk): READY; 18 POI; issues: none
 - **Таганрог** (taganrog): READY; 18 POI; issues: none
 - **Благовещенск** (blagoveshchensk): READY; 18 POI; issues: none
-- **Люберцы** (lyubertsy): REVIEW; 0 POI; issues: OSM query failed: https://overpass.osm.jp/api/interpreter: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certif; https://overpass-api.de/api/interpreter
+- **Люберцы** (lyubertsy): READY; 18 POI; issues: none
 - **Комсомольск-на-Амуре** (komsomolsk-on-amur): READY; 18 POI; issues: none
 - **Королёв** (korolyov): READY; 18 POI; issues: none
 - **Энгельс** (engels): READY; 18 POI; issues: none
 - **Братск** (bratsk): READY; 18 POI; issues: none
 - **Шахты** (shakhty): READY; 18 POI; issues: none
 - **Ангарск** (angarsk): READY; 18 POI; issues: none
-- **Старый Оскол** (stary-oskol): REVIEW; 0 POI; issues: districts: 4 < 5
+- **Старый Оскол** (stary-oskol): READY; 18 POI; issues: none
 - **Дзержинск** (dzerzhinsk): READY; 18 POI; issues: none
 - **Красногорск** (krasnogorsk): READY; 18 POI; issues: none
 - **Одинцово** (odintsovo): READY; 18 POI; issues: none
