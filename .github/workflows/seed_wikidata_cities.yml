@@ -24,8 +24,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e .
-      - name: Pilot Wikidata geospatial extraction for 4 Overpass failures
-        run: python scripts/wikidata_fallback.py --limit 4
+      - name: Collect Wikidata fallback for all remaining OSM failures
+        run: python scripts/wikidata_fallback.py --limit 59
       - name: Commit sourced, reviewable Wikidata evidence to feature branch
         run: |
           git config user.name "github-actions[bot]"
