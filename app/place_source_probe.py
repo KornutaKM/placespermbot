@@ -301,7 +301,9 @@ def run_audit(*, live: bool = False, timeout: float = 12) -> dict:
         "place_count": len(rows),
         "withheld_count": len(withheld_watch),
         "total_tracked": len(rows) + len(withheld_watch),
-        "unique_source_urls": len(set((*unique, *(w["source_url"] for w in withheld_watch)))),
+        "unique_source_urls": len({
+            *unique, *(item["source_url"] for item in withheld_watch)
+        }),
         "signal_counts": dict(sorted(status_counts.items())),
         "city_summary": [
             {"slug": c.slug, "name": c.name, **dict(city_stats[c.slug])}
