@@ -17,14 +17,14 @@ from app.place_source_probe import (
 
 
 def test_all_documentary_evidence_points_exist_and_sources_are_independent():
-    assert len(EVIDENCE) == 19
+    assert len(EVIDENCE) == 21
     assert sum(item.city_slug == "perm" for item in EVIDENCE) == 14
     assert validate_evidence(as_of=date(2026, 10, 11)) == ()
     assert {
         "perm-art-gallery", "perm-zoo", "permm",
         "perm-childrens-museum-center", "perm-antiquities-museum",
     } <= {item.place_slug for item in EVIDENCE}
-    assert len({(e.city_slug, e.place_slug) for e in EVIDENCE}) == 19
+    assert len({(e.city_slug, e.place_slug) for e in EVIDENCE}) == 21
 
 
 def test_evidence_is_a_operator_listing_not_guaranteed_access():
@@ -56,15 +56,15 @@ def test_evidence_validation_catches_missing_place_in_altered_catalog():
 def test_all_city_inventory_annotates_every_source_without_false_claims():
     report = build_inventory(as_of=date(2026, 10, 11))
     assert report["active_places_count"] == 2141
-    assert report["documented_operator_listings"] == 16
+    assert report["documented_operator_listings"] == 18
     assert report["documented_official_tourism_listings"] == 3
     assert report["blocking_findings"] == []
     checked = [
         p for p in report["places"]
         if p["documentary_evidence"]["status"] == "operator_listed"
     ]
-    assert len(checked) == 16
-    assert {p["city_slug"] for p in checked} == {"perm", "yaroslavl", "volgograd"}
+    assert len(checked) == 18
+    assert {p["city_slug"] for p in checked} == {"perm", "yaroslavl", "volgograd", "murmansk"}
     assert all(p["review_status"] == "requires_current_independent_confirmation"
                for p in report["places"])
 
@@ -178,3 +178,30 @@ def test_official_tourism_listing_is_not_operator_verification() -> None:
     assert "уточняйте" in text
     report = build_inventory(as_of=date(2026, 10, 11))
     assert sum(c["official_tourism_listed"] for c in report["cities"]) == 3
+
+
+def test_murmansk_sources_use_individual_operator_records_without_access_claim():
+    city = get_catalog("murmansk")
+    icebreaker = city.place_by_slug("murmansk-icebreaker-lenin")
+    craft_house = city.place_by_slug("murmansk-crafts-house")
+    exhibition = city.place_by_slug("murmansk-atom-and-arctic")
+    assert icebreaker.source.url == (
+        "https://www.rosatomflot.ru/atomnyy-ledokol-lenin/grafik-raboty/"
+    )
+    assert craft_house.source.url == "https://www.artmmuseum.ru/history/"
+    assert icebreaker.source.checked_at == date(2026, 10, 11)
+    assert craft_house.source.checked_at == date(2026, 10, 11)
+    assert exhibition.source.url == icebreaker.source.url
+    for slug in ("murmansk-icebreaker-lenin", "murmansk-crafts-house"):
+        record = public_evidence("murmansk", slug, as_of=date(2026, 10, 11))
+        assert record["status"] == "operator_listed"
+        assert record["checked_on"] == "2026-10-11"
+        assert record["evidence_url"] == city.place_by_slug(slug).source.url
+        assert "уточня" in record["finding"].lower()
+    assert public_evidence(
+        "murmansk", "murmansk-atom-and-arctic", as_of=date(2026, 10, 11)
+    )["status"] == "not_independently_checked"
+    assert any(
+        "murmansk-icebreaker-lenin" in route.place_slugs
+        for route in city.routes
+    )
