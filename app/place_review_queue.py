@@ -116,6 +116,7 @@ def build_review_queue(
             "location_review": 0,
             "retry": 0,
             "operator_listings": 0,
+            "official_tourism_listings": 0,
             "not_documented_by_operator": 0,
             "route_stops_impacted": 0,
             "withheld": 0,
@@ -135,6 +136,8 @@ def build_review_queue(
             by_city[catalog.slug]["operator_listings"] += 1
         else:
             by_city[catalog.slug]["not_documented_by_operator"] += 1
+        if evidence.get("status") == "official_tourism_listing":
+            by_city[catalog.slug]["official_tourism_listings"] += 1
         priority = priority_for_signal(signal)
         if priority is None:
             continue
@@ -267,6 +270,9 @@ def build_review_queue(
         "technical_retry_hosts": retry_host_summary,
         "previous_scan_available": previous is not None,
         "new_or_changed_count": sum(q["new_or_changed"] for q in queue),
+        "official_tourism_listing_count": sum(
+            city["official_tourism_listings"] for city in by_city.values()
+        ),
         "city_summary": sorted(by_city.values(), key=lambda city: city["name"]),
         "queue": queue,
         "withheld": withheld_rows,
@@ -357,8 +363,8 @@ def render_markdown(result: dict, *, max_items: int = 30) -> str:
         "",
         "## Full 104-city coverage",
         "",
-        "| City | Active | P0 | Location | Missing | Redirect | Retry | Operator listing | Undocumented | Withheld |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| City | Active | P0 | Location | Missing | Redirect | Retry | Operator listing | Tourism office | No operator proof | Withheld |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ])
     for city in result["city_summary"]:
         lines.append(
@@ -367,6 +373,7 @@ def render_markdown(result: dict, *, max_items: int = 30) -> str:
             f"{city['source_missing']} | {city['source_redirect']} "
             f"| {city['retry']} | "
             f"{city['operator_listings']} | "
+            f"{city['official_tourism_listings']} | "
             f"{city['not_documented_by_operator']} | {city['withheld']} |"
         )
     return "\n".join(lines) + "\n"
