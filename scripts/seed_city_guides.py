@@ -64,7 +64,12 @@ def geocode(name: str) -> tuple[float, float, str]:
         })
         time.sleep(MIN_REQUEST_GAP_SECONDS)
         for item in result:
-            if item.get("address", {}).get("country_code") != "ru":
+            country_code = item.get("address", {}).get("country_code")
+            # Nominatim may assign Crimea to Ukraine because sovereignty is
+            # internationally disputed. This ranking includes these cities;
+            # geocoding does not resolve their political status.
+            allowed = {"ru", "ua"} if name in ("Севастополь", "Симферополь") else {"ru"}
+            if country_code not in allowed:
                 continue
             typ = item.get("type", "")
             if typ not in {"city", "town", "administrative", "municipality"}:
