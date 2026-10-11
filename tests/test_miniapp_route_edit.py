@@ -137,16 +137,22 @@ def test_editor_rejects_unsafe_new_bridge_and_edited_time_budget():
         estimated_minutes=315, distance_km=7.8, places=stops
     )
     city = SimpleNamespace(slug="perm")
-    with patch("app.miniapp_route_builder.build_miniapp_route", return_value=baseline):
+    with patch(
+        "app.miniapp_route_builder.build_miniapp_route", return_value=baseline
+    ) as mocked_route:
         bridge = payload_for(city, baseline, [stops[0].slug, stops[2].slug])
         with pytest.raises(ValueError, match="5 km"):
             edited_miniapp_route(city, bridge)
-        over = payload_for(city, baseline, [stops[0].slug, stops[1].slug])
-        over = over.model_copy(update={"budget_minutes": 120})
-        # The mocked canonical planner proves the time-budget gate independently.
-        over = over.model_copy(update={"base_route_id": route_id_for(
-            "perm", "classic", 120, tuple(p.slug for p in stops)
-        )})
+        # Independently set the mocked baseline to the *same* short budget,
+        # isolating the time check from the stale-baseline checksum gate.
+        short_baseline = GeneratedRoute(
+            interest="classic", budget_minutes=120,
+            estimated_minutes=315, distance_km=7.8, places=stops
+        )
+        mocked_route.return_value = short_baseline
+        over = payload_for(
+            city, short_baseline, [stops[0].slug, stops[1].slug]
+        )
         with pytest.raises(ValueError, match="time budget"):
             edited_miniapp_route(city, over)
 
