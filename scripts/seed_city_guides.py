@@ -9,10 +9,8 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import sys
 import time
-from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -283,7 +281,7 @@ def seed_one(name: str, slug: str) -> dict:
         "slug": slug,
         "name": name,
         "center": [lat, lon],
-        "checked_at": datetime.now(timezone.utc).date().isoformat(),
+        "checked_at": datetime.now(UTC).date().isoformat(),
         "places": places if not issues else [],
         "issues": issues,
         "stats": meta,
@@ -300,8 +298,8 @@ def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     previous = json.loads(OUT.read_text()) if OUT.exists() else {"cities": []}
     completed = {c["slug"]: c for c in previous["cities"] if c.get("places")}
-    lines = ["# OSM candidate city guide acquisition", "", "⚠️ Extracted OSM map data; not on-site verified. "
-             "Routes are geometric suggestions and must be checked before field publication.",
+    lines = ["# OSM candidate city guide acquisition", "", ("⚠️ Extracted OSM map data; not on-site verified. "
+             "Routes are geometric suggestions and must be checked before field publication."),
              "", "© OpenStreetMap contributors, ODbL 1.0. See https://www.openstreetmap.org/copyright",
              ""]
     selected = [(name, RESERVED_SLUGS[name]) for name in TOP_100_NAMES
@@ -314,7 +312,7 @@ def main() -> None:
         else:
             try:
                 result = seed_one(name, slug)
-            except Exception as exc:
+            except (OSError, ValueError, RuntimeError, KeyError) as exc:
                 print(f"  ERROR {type(exc).__name__}: {exc}", flush=True)
                 result = {"slug": slug, "name": name, "places": [],
                           "issues": [str(exc)[:200]], "stats": {}}
