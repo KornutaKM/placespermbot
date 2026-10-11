@@ -45,6 +45,7 @@ def _distance_km(a: Place, b: Place) -> float:
 def _candidate_route(
     slug: str, name: str, key: str, title: str, candidates: tuple[Place, ...],
     *, adjacent: tuple[Place, ...] = (),
+    used_signatures: set[tuple[str, ...]] | None = None,
 ) -> RoutePlan:
     if len(candidates) < 2:
         raise ValueError(f"{slug}/{key}: not enough themed locations")
@@ -71,27 +72,33 @@ def _candidate_route(
         )
     if not possible:
         raise ValueError(f"{slug}/{key}: no nearby pair within 5 km")
-    _, _, _, first, second = possible[0]
-    visits = [first, second]
-    # A third nearby point makes an itinerary more informative without
-    # assuming roads/passable paths. Keep each straight segment <= 3.5 km.
-    for place in candidates:
-        if place.slug in {p.slug for p in visits}:
+    for _, _, _, first, second in possible:
+        visits = [first, second]
+        # A third nearby POI improves the map suggestion without inferring
+        # pedestrian networks. Every straight segment stays <= 5 km.
+        for place in candidates:
+            if place.slug in {p.slug for p in visits}:
+                continue
+            if 0.08 <= _distance_km(visits[-1], place) <= 1.8:
+                visits.append(place)
+                break
+        signature = tuple(p.slug for p in visits)
+        if used_signatures is not None and signature in used_signatures:
             continue
-        if 0.08 <= _distance_km(visits[-1], place) <= 1.8:
-            visits.append(place)
-            break
-    straight = sum(_distance_km(a, b) for a, b in pairwise(visits))
-    distance = max(0.3, round(straight * 1.5 + 0.3, 1))
-    duration = sum(p.visit_minutes for p in visits) + ceil(distance / 4.5 * 60) + 20
-    return RoutePlan(
-        f"{slug}-osm-{key}",
-        f"{name}: {title}",
-        "Подборка близких картографических точек по OpenStreetMap. "
-        "Это не проверенный пешеходный маршрут: реальные дороги, переходы "
-        "и доступность необходимо проверить на карте и на месте.",
-        duration, distance, tuple(p.slug for p in visits),
-    )
+        if used_signatures is not None:
+            used_signatures.add(signature)
+        straight = sum(_distance_km(a, b) for a, b in pairwise(visits))
+        distance = max(0.3, round(straight * 1.5 + 0.3, 1))
+        duration = sum(p.visit_minutes for p in visits) + ceil(distance / 4.5 * 60) + 20
+        return RoutePlan(
+            f"{slug}-osm-{key}",
+            f"{name}: {title}",
+            "Подборка близких картографических точек по OpenStreetMap. "
+            "Это не проверенный пешеходный маршрут: реальные дороги, переходы "
+            "и доступность необходимо проверить на карте и на месте.",
+            duration, distance, signature,
+        )
+    raise ValueError(f"{slug}/{key}: no distinct nearby route")
 
 
 def _compile_city(item: dict) -> OsmSeedCity:
@@ -126,20 +133,28 @@ def _compile_city(item: dict) -> OsmSeedCity:
             tuple(raw["tags"]),
         ))
     placed = tuple(places)
+    used_routes: set[tuple[str, ...]] = set()
     routes = (
-        _candidate_route(slug, name, "overview", "Знакомство с местами", placed),
+        _candidate_route(
+            slug, name, "overview", "Знакомство с местами", placed,
+            used_signatures=used_routes,
+        ),
         _candidate_route(slug, name, "heritage", "Исторические места",
             tuple(p for p in placed if p.category == "sights"),
-            adjacent=tuple(p for p in placed if p.category != "sights")),
+            adjacent=tuple(p for p in placed if p.category != "sights"),
+            used_signatures=used_routes),
         _candidate_route(slug, name, "culture", "Музеи и культура",
             tuple(p for p in placed if p.category == "museums"),
-            adjacent=tuple(p for p in placed if p.category != "museums")),
+            adjacent=tuple(p for p in placed if p.category != "museums"),
+            used_signatures=used_routes),
         _candidate_route(slug, name, "green", "Зелёные пространства",
             tuple(p for p in placed if p.category == "parks"),
-            adjacent=tuple(p for p in placed if p.category != "parks")),
+            adjacent=tuple(p for p in placed if p.category != "parks"),
+            used_signatures=used_routes),
         _candidate_route(slug, name, "family", "Семейные места",
             tuple(p for p in placed if "с детьми" in p.tags),
-            adjacent=tuple(p for p in placed if "с детьми" not in p.tags)),
+            adjacent=tuple(p for p in placed if "с детьми" not in p.tags),
+            used_signatures=used_routes),
     )
     return OsmSeedCity(slug, name, CATEGORY_LABELS, placed, routes)
 
