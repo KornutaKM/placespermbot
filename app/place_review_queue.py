@@ -307,8 +307,8 @@ def render_markdown(result: dict, *, max_items: int = 30) -> str:
         "",
         "## Technical retry clusters by source host",
         "",
-        "A single failing website may affect multiple places. Domain failures do "
-        "**not** imply these attractions are closed.",
+        ("A single failing website may affect multiple places. Domain failures do "
+        "**not** imply these attractions are closed."),
         "",
         "| Source host | Affected POIs | Cities | Routes | Failures |",
         "|---|---:|---:|---:|---|",
