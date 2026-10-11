@@ -42,14 +42,16 @@ function sourceDetails(place) {
   const safeUrl = /^https:\/\/[^\/\s@?#<>"']+(?:[\/?#][^\s<>"']*)?$/i.test(url);
   const checkedAt = /^\d{4}-\d{2}-\d{2}$/.test(String(source.checked_at ?? ""))
     ? source.checked_at : "не указана";
+  const isOsm = safeUrl && url.startsWith("https://www.openstreetmap.org/");
   return '<div class="source-details"><strong>Откуда сведения</strong>' +
     '<p>' + (safeUrl
       ? '<a href="' + escapeText(url) +
         '" target="_blank" rel="noopener noreferrer">' + escapeText(name) + ' ↗</a>'
       : escapeText(name)) + '</p>' +
-    '<small>Дата редакционной записи: ' + escapeText(checkedAt) +
+    '<small>' + (isOsm ? 'Дата выгрузки данных OSM: ' : 'Дата редакционной записи: ') +
+    escapeText(checkedAt) +
     '. Не гарантирует актуальность часов, цен и доступности.</small>' +
-    (safeUrl && url.startsWith("https://www.openstreetmap.org/")
+    (isOsm
       ? '<small>Картографические данные: © OpenStreetMap contributors, ' +
         '<a href="https://www.openstreetmap.org/copyright" target="_blank" ' +
         'rel="noopener noreferrer">Open Database License (ODbL)</a>. ' +
