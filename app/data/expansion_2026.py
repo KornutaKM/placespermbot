@@ -37,8 +37,9 @@ INDIVIDUAL_SOURCES: dict[tuple[str, str], PlaceSource] = {
         CHECKED_AT,
     ),
     ("kursk", "museum-local"): PlaceSource(
-        "Курский областной краеведческий музей — официальный сайт и экскурсии",
-        "https://kursk-museum.ru/ekskursiya-kurskij-detinec/",
+        "Министерство культуры Курской области — карточка краеведческого музея",
+        ("https://xn--46-6kc3bf4angc2g.xn--p1ai/organizations/"
+         "обук-курский-областной-краеведческ/"),
         CHECKED_AT,
     ),
     ("kursk", "znamensky"): PlaceSource(
