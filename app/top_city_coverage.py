@@ -14,6 +14,7 @@ from dataclasses import asdict, dataclass
 
 from app.city_manifest import list_city_manifests
 from app.data.osm_seed_2026 import OSM_SEED_CITIES
+from app.data.wikidata_seed_2026 import WIKIDATA_SEED_CITIES
 
 RANKING_DATE = "2025-01-01"
 RANKING_SOURCES = (
@@ -202,7 +203,7 @@ class TopCity:
 def top_city_coverage() -> tuple[TopCity, ...]:
     """Consistent view of the ranked target and live manifest-backed coverage."""
     active = {city.name: city.slug for city in list_city_manifests()}
-    map_seeds = {city.slug for city in OSM_SEED_CITIES}
+    map_seeds = {city.slug for city in (*OSM_SEED_CITIES, *WIKIDATA_SEED_CITIES)}
     result: list[TopCity] = []
     for rank, name in enumerate(TOP_100_NAMES, start=1):
         known_slug = RESERVED_SLUGS.get(name)
