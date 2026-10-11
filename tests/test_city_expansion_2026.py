@@ -95,3 +95,45 @@ def test_new_city_catalogs_are_available_in_public_miniapp_api(tmp_path):
             assert len(payload["places"]) == 12
             assert len(payload["routes"]) == 5
             assert payload["places"][0]["map_url"].startswith("https://")
+
+
+def test_kursk_operator_sources_and_gallery_geolocation_are_documented():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("kursk")
+    sources = {
+        "kursk-deineka": "https://deinekagallery.ru/posetitelyam/",
+        "kursk-museum-local": (
+            "https://kursk-museum.ru/ekskursiya-kurskij-detinec/"
+        ),
+        "kursk-znamensky": "https://kursk-znamen-1.cerkov.ru/",
+        "kursk-sergiev": "https://serge-kazan.cerkov.ru/",
+    }
+    for slug, url in sources.items():
+        place = city.place_by_slug(slug)
+        assert place is not None
+        assert place.source.url == url
+        assert place.source.checked_at == date(2026, 10, 11)
+        evidence = public_evidence("kursk", slug, as_of=date(2026, 10, 11))
+        assert evidence["status"] == "operator_listed"
+        assert evidence["evidence_url"] == url
+        assert "уточняйте" in evidence["finding"]
+
+    gallery = city.place_by_slug("kursk-deineka")
+    assert gallery.title == "Выставочный зал галереи имени А. А. Дейнеки"
+    assert gallery.latitude == 51.745951
+    assert gallery.longitude == 36.190608
+    assert gallery.district == "Радищева, 85"
+    assert "Советской, 3" in gallery.summary
+    assert "Луначарского, 6" in city.place_by_slug(
+        "kursk-museum-local"
+    ).summary
+    assert city.place_by_slug("kursk-red-square").source.url == (
+        "https://www.culture.ru/s/kursk/"
+    )
+    assert "kursk-deineka" in city.route_by_slug(
+        "kursk-museums"
+    ).place_slugs
+    assert not hard_route_findings(inspect_routes(city))
