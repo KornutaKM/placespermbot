@@ -133,6 +133,9 @@ function renderHome() {
     '</div><button type="button" class="discovery-entry" data-open="discover">' +
     '<strong>Поиск по всей России ↗</strong><span>Достопримечательности всех ' +
     state.cities.length + ' городов в одном поиске</span></button>' +
+    '<button type="button" class="discovery-entry" data-top100="true">' +
+    '<strong>Топ-100 городов России ↗</strong>' +
+    '<span>Рейтинг и готовность путеводителей</span></button>' +
     '<div class="stats"><div class="stat"><strong>' +
     catalog.places.length + '</strong><span>мест</span></div><div class="stat"><strong>' +
     catalog.routes.length + '</strong><span>маршрутов</span></div><div class="stat"><strong>' +
@@ -1381,6 +1384,56 @@ function openRoute(slug) {
     mapLinks);
 }
 
+
+async function openTopCities() {
+  try {
+    // The directory is public and fetched only after an explicit user action.
+    const coverage = await api("/api/city-coverage");
+    if (coverage.target_count !== 100 ||
+      !Array.isArray(coverage.cities) || coverage.cities.length !== 100 ||
+      !Number.isInteger(coverage.ready_count) ||
+      !Number.isInteger(coverage.pending_count) ||
+      coverage.ready_count + coverage.pending_count !== 100) {
+      throw new Error("Invalid city coverage");
+    }
+    openSheet('<div class="sheet-head"><div><h2>Топ-100 городов</h2>' +
+      '<p>Рейтинг по населению на 1 января 2025 года</p></div>' +
+      '<button type="button" class="sheet-close" data-close aria-label="Закрыть">×</button></div>' +
+      '<div class="notice">Готовы ' + coverage.ready_count +
+      ' путеводителей из 100, ' + coverage.pending_count +
+      ' в подготовке. Остальные туристические города сохраняются.</div>' +
+      '<label class="search"><span>⌕</span><input id="top100-filter" type="search" ' +
+      'autocomplete="off" aria-label="Найти город в топ-100" placeholder="Найти город…"></label>' +
+      '<div class="top100-list" id="top100-results"></div>' +
+      '<p class="sheet-caption">Это города в их административных границах, не агломерации. ' +
+      'Недоступные путеводители нельзя выбрать или сохранить.</p>');
+    const field = document.getElementById("top100-filter");
+    const redraw = () => {
+      const q = field.value.trim().toLocaleLowerCase("ru").replaceAll("ё", "е");
+      const matching = coverage.cities.filter(city =>
+        String(city.name).toLocaleLowerCase("ru").replaceAll("ё", "е").includes(q));
+      document.getElementById("top100-results").innerHTML = matching.length
+        ? matching.map(city => {
+          const ready = city.guide_available === true &&
+            state.cities.some(item => item.slug === city.slug);
+          return '<div class="top100-item"><span class="top100-rank">' +
+            escapeText(city.rank) + '</span><div><strong>' +
+            escapeText(city.name) + '</strong><small>' +
+            (ready ? 'Путеводитель доступен' : 'Каталог готовится') +
+            '</small></div>' + (ready
+              ? '<button type="button" data-city="' + escapeText(city.slug) +
+                '">Выбрать ↗</button>'
+              : '<span class="top100-pending">Скоро</span>') + '</div>';
+        }).join("")
+        : '<div class="empty">Город не найден</div>';
+    };
+    field.addEventListener("input", redraw);
+    redraw();
+  } catch (_) {
+    notify("Не удалось загрузить рейтинг городов.");
+  }
+}
+
 function openCities() {
   openSheet('<div class="sheet-head"><div><h2>Выберите город</h2>' +
     '<p>Открывайте места и маршруты: ' + state.cities.length + ' городов</p></div>' +
@@ -1456,6 +1509,10 @@ async function chooseCity(slug) {
 screen.addEventListener("click", event => {
   const trigger = event.target.closest("button");
   if (!trigger) return;
+  if (trigger.dataset.top100) {
+    void openTopCities();
+    return;
+  }
   if (trigger.dataset.discoverCity && trigger.dataset.discoverPlace) {
     void openDiscoveryPlace(trigger.dataset.discoverCity, trigger.dataset.discoverPlace);
     return;
