@@ -179,6 +179,15 @@ EVIDENCE = (
         "Чернова на Первомайской, 54, часы и предварительную запись. "
         "Посещение без согласования не гарантируется.",
     ),
+    Evidence(
+        "syktyvkar", "syktyvkar-cathedral", "operator_listed",
+        date(2026, 10, 11),
+        ("https://syktyvkar-eparchia.ru/index/"
+         "prikhoda_svjato_stefanovskogo_kafedralnogo_sobora/0-24"),
+        "Сыктывкарская епархия указывает действующий кафедральный собор "
+        "на Свободы, 60, контакт и обычное расписание богослужений. "
+        "Праздничные ограничения и доступ на конкретную дату уточняйте.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(
