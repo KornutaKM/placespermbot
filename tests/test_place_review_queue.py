@@ -198,3 +198,49 @@ def test_duplicate_previous_snapshot_does_not_silently_corrupt_transitions():
     previous["places"].append(deepcopy(previous["places"][0]))
     with pytest.raises(ValueError, match="Duplicate place in previous scan"):
         build_review_queue(run_audit(live=False), previous=previous)
+
+
+def test_partial_previous_baseline_reports_scope_without_false_recovery():
+    current = run_audit(live=False)
+    previous = deepcopy(current)
+    removed = previous["places"].pop()
+    previous["place_count"] -= 1
+    report = build_review_queue(current, previous=previous)
+    assert report["previous_scan_available"] is True
+    assert report["previous_scan_place_count"] == 2140
+    assert report["previous_place_match_count"] == 2140
+    assert report["new_places_since_previous_count"] == 1
+    assert report["retired_places_since_previous_count"] == 0
+    assert report["same_source_comparable_count"] == 2140
+    assert report["recovered_technical_probe_count"] == 0
+    assert removed["place_slug"] not in {
+        entry["place_slug"] for entry in report["recovered_technical_probes"]
+    }
+    assert "added in current catalog: **1**" in render_markdown(report)
+
+
+def test_previous_snapshot_additional_legacy_place_excluded_from_transitions():
+    current = run_audit(live=False)
+    previous = deepcopy(current)
+    retired = deepcopy(previous["places"][0])
+    retired["place_slug"] = "retired-historic-snapshot-only"
+    previous["places"].append(retired)
+    previous["place_count"] += 1
+    report = build_review_queue(current, previous=previous)
+    assert report["previous_scan_place_count"] == 2142
+    assert report["previous_place_match_count"] == 2141
+    assert report["new_places_since_previous_count"] == 0
+    assert report["retired_places_since_previous_count"] == 1
+    assert report["same_source_comparable_count"] == 2141
+
+
+def test_invalid_previous_signal_and_source_fail_closed():
+    current = run_audit(live=False)
+    previous = deepcopy(current)
+    previous["places"][0]["probe"] = {"signal": "venue_verified_open"}
+    with pytest.raises(ValueError, match="unknown previous probe signal"):
+        build_review_queue(current, previous=previous)
+    previous["places"][0]["probe"] = {"signal": "not_probed"}
+    previous["places"][0].pop("source_url")
+    with pytest.raises(ValueError, match="previous source URL is missing"):
+        build_review_queue(current, previous=previous)
