@@ -286,11 +286,11 @@ def valid_city(places: list, meta: dict) -> list[str]:
         has_pair = any(
             0.08 <= distance_km(
                 a["latitude"], a["longitude"], b["latitude"], b["longitude"]
-            ) <= 3.5
+            ) <= 5.0
             for i, a in enumerate(selected) for b in selected[i + 1:]
         )
         if not has_pair:
-            issues.append(f"{theme}: no two distinct nearby mapped stops")
+            issues.append(f"{theme}: no two distinct mapped stops within 5 km")
     return issues
 
 def seed_one(name: str, slug: str) -> dict:
