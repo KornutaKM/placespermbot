@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from app.catalog import list_catalogs
 from app.config import Settings
 from app.data.osm_seed_2026 import OSM_SEED_CITIES
+from app.data.wikidata_seed_2026 import WIKIDATA_SEED_CITIES
 from app.handlers.main import top100_text
 from app.miniapp_server import create_miniapp
 from app.top_city_coverage import (
@@ -18,6 +19,9 @@ from app.top_city_coverage import (
     coverage_summary,
     top_city_coverage,
 )
+
+
+MAP_CANDIDATE_COUNT = len(OSM_SEED_CITIES) + len(WIKIDATA_SEED_CITIES)
 
 
 def test_rank_and_coverage_contract():
@@ -36,11 +40,11 @@ def test_rank_and_coverage_contract():
 
     ready = [city for city in ranked if city.guide_available]
     pending = [city for city in ranked if not city.guide_available]
-    assert len(ready) == 41 + len(OSM_SEED_CITIES)
-    assert len(pending) == 59 - len(OSM_SEED_CITIES)
-    assert len(list_catalogs()) == 45 + len(OSM_SEED_CITIES)
+    assert len(ready) == 41 + MAP_CANDIDATE_COUNT
+    assert len(pending) == 59 - MAP_CANDIDATE_COUNT
+    assert len(list_catalogs()) == 45 + MAP_CANDIDATE_COUNT
     assert sum(c.guide_status == "editorial" for c in ranked) == 41
-    assert sum(c.guide_status == "map_seed" for c in ranked) == len(OSM_SEED_CITIES)
+    assert sum(c.guide_status == "map_seed" for c in ranked) == MAP_CANDIDATE_COUNT
     assert all(c.guide_status == "pending" for c in pending)
     assert set(RESERVED_SLUGS) == {
         city.name for city in ranked if city.name in RESERVED_SLUGS
@@ -66,11 +70,11 @@ def test_directory_api_is_public_but_pending_cities_are_not_catalogs():
         payload = response.json()
         assert payload == coverage_summary()
         assert payload["target_count"] == 100
-        assert payload["ready_count"] == 41 + len(OSM_SEED_CITIES)
-        assert payload["pending_count"] == 59 - len(OSM_SEED_CITIES)
-        assert payload["catalog_city_count"] == 45 + len(OSM_SEED_CITIES)
+        assert payload["ready_count"] == 41 + MAP_CANDIDATE_COUNT
+        assert payload["pending_count"] == 59 - MAP_CANDIDATE_COUNT
+        assert payload["catalog_city_count"] == 45 + MAP_CANDIDATE_COUNT
         assert payload["editorial_count"] == 41
-        assert payload["map_seed_count"] == len(OSM_SEED_CITIES)
+        assert payload["map_seed_count"] == MAP_CANDIDATE_COUNT
         assert payload["ranking_date"] == "2025-01-01"
         assert len(payload["ranking_sources"]) == 3
         assert "user_id" not in response.text
@@ -83,7 +87,7 @@ def test_directory_api_is_public_but_pending_cities_are_not_catalogs():
             status = client.get(f"/api/catalogs/{city['slug']}").status_code
             assert status == (200 if city["guide_available"] else 404)
         assert client.get("/api/catalogs/moscow").status_code == 200
-        assert len(client.get("/api/cities").json()["cities"]) == 45 + len(OSM_SEED_CITIES)
+        assert len(client.get("/api/cities").json()["cities"]) == 45 + MAP_CANDIDATE_COUNT
 
 
 def test_city_can_be_promoted_only_by_real_manifest_registration(monkeypatch):
@@ -98,8 +102,8 @@ def test_city_can_be_promoted_only_by_real_manifest_registration(monkeypatch):
     )
     summary = coverage_summary()
     assert (summary["ready_count"], summary["pending_count"]) == (
-        41 + len(OSM_SEED_CITIES) + (0 if was_ready else 1),
-        59 - len(OSM_SEED_CITIES) - (0 if was_ready else 1),
+        41 + MAP_CANDIDATE_COUNT + (0 if was_ready else 1),
+        59 - MAP_CANDIDATE_COUNT - (0 if was_ready else 1),
     )
     assert next(city for city in summary["cities"] if city["name"] == "Тверь")[
         "guide_available"
