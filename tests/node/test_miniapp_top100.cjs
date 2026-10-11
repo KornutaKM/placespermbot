@@ -38,6 +38,8 @@ cities[1] = {
   rank: 2, name: "<img src=x onerror=alert(1)>",
   slug: "pending", guide_available: false
 };
+cities[2] = { rank: 3, name: "Иваново", slug: "ivanovo",
+  guide_available: true, guide_status: "map_seed" };
 cities[99] = { rank: 100, name: "Абакан", slug: "abakan", guide_available: false };
 const ctx = {
   window: { Telegram: { WebApp: { initData: "" } }, scrollTo() {} },
@@ -47,7 +49,8 @@ const ctx = {
     if (shouldFail) return { ok: false };
     if (url !== "/api/city-coverage") throw Error("Unexpected URL " + url);
     return { ok: true, json: async () => ({
-      target_count: 100, ready_count: 1, pending_count: 99,
+      target_count: 100, ready_count: 2, pending_count: 98,
+      editorial_count: 1, map_seed_count: 1,
       cities, ranking_date: "2025-01-01"
     }) };
   }
@@ -58,22 +61,43 @@ vm.runInNewContext(
 );
 async function test() {
   const { state, renderHome, openTopCities } = ctx.__ui;
-  state.cities = [{ slug: "moscow", name: "Москва" }];
+  state.cities = [
+    { slug: "moscow", name: "Москва" },
+    { slug: "ivanovo", name: "Иваново" }
+  ];
   state.catalog = {
     slug: "moscow", name: "Москва", places: [], routes: [], category_labels: {}
   };
   renderHome();
   assert.match(document.getElementById("screen").innerHTML, /data-top100="true"/);
+  state.catalog = {
+    slug: "ivanovo", name: "Иваново", guide_status: "map_seed",
+    places: [], routes: [], category_labels: {}
+  };
+  renderHome();
+  assert.match(document.getElementById("screen").innerHTML,
+    /не проверенный редакционный путеводитель/);
+  state.catalog = {
+    slug: "moscow", name: "Москва", guide_status: "editorial",
+    places: [], routes: [], category_labels: {}
+  };
+  renderHome();
+  assert.doesNotMatch(document.getElementById("screen").innerHTML,
+    /не проверенный редакционный путеводитель/);
   assert.equal(calls.length, 0, "Directory must be lazy-loaded");
   await openTopCities();
   assert.equal(calls.length, 1);
   const markup = document.getElementById("top100-results").innerHTML;
   assert.match(markup, /data-city="moscow"/);
+  assert.match(markup, /data-city="ivanovo"/);
+  assert.match(markup, /Подборка OSM/);
   assert.match(markup, /Каталог готовится/);
   assert.match(markup, /&lt;img/);
   assert.doesNotMatch(markup, /<img src/);
   assert.doesNotMatch(markup, /data-city="abakan"/);
-  assert.match(document.getElementById("sheet-root").innerHTML, /1 путеводителей из 100/);
+  assert.match(document.getElementById("sheet-root").innerHTML, /2 путеводителей из 100/);
+  assert.match(document.getElementById("sheet-root").innerHTML,
+    /картографических подборок OpenStreetMap/);
   const filter = document.getElementById("top100-filter");
   filter.value = "абакан";
   filter.handlers.input();
