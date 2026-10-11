@@ -210,6 +210,7 @@ def seed_city(name: str, slug: str) -> dict:
         "slug": slug, "name": name, "center": [lat, lon],
         "checked_at": datetime.now(UTC).date().isoformat(),
         "places": places if not issues else [],
+        "review_candidates": places if issues else [],
         "issues": issues,
         "stats": stats,
         "observed_wikidata_bindings": len(result),
