@@ -67,6 +67,14 @@ EVIDENCE = (
              "https://zoo.perm.ru/news/2026/09/30/2115",
              "Официальное сообщение от 30 сентября 2026 года о зимнем режиме."),
     Evidence(
+        "volgograd", "alexander-nevsky-cathedral-vlg", "operator_listed",
+        date(2026, 10, 11),
+        "https://alexan-nevsk-sob.cerkov.ru/",
+        "Официальная приходская страница кафедрального собора указывает "
+        "статус «действующий» и адрес Александровский сад. "
+        "Доступ в конкретный день и ограничения уточняйте у прихода.",
+    ),
+    Evidence(
         "yaroslavl", "yar-volkov-theatre", "operator_listed",
         date(2026, 10, 11),
         "https://volkovteatr.ru/theatre/basic-information/",

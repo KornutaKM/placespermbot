@@ -16,6 +16,16 @@ PAVLOV_HOUSE_SOURCE = PlaceSource(
     url="https://monument.volgadmin.ru/start.asp?np=3",
     checked_at=date(2026, 10, 11),
 )
+ALEXANDER_NEVSKY_VLG_SOURCE = PlaceSource(
+    name="Волгоградская епархия — кафедральный собор Александра Невского",
+    url="https://alexan-nevsk-sob.cerkov.ru/",
+    checked_at=date(2026, 10, 11),
+)
+VOLGA_DON_LOCK_SOURCE = PlaceSource(
+    name="Городской реестр памятников Волгограда — первый шлюз Волго-Дона",
+    url="https://monument.volgadmin.ru/start.asp?np=4-1",
+    checked_at=date(2026, 10, 11),
+)
 VISIT_VLG = PlaceSource(
     name="Туристический портал Волгограда — достопримечательности",
     url="https://visitvlg.ru/?bcs=156&menu=9",
@@ -283,7 +293,7 @@ PLACES = (
         True,
         48.7073,
         44.5164,
-        VOLGOGRAD_TOURISM,
+        ALEXANDER_NEVSKY_VLG_SOURCE,
         ("архитектура", "религия", "центр", "бесплатно"),
     ),
     Place(
@@ -311,7 +321,7 @@ PLACES = (
         True,
         48.4951,
         44.5937,
-        VOLGOGRAD_TOURISM,
+        VOLGA_DON_LOCK_SOURCE,
         ("канал", "инженерия", "Волга", "архитектура", "бесплатно"),
     ),
     Place(

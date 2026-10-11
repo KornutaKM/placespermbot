@@ -18,7 +18,11 @@ def test_volgograd_catalog_has_current_local_provenance() -> None:
         assert 48.45 <= place.latitude <= 48.80
         assert 44.45 <= place.longitude <= 44.65
         expected_date = (
-            date(2026, 10, 11) if place.slug == "pavlov-house"
+            date(2026, 10, 11) if place.slug in {
+                "pavlov-house",
+                "alexander-nevsky-cathedral-vlg",
+                "volga-don-first-lock",
+            }
             else date(2026, 10, 6)
         )
         assert place.source.checked_at == expected_date
@@ -32,6 +36,14 @@ def test_volgograd_landmarks_use_specific_sources() -> None:
     assert (
         city.place_by_slug("pavlov-house").source.url
         == "https://monument.volgadmin.ru/start.asp?np=3"
+    )
+    assert (
+        city.place_by_slug("alexander-nevsky-cathedral-vlg").source.url
+        == "https://alexan-nevsk-sob.cerkov.ru/"
+    )
+    assert (
+        city.place_by_slug("volga-don-first-lock").source.url
+        == "https://monument.volgadmin.ru/start.asp?np=4-1"
     )
     expected_hosts = {
         "mamaev-kurgan": "stalingrad-battle.ru",
