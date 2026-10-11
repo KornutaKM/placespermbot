@@ -64,10 +64,10 @@ def test_retired_slug_guard_rejects_accidental_catalog_restoration():
 def test_freshness_inventory_works_for_every_active_city_and_source():
     report = build_inventory(as_of=date(2026, 10, 11))
     assert report["cities_count"] == 104
-    assert report["active_places_count"] == 2142
+    assert report["active_places_count"] == 2141
     assert report["not_verified_now"] == report["active_places_count"]
     assert len(report["cities"]) == 104
-    assert len(report["places"]) == 2142
+    assert len(report["places"]) == 2141
     assert len({c["slug"] for c in report["cities"]}) == 104
     assert {p["city_slug"] for p in report["places"]} == {
         c["slug"] for c in report["cities"]
@@ -77,6 +77,10 @@ def test_freshness_inventory_works_for_every_active_city_and_source():
     assert report["source_types"]["community_wikidata"] >= 18
     assert report["blocking_findings"] == []
     assert report["historically_removed_count"] == 1
+    assert report["withheld_pending_review_count"] == 1
+    assert report["withheld_pending_review"][0]["place_slug"] == (
+        "nalchik-osm-way-234973881"
+    )
     assert report["documented_past_observations"] == 1
     assert all(
         p["review_status"] == "requires_current_independent_confirmation"
@@ -96,7 +100,7 @@ def test_gallery_report_is_a_dated_observation_not_current_access_guarantee():
     assert gallery["past_published_observation"]["reported_on"] == "2026-04-02"
     assert gallery["review_status"] == "requires_current_independent_confirmation"
     rendered = render_markdown(report)
-    assert "104" in rendered and "2142" in rendered
+    assert "104" in rendered and "2141" in rendered
     assert "Пермские ворота" in rendered
     assert "перев" not in gallery["review_status"]
 
