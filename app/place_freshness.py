@@ -61,10 +61,10 @@ CORRECTED_MISLOCATIONS = (
         "и заменена Музеем истории города по адресу Ульяновых, 9.",
         (
             "https://travel30.ru/map/81/",
-            "https://www.culture.ru/institutes/20718/"
-            "muzei-istorii-rybolovstva-s-oranzherei",
-            "https://www.culture.ru/institutes/20501/"
-            "muzei-istorii-goroda-astrakhani",
+            ("https://www.culture.ru/institutes/20718/"
+             "muzei-istorii-rybolovstva-s-oranzherei"),
+            ("https://www.culture.ru/institutes/20501/"
+             "muzei-istorii-goroda-astrakhani"),
         ),
     ),
 )
