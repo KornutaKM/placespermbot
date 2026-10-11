@@ -39,6 +39,9 @@ def test_rank_and_coverage_contract():
     assert len(ready) == 41 + len(OSM_SEED_CITIES)
     assert len(pending) == 59 - len(OSM_SEED_CITIES)
     assert len(list_catalogs()) == 45 + len(OSM_SEED_CITIES)
+    assert sum(c.guide_status == "editorial" for c in ranked) == 41
+    assert sum(c.guide_status == "map_seed" for c in ranked) == len(OSM_SEED_CITIES)
+    assert all(c.guide_status == "pending" for c in pending)
     assert set(RESERVED_SLUGS) == {
         city.name for city in ranked if city.name in RESERVED_SLUGS
     }
@@ -66,6 +69,8 @@ def test_directory_api_is_public_but_pending_cities_are_not_catalogs():
         assert payload["ready_count"] == 41 + len(OSM_SEED_CITIES)
         assert payload["pending_count"] == 59 - len(OSM_SEED_CITIES)
         assert payload["catalog_city_count"] == 45 + len(OSM_SEED_CITIES)
+        assert payload["editorial_count"] == 41
+        assert payload["map_seed_count"] == len(OSM_SEED_CITIES)
         assert payload["ranking_date"] == "2025-01-01"
         assert len(payload["ranking_sources"]) == 3
         assert "user_id" not in response.text
