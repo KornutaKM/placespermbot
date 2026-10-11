@@ -41,6 +41,7 @@ from app.data import (
     yekaterinburg,
 )
 from app.data.expansion_2026 import EXPANSION_CITIES
+from app.data.osm_seed_2026 import OSM_SEED_CITIES
 from app.domain import Place, RoutePlan
 
 
@@ -126,6 +127,20 @@ CITY_MANIFESTS += tuple(
         quality=CatalogQualityProfile(12, 5, 5, 4, 5, 6, 2),
     )
     for city in EXPANSION_CITIES
+)
+
+# One-time OpenStreetMap snapshots are opt-in real candidate guides, never
+# placeholder entries from the ranking. Minimums are not relaxed.
+CITY_MANIFESTS += tuple(
+    CityManifest(
+        slug=city.slug,
+        name=city.name,
+        category_labels=city.category_labels,
+        places=city.places,
+        routes=city.routes,
+        quality=CatalogQualityProfile(12, 5, 5, 4, 5, 6, 2),
+    )
+    for city in OSM_SEED_CITIES
 )
 
 
