@@ -48,7 +48,13 @@ function sourceDetails(place) {
         '" target="_blank" rel="noopener noreferrer">' + escapeText(name) + ' ↗</a>'
       : escapeText(name)) + '</p>' +
     '<small>Дата редакционной записи: ' + escapeText(checkedAt) +
-    '. Не гарантирует актуальность часов, цен и доступности.</small></div>';
+    '. Не гарантирует актуальность часов, цен и доступности.</small>' +
+    (safeUrl && url.startsWith("https://www.openstreetmap.org/")
+      ? '<small>Картографические данные: © OpenStreetMap contributors, ' +
+        '<a href="https://www.openstreetmap.org/copyright" target="_blank" ' +
+        'rel="noopener noreferrer">Open Database License (ODbL)</a>. ' +
+        'Объект и доступность не проверены на месте.</small>'
+      : "") + '</div>';
 }
 
 function notify(message) {
