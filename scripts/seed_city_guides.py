@@ -307,7 +307,7 @@ def valid_city(places: list, meta: dict) -> list[str]:
         other = places if theme == "overview" else [
             p for p in places if p not in selected
         ]
-        within_reach = lambda a, b: 0.08 <= distance_km(  # noqa: E731
+        within_reach = lambda a, b: 0.08 <= distance_km(
             a["latitude"], a["longitude"], b["latitude"], b["longitude"]
         ) <= 5.0
         has_pair = any(
