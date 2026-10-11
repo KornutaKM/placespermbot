@@ -139,6 +139,46 @@ EVIDENCE = (
         "в афише на октябрь 2026 есть постановки. Осмотр фасада снаружи "
         "не подтверждает свободного доступа в зал; билеты и правила уточняйте.",
     ),
+    Evidence(
+        "syktyvkar", "syktyvkar-national-museum", "operator_listed",
+        date(2026, 10, 11),
+        "https://museumkomi.ru/?page_id=1609",
+        "Сайт Национального музея подтверждает отдел природы и выставочный "
+        "зал на Коммунистической, 6 и режим. Отдел истории на Ленина, 57 "
+        "объявлен закрытым на ремонт; вход в конкретный день уточняйте.",
+    ),
+    Evidence(
+        "syktyvkar", "syktyvkar-national-gallery", "operator_listed",
+        date(2026, 10, 11),
+        "https://ngrkomi-art.ru/",
+        "Официальный сайт Национальной галереи указывает Кирова, 44 "
+        "и октябрьские выставки 2026 года. Наличие билетов и вход "
+        "в конкретный день необходимо уточнять.",
+    ),
+    Evidence(
+        "syktyvkar", "syktyvkar-savin", "operator_listed",
+        date(2026, 10, 11),
+        "https://komidrama.ru/contacts",
+        "Театр драмы имени Виктора Савина подтверждает адрес Первомайская, 56 "
+        "и кассу, а афиша включает октябрь 2026 года. Свободный проход "
+        "внутрь здания не подтверждён.",
+    ),
+    Evidence(
+        "syktyvkar", "syktyvkar-opera", "operator_listed",
+        date(2026, 10, 11),
+        "https://komiopera.ru/",
+        "Официальный сайт театра оперы и балета Коми указывает адрес "
+        "Коммунистическая, 32 и октябрьскую афишу 2026 года. "
+        "Доступ в зал зависит от билетов и правил учреждения.",
+    ),
+    Evidence(
+        "syktyvkar", "syktyvkar-geology", "operator_listed",
+        date(2026, 10, 11),
+        "https://geo.komisc.ru/museum/museum-contacts",
+        "Оператор — Институт геологии Коми НЦ УрО РАН — указывает музей "
+        "Чернова на Первомайской, 54, часы и предварительную запись. "
+        "Посещение без согласования не гарантируется.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(
