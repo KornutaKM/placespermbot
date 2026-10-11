@@ -16,7 +16,7 @@ from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from app.catalog import list_catalogs
@@ -219,7 +219,7 @@ def run_audit(*, live: bool = False, timeout: float = 12) -> dict:
                 url = tasks[future]
                 try:
                     result_by_url[url] = future.result()
-                except Exception as exc:
+                except (OSError, ValueError, RuntimeError, TypeError) as exc:
                     result_by_url[url] = {
                         "signal": "probe_inconclusive",
                         "error_type": type(exc).__name__,
