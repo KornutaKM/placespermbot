@@ -480,3 +480,34 @@ def test_ulan_ude_lenin_head_and_tsar_gates_pins_are_place_specific():
     intro = city.route_by_slug("ulan-ude-first")
     assert "ulan-ude-lenin-head" in intro.place_slugs
     assert "ulan-ude-tsar-gates" in intro.place_slugs
+
+
+def test_ulan_ude_musical_fountain_is_specific_free_seasonal_attraction():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("ulan-ude")
+    fountain = city.place_by_slug("ulan-ude-musical")
+    theatre = city.place_by_slug("ulan-ude-opera")
+    assert fountain is not None and theatre is not None
+    assert fountain.title == "Музыкальный фонтан на Театральной площади"
+    assert (fountain.latitude, fountain.longitude) == (
+        51.833617, 107.583233
+    )
+    assert fountain.district == "Театральная площадь имени Л. Линховоина"
+    assert fountain.source.url == (
+        "https://goru.travel/place/fontan-na-teatralnoy-ploshchadi-ulan-ude"
+    )
+    assert fountain.source.checked_at == date(2026, 10, 11)
+    assert fountain.category == "family"
+    assert fountain.is_free
+    assert "с детьми" in fountain.tags
+    assert "бесплатно" in fountain.tags
+    assert "работа воды и подсветки сезонная" in fountain.summary
+    assert "в октябре не гарантируется" in fountain.summary
+    assert distance_km(fountain, theatre) < 0.2
+    assert public_evidence(
+        "ulan-ude", "ulan-ude-musical", as_of=date(2026, 10, 11)
+    )["status"] == "not_independently_checked"
+    assert not hard_route_findings(inspect_routes(city))
