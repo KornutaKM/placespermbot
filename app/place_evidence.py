@@ -116,14 +116,6 @@ EVIDENCE = (
         "Доступность конкретной выставки и часы уточняйте перед поездкой.",
     ),
     Evidence(
-        "kursk", "kursk-museum-local", "operator_listed",
-        date(2026, 10, 11),
-        "https://kursk-museum.ru/ekskursiya-kurskij-detinec/",
-        "На сайте музея указаны Луначарского, 6 и контакты экскурсионного "
-        "обслуживания. Актуальную экспозицию, вход и режим уточняйте "
-        "непосредственно у музея.",
-    ),
-    Evidence(
         "kursk", "kursk-znamensky", "operator_listed",
         date(2026, 10, 11),
         "https://kursk-znamen-1.cerkov.ru/",
