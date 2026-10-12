@@ -107,7 +107,7 @@ def build_review_queue(
                     f"{key}: unknown previous probe signal: {previous_signal}"
                 )
             if not isinstance(prior.get("source_url"), str):
-                raise ValueError(f"{key}: previous source URL is missing")
+                raise TypeError(f"{key}: previous source URL is missing")
             old_rows[key] = prior
     route_impact = defaultdict(list)
     for catalog in active:
