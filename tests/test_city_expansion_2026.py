@@ -746,3 +746,45 @@ def test_yoshkar_ola_annunciation_tower_is_museum_exterior_not_free_exhibition()
         "yoshkar-ola-historic"
     ).place_slugs
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_yoshkar_ola_central_park_pin_is_inside_grounded_park_area():
+    from datetime import date
+
+    from app.catalog import coordinates_distance_km
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("yoshkar-ola")
+    park = city.place_by_slug("yoshkar-ola-botanic")
+    assert park is not None
+    assert park.title == "Центральный парк культуры и отдыха им. XXX-летия ВЛКСМ"
+    assert (park.latitude, park.longitude) == (56.63619, 47.8898)
+    assert park.district == "Комсомольская, 124"
+    assert "Точка отмечает территорию парка, а не подтверждённый вход" in (
+        park.summary
+    )
+    assert "аттракционы могут оплачиваться отдельно" in park.summary
+    assert park.source.url == (
+        "https://visit-mariel.ru/routs/sights/"
+        "tsentralnyy-park-kultury-i-otdykha/"
+    )
+    assert park.source.checked_at == date(2026, 10, 12)
+    # Original editorial marker was more than 700 metres outside the
+    # independently mapped park area: never restore that inaccurate pin.
+    assert coordinates_distance_km(
+        56.64, 47.9018, park.latitude, park.longitude
+    ) > 0.7
+    evidence = public_evidence(
+        "yoshkar-ola", "yoshkar-ola-botanic",
+        as_of=date(2026, 10, 12),
+    )
+    assert evidence["status"] == "official_tourism_listing"
+    assert evidence["evidence_url"] == park.source.url
+    assert public_evidence(
+        "yoshkar-ola", "yoshkar-ola-botanic",
+        as_of=date(2026, 10, 11),
+    )["status"] == "not_independently_checked"
+    assert any(
+        park.slug in route.place_slugs for route in city.routes
+    )
+    assert not hard_route_findings(inspect_routes(city))
