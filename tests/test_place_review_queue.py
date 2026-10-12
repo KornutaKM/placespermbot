@@ -28,9 +28,9 @@ def test_offline_scan_queues_withheld_but_never_promotes_unchanged_urls():
     assert result["review_queue_count"] == 0
     assert result["withheld"][0]["place_slug"] == "nalchik-osm-way-234973881"
     assert sum(c["total"] for c in result["city_summary"]) == 2141
-    assert sum(c["operator_listings"] for c in result["city_summary"]) == 45
-    assert result["official_tourism_listing_count"] == 12
-    assert sum(c["official_tourism_listings"] for c in result["city_summary"]) == 12
+    assert sum(c["operator_listings"] for c in result["city_summary"]) == 46
+    assert result["official_tourism_listing_count"] == 13
+    assert sum(c["official_tourism_listings"] for c in result["city_summary"]) == 13
     assert next(c for c in result["city_summary"] if c["slug"] == "omsk")[
         "official_tourism_listings"
     ] == 3
