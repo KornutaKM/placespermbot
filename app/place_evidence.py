@@ -256,6 +256,14 @@ EVIDENCE = (
         "Вознесенская, 39. Отдел воинской славы расположен отдельно "
         "на Первомайской, 128; вход и расписание уточняйте.",
     ),
+    Evidence(
+        "yoshkar-ola", "yoshkar-ola-theatre", "operator_listed",
+        date(2026, 10, 12),
+        "https://operaballet.net/contacts/",
+        "Официальный сайт театра Сапаева указывает Комсомольскую, 130, "
+        "режим кассы и афишу октября 2026 года. Осмотр фасада возможен "
+        "отдельно от спектаклей; доступ в зал и билеты уточняйте.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(
