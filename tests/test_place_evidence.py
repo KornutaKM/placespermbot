@@ -64,7 +64,10 @@ def test_all_city_inventory_annotates_every_source_without_false_claims():
         if p["documentary_evidence"]["status"] == "operator_listed"
     ]
     assert len(checked) == 41
-    assert {p["city_slug"] for p in checked} == {"perm", "yaroslavl", "volgograd", "murmansk", "sochi", "kursk", "syktyvkar", "ulan-ude", "yoshkar-ola"}
+    assert {p["city_slug"] for p in checked} == {
+        "perm", "yaroslavl", "volgograd", "murmansk", "sochi",
+        "kursk", "syktyvkar", "ulan-ude", "yoshkar-ola", "penza",
+    }
     assert all(p["review_status"] == "requires_current_independent_confirmation"
                for p in report["places"])
 
