@@ -277,6 +277,36 @@ EVIDENCE = (
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(
+        "yoshkar-ola", "yoshkar-ola-bruges", "official_tourism_listing",
+        date(2026, 10, 12),
+        ("https://i-ola-visit.ru/articles/chto-posmotret/dostoprimechatelnosti/"
+         "naberezhnaya-/naberezhnaya-bryugge/"),
+        "Городской туристско-информационный центр описывает "
+        "Набережную Брюгге на левом берегу Малой Кокшаги, её "
+        "современный архитектурный ансамбль и ориентиры. "
+        "Текущую проходимость дорожек уточняйте на месте.",
+    ),
+    Evidence(
+        "yoshkar-ola", "yoshkar-ola-patriarch", "official_tourism_listing",
+        date(2026, 10, 12),
+        ("https://i-ola-visit.ru/articles/sobiraemsya-v-dorogu/o-gorode/"
+         "top10/patriarshaya-ploschad/"),
+        "Городской ТИЦ отдельно описывает Патриаршую площадь, "
+        "Воскресенский мост и композицию часов «12 апостолов». "
+        "Это не гарантия, что механизм сработает в конкретный час.",
+    ),
+    Evidence(
+        "yoshkar-ola", "yoshkar-ola-italian", "official_tourism_listing",
+        date(2026, 10, 12),
+        ("https://i-ola-visit.ru/articles/chto-posmotret/dostoprimechatelnosti/"
+         "gorodskie-ploschadi/ploschad-nogotkova-obolenskogo58/"),
+        "Городской ТИЦ подтверждает современную площадь "
+        "Оболенского-Ноготкова, памятник первому воеводе, "
+        "копию Царь-пушки и Национальную галерею рядом. "
+        "Режим мероприятий и доступность уточняйте отдельно.",
+    ),
+
+    Evidence(
         "yoshkar-ola", "yoshkar-ola-botanic", "official_tourism_listing",
         date(2026, 10, 12),
         "https://visit-mariel.ru/routs/sights/tsentralnyy-park-kultury-i-otdykha/",
