@@ -1012,3 +1012,34 @@ def test_penza_cathedral_and_first_settler_have_distinct_primary_sources():
         assert current["evidence_url"] == place.source.url
         assert historical["status"] == "not_independently_checked"
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_penza_planetarium_and_belinsky_park_have_distinct_access_rules():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("penza")
+    planet = city.place_by_slug("penza-penza-planet")
+    park = city.place_by_slug("penza-belinsky-park")
+    assert planet is not None and park is not None
+    assert planet.district == "Карла Маркса, 2"
+    assert park.district == "Карла Маркса, 1"
+    assert planet.source.url == (
+        "https://penzatourism.ru/where/dostoprimechatelnosti/muzei/"
+        "penzenskiy-planetariy/"
+    )
+    assert park.source.url == "https://www.park-belinsky.ru/"
+    assert planet.source.checked_at == park.source.checked_at == date(2026, 10, 12)
+    assert "Сеансы и экскурсии по билетам" in planet.summary
+    assert "аттракционы сезонные" in park.summary
+    assert public_evidence(
+        "penza", planet.slug, as_of=date(2026, 10, 12)
+    )["status"] == "official_tourism_listing"
+    assert public_evidence(
+        "penza", park.slug, as_of=date(2026, 10, 12)
+    )["status"] == "operator_listed"
+    assert public_evidence(
+        "penza", planet.slug, as_of=date(2026, 10, 11)
+    )["status"] == "not_independently_checked"
+    assert not hard_route_findings(inspect_routes(city))
