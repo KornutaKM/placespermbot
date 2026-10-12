@@ -242,5 +242,5 @@ def test_invalid_previous_signal_and_source_fail_closed():
         build_review_queue(current, previous=previous)
     previous["places"][0]["probe"] = {"signal": "not_probed"}
     previous["places"][0].pop("source_url")
-    with pytest.raises(ValueError, match="previous source URL is missing"):
+    with pytest.raises(TypeError, match="previous source URL is missing"):
         build_review_queue(current, previous=previous)
