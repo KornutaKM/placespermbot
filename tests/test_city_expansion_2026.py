@@ -940,7 +940,7 @@ def test_penza_zoo_meyerhold_and_literary_museum_are_operator_listed():
     institutions = {
         "penza-penza-zoo": (
             "Красная, 10", "https://zoo-penza.ru/",
-            (53.1898, 45.0164), "время осмотра и продажи билетов",
+            (53.1898, 45.0164), "часы кассы и экспозиции различаются",
         ),
         "penza-meyerhold": (
             "Володарского, 59", "https://dommeyerholda.ru/kontakty/",
