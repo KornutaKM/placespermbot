@@ -929,3 +929,51 @@ def test_penza_museums_have_individual_sources_without_conflating_venues():
     assert "отдельная площадка" in local.summary
     assert len(city.places) == 12
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_penza_zoo_meyerhold_and_literary_museum_are_operator_listed():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("penza")
+    institutions = {
+        "penza-penza-zoo": (
+            "Красная, 10", "https://zoo-penza.ru/",
+            (53.1898, 45.0164), "часы кассы и экспозиции различаются",
+        ),
+        "penza-meyerhold": (
+            "Володарского, 59", "https://dommeyerholda.ru/kontakty/",
+            (53.1967, 45.0098), "групповые посещения",
+        ),
+        "penza-literary": (
+            "Кирова, 2", "https://muzlitpenza.ru/kontakty/",
+            (53.1932, 45.0216), "филиалов",
+        ),
+    }
+    for slug, (address, url, coords, caveat) in institutions.items():
+        place = city.place_by_slug(slug)
+        assert place is not None
+        assert place.district == address
+        assert place.source.url == url
+        assert place.source.checked_at == date(2026, 10, 12)
+        assert (place.latitude, place.longitude) == coords
+        assert caveat in place.summary
+        evidence = public_evidence("penza", slug, as_of=date(2026, 10, 12))
+        assert evidence["status"] == "operator_listed"
+        assert evidence["evidence_url"] == url
+        assert "уточняйте" in evidence["finding"]
+        historical = public_evidence("penza", slug, as_of=date(2026, 10, 11))
+        assert historical["status"] == "not_independently_checked"
+        assert historical["evidence_url"] is None
+    # Not every registered POI belongs to a curated prebuilt route.
+    # Preserve existing routes rather than inventing mandatory stops.
+    assert len(city.routes) == 5
+
+    zoo = city.place_by_slug("penza-penza-zoo")
+    assert zoo.category == "family"
+    assert zoo.is_free is False
+    assert "Посещение зоопарка платное" in zoo.summary
+    assert "1981" not in zoo.summary
+    assert len(city.places) == 12
+    assert not hard_route_findings(inspect_routes(city))
