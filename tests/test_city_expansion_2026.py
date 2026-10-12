@@ -977,3 +977,38 @@ def test_penza_zoo_meyerhold_and_literary_museum_are_operator_listed():
     assert "1981" not in zoo.summary
     assert len(city.places) == 12
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_penza_cathedral_and_first_settler_have_distinct_primary_sources():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("penza")
+    cathedral = city.place_by_slug("penza-spassky")
+    settler = city.place_by_slug("penza-monument-first")
+    assert cathedral is not None and settler is not None
+    assert cathedral.district == "Соборная площадь, 3"
+    assert cathedral.source.url == "https://soborpenza.cerkov.ru/kontakty/"
+    assert cathedral.source.checked_at == date(2026, 10, 12)
+    assert "октября 2026" in cathedral.summary
+    assert "уточняйте" in cathedral.summary
+    assert settler.district == "Кирова, 11 — смотровая площадка"
+    assert settler.source.url == (
+        "https://penzatourism.ru/where/dostoprimechatelnosti/art-obekty/"
+        "pamyatnik-pervoposelenets/"
+    )
+    assert "звонница с пушкой" in settler.summary
+    assert "долину Суры" in settler.summary
+    records = {
+        "penza-spassky": "operator_listed",
+        "penza-monument-first": "official_tourism_listing",
+    }
+    for slug, expected_status in records.items():
+        place = city.place_by_slug(slug)
+        current = public_evidence("penza", slug, as_of=date(2026, 10, 12))
+        historical = public_evidence("penza", slug, as_of=date(2026, 10, 11))
+        assert current["status"] == expected_status
+        assert current["evidence_url"] == place.source.url
+        assert historical["status"] == "not_independently_checked"
+    assert not hard_route_findings(inspect_routes(city))
