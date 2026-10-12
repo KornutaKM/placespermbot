@@ -308,8 +308,33 @@ EVIDENCE = (
         "режим. Другие филиалы имеют отдельные адреса; билетный "
         "режим конкретной экспозиции уточняйте.",
     ),
+    Evidence(
+        "penza", "penza-belinsky-park", "operator_listed",
+        date(2026, 10, 12),
+        "https://park-belinsky.ru/park/contacts/",
+        "Муниципальный оператор парка Белинского подтверждает "
+        "площадку на Карла Маркса, 1; аттракционы имеют отдельные "
+        "сезонные правила и плату. Актуальную доступность уточняйте.",
+    ),
+    Evidence(
+        "penza", "penza-spassky", "operator_listed",
+        date(2026, 10, 12),
+        "https://soborpenza.cerkov.ru/kontakty/",
+        "Приход Спасского кафедрального собора публикует адрес "
+        "Соборная площадь, 3 и анонсы богослужений октября 2026 года. "
+        "Реальный доступ внутрь и правила посещения уточняйте.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
+    Evidence(
+        "penza", "penza-penza-planet", "official_tourism_listing",
+        date(2026, 10, 12),
+        "https://penzatourism.ru/where/dostoprimechatelnosti/muzei/penzenskiy-planetariy/",
+        "Городской туристско-информационный центр подтверждает "
+        "реконструированный Пензенский планетарий на Карла Маркса, 2. "
+        "Доступ на сеансы и билетный режим в конкретный день уточняйте.",
+    ),
+
     Evidence(
         "penza", "penza-museum-one", "official_tourism_listing",
         date(2026, 10, 12),
