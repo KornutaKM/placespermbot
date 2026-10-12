@@ -552,3 +552,54 @@ def test_ulan_ude_arbat_map_pin_has_dated_construction_warning():
         "ulan-ude-walk"
     ).place_slugs
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_yoshkar_ola_three_museums_use_precise_operator_sources():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    catalog = get_catalog("yoshkar-ola")
+    institutions = {
+        "yoshkar-ola-evseev": (
+            "Советская, 153",
+            ("https://fumus.ru/expositions/"
+             "ekspozitsiya-natsionalnogo-muzeya-respubliki-mariy-el-imeni-t-evseeva/"),
+        ),
+        "yoshkar-ola-gallery": (
+            "Ленинский проспект, 24",
+            "https://rmii.ru/node/109",
+        ),
+        "yoshkar-ola-history": (
+            "Вознесенская, 39",
+            ("https://i-ola-museum.ru/clauses/o-muzee/"
+             "chasy-adresa-i-usloviya-raboty3283/"),
+        ),
+    }
+    for slug, (street, url) in institutions.items():
+        place = catalog.place_by_slug(slug)
+        assert place is not None
+        assert place.district == street
+        assert place.source.url == url
+        assert place.source.checked_at == date(2026, 10, 12)
+        evidence = public_evidence(
+            "yoshkar-ola", slug, as_of=date(2026, 10, 12)
+        )
+        assert evidence["status"] == "operator_listed"
+        assert evidence["checked_on"] == "2026-10-12"
+        assert evidence["evidence_url"] == url
+        assert "уточняйте" in evidence["finding"]
+        assert slug in catalog.route_by_slug("yoshkar-ola-museums").place_slugs
+
+    assert "2026" in catalog.place_by_slug("yoshkar-ola-evseev").summary
+    assert "Рериха" in catalog.place_by_slug("yoshkar-ola-gallery").summary
+    assert "Первомайской, 128" in catalog.place_by_slug(
+        "yoshkar-ola-history"
+    ).summary
+    # Addresses are operator-verified; pedestrian entrance coordinates are not.
+    assert len(catalog.places) == 12
+    assert len(catalog.routes) == 5
+    assert catalog.place_by_slug("yoshkar-ola-bruges").source.url == (
+        "https://visit-mariel.ru/"
+    )
+    assert not hard_route_findings(inspect_routes(catalog))
