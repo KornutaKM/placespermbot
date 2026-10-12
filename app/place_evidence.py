@@ -230,6 +230,32 @@ EVIDENCE = (
         "Стрелецкую, 1, автобус № 97 и общий график приёма. "
         "Праздничные изменения и доступ на конкретную дату уточняйте.",
     ),
+    Evidence(
+        "yoshkar-ola", "yoshkar-ola-evseev", "operator_listed",
+        date(2026, 10, 12),
+        ("https://fumus.ru/expositions/"
+         "ekspozitsiya-natsionalnogo-muzeya-respubliki-mariy-el-imeni-t-evseeva/"),
+        "Национальный музей указывает постоянную экспозицию марийской "
+        "культуры на 2026 год и главный корпус по адресу Советская, 153. "
+        "Фактическую доступность, билеты и вход на дату визита уточняйте.",
+    ),
+    Evidence(
+        "yoshkar-ola", "yoshkar-ola-gallery", "operator_listed",
+        date(2026, 10, 12),
+        "https://rmii.ru/node/109",
+        "Республиканский музей изобразительных искусств указывает "
+        "Национальную галерею на Ленинском проспекте, 24 и часы кассы. "
+        "Октябрьский проект 2026 года опубликован на сайте оператора; "
+        "билеты и условия посещения уточняйте.",
+    ),
+    Evidence(
+        "yoshkar-ola", "yoshkar-ola-history", "operator_listed",
+        date(2026, 10, 12),
+        "https://i-ola-museum.ru/clauses/o-muzee/chasy-adresa-i-usloviya-raboty3283/",
+        "Муниципальный музей публикует режим и адрес главного корпуса "
+        "Вознесенская, 39. Отдел воинской славы расположен отдельно "
+        "на Первомайской, 128; вход и расписание уточняйте.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(
