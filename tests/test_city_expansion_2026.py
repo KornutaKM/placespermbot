@@ -838,3 +838,38 @@ def test_yoshkar_ola_three_civic_spaces_have_distinct_tourism_citations():
         assert historical["evidence_url"] is None
         assert any(slug in route.place_slugs for route in city.routes)
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_yoshkar_ola_riverwalk_is_wider_legal_pedestrian_zone_than_bruges():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("yoshkar-ola")
+    corridor = city.place_by_slug("yoshkar-ola-riverwalk")
+    bruges = city.place_by_slug("yoshkar-ola-bruges")
+    assert corridor is not None and bruges is not None
+    assert corridor.title == "Пешеходная зона набережной Малой Кокшаги"
+    assert corridor.category == "parks"
+    assert corridor.is_free is True
+    assert corridor.district == "Центральный мост — Вознесенский мост"
+    assert "постановлением администрации № 549 от 19 мая 2025 года" in (
+        corridor.summary
+    )
+    for section in ("Брюгге", "Воскресенскую", "Амстердам"):
+        assert section in corridor.summary
+    assert "не дубликат Брюгге" in corridor.summary
+    assert "Пин ориентировочный" in corridor.summary
+    assert corridor.source.url == (
+        "https://i-ola.ru/upload/iblock/73e/"
+        "9ehqvy79xc1mcj1grxg67pm7bytvwbwc/Post2025_549.pdf"
+    )
+    assert corridor.source.checked_at == date(2026, 10, 12)
+    assert corridor.source.url != bruges.source.url
+    assert (corridor.latitude, corridor.longitude) == (56.6331, 47.9051)
+    assert public_evidence(
+        "yoshkar-ola", corridor.slug,
+        as_of=date(2026, 10, 12),
+    )["status"] == "not_independently_checked"
+    assert any(corridor.slug in route.place_slugs for route in city.routes)
+    assert not hard_route_findings(inspect_routes(city))
