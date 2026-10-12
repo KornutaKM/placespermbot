@@ -926,6 +926,6 @@ def test_penza_museums_have_individual_sources_without_conflating_venues():
     local = city.place_by_slug("penza-local-history")
     assert "историческое здание" in local.title
     assert "Белинского, 8" in local.summary
-    assert "другой корпус" in local.summary
+    assert "отдельная площадка" in local.summary
     assert len(city.places) == 12
     assert not hard_route_findings(inspect_routes(city))
