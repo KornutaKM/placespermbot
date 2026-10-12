@@ -205,3 +205,27 @@ def test_murmansk_sources_use_individual_operator_records_without_access_claim()
         "murmansk-icebreaker-lenin" in route.place_slugs
         for route in city.routes
     )
+
+
+def test_future_operator_evidence_is_not_exposed_in_historical_as_of_views():
+    from app.place_evidence import telegram_evidence_notice
+
+    for slug in ("yoshkar-ola-evseev", "yoshkar-ola-gallery",
+                 "yoshkar-ola-history"):
+        earlier = public_evidence(
+            "yoshkar-ola", slug, as_of=date(2026, 10, 11)
+        )
+        assert earlier["status"] == "not_independently_checked"
+        assert earlier["checked_on"] is None
+        assert earlier["evidence_url"] is None
+        assert "не получено" in earlier["finding"]
+        notice = telegram_evidence_notice(
+            "yoshkar-ola", slug, as_of=date(2026, 10, 11)
+        )
+        assert "Существование и текущая доступность не подтверждены" in notice
+        assert "https://" not in notice
+        confirmed = public_evidence(
+            "yoshkar-ola", slug, as_of=date(2026, 10, 12)
+        )
+        assert confirmed["status"] == "operator_listed"
+        assert confirmed["evidence_url"].startswith("https://")
