@@ -873,3 +873,59 @@ def test_yoshkar_ola_riverwalk_is_wider_legal_pedestrian_zone_than_bruges():
     )["status"] == "not_independently_checked"
     assert any(corridor.slug in route.place_slugs for route in city.routes)
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_penza_museums_have_individual_sources_without_conflating_venues():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("penza")
+    places = {
+        "penza-museum-one": (
+            "Кирова, 11",
+            ("https://penzatourism.ru/where/dostoprimechatelnosti/muzei/"
+             "muzey-odnoy-kartina-im-g-v-myasnikova/"),
+            "official_tourism_listing",
+            (53.1929, 45.0173),
+        ),
+        "penza-savitsky": (
+            "Советская, 3",
+            ("https://penzatourism.ru/where/dostoprimechatelnosti/muzei/"
+             "galereya-im-k-a-savitskogo/"),
+            "official_tourism_listing",
+            (53.198, 45.017),
+        ),
+        "penza-local-history": (
+            "Красная, 73",
+            ("https://km-penza.ru/nashi-muzei/"
+             "penzenskij-gosudarstvennyj-kraevedcheskij-muzej/"),
+            "operator_listed",
+            (53.1945, 45.0186),
+        ),
+    }
+    for slug, (address, url, status, coords) in places.items():
+        place = city.place_by_slug(slug)
+        assert place is not None
+        assert place.district == address
+        assert place.source.url == url
+        assert place.source.checked_at == date(2026, 10, 12)
+        assert (place.latitude, place.longitude) == coords
+        evidence = public_evidence("penza", slug, as_of=date(2026, 10, 12))
+        assert evidence["status"] == status
+        assert evidence["evidence_url"] == url
+        assert "уточняйте" in evidence["finding"]
+        previous = public_evidence("penza", slug, as_of=date(2026, 10, 11))
+        assert previous["status"] == "not_independently_checked"
+        assert previous["evidence_url"] is None
+        assert any(slug in route.place_slugs for route in city.routes)
+
+    one = city.place_by_slug("penza-museum-one")
+    assert "одной картины" in one.summary
+    assert "сеанса" in one.summary
+    local = city.place_by_slug("penza-local-history")
+    assert "историческое здание" in local.title
+    assert "Белинского, 8" in local.summary
+    assert "другой корпус" in local.summary
+    assert len(city.places) == 12
+    assert not hard_route_findings(inspect_routes(city))
