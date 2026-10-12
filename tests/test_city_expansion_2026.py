@@ -600,7 +600,8 @@ def test_yoshkar_ola_three_museums_use_precise_operator_sources():
     assert len(catalog.places) == 12
     assert len(catalog.routes) == 5
     assert catalog.place_by_slug("yoshkar-ola-bruges").source.url == (
-        "https://visit-mariel.ru/"
+        "https://i-ola-visit.ru/articles/chto-posmotret/dostoprimechatelnosti/"
+        "naberezhnaya-/naberezhnaya-bryugge/"
     )
     assert not hard_route_findings(inspect_routes(catalog))
 
