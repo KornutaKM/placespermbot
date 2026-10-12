@@ -264,6 +264,16 @@ EVIDENCE = (
         "режим кассы и афишу октября 2026 года. Осмотр фасада возможен "
         "отдельно от спектаклей; доступ в зал и билеты уточняйте.",
     ),
+    Evidence(
+        "yoshkar-ola", "yoshkar-ola-annunciation", "operator_listed",
+        date(2026, 10, 12),
+        "https://fumus.ru/posetitelyam/objects/blagoveshchenskaya-bashnya/",
+        "Национальный музей Республики Марий Эл подтверждает культурно-"
+        "выставочный центр «Башня» в Благовещенской башне по адресу "
+        "площадь Республики и Пресвятой Девы Марии, 1. Экспозиция "
+        "2026 года и музейные билеты опубликованы оператором; реальный "
+        "проход, выставки и обзорную площадку уточняйте отдельно.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(

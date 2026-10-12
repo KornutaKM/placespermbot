@@ -710,3 +710,39 @@ def test_yoshkar_ola_kremlin_is_a_modern_reconstruction_not_original_fortress():
         "yoshkar-ola-historic"
     ).place_slugs
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_yoshkar_ola_annunciation_tower_is_museum_exterior_not_free_exhibition():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("yoshkar-ola")
+    tower = city.place_by_slug("yoshkar-ola-annunciation")
+    assert tower is not None
+    assert tower.category == "sights"
+    assert tower.is_free is True  # Exterior only; never the ticketed exhibition.
+    assert tower.district == "Площадь Республики и Пресвятой Девы Марии, 1"
+    assert "КВЦ «Башня»" in tower.title
+    assert "открытый в 2018 году" in tower.summary
+    assert "Осмотр фасада снаружи бесплатный" in tower.summary
+    assert "смотровую площадку" in tower.summary
+    assert "по правилам и билетам оператора" in tower.summary
+    assert tower.source.url == (
+        "https://fumus.ru/posetitelyam/objects/blagoveshchenskaya-bashnya/"
+    )
+    assert tower.source.checked_at == date(2026, 10, 12)
+    current = public_evidence(
+        "yoshkar-ola", "yoshkar-ola-annunciation",
+        as_of=date(2026, 10, 12),
+    )
+    assert current["status"] == "operator_listed"
+    assert current["evidence_url"] == tower.source.url
+    assert public_evidence(
+        "yoshkar-ola", "yoshkar-ola-annunciation",
+        as_of=date(2026, 10, 11),
+    )["status"] == "not_independently_checked"
+    assert "yoshkar-ola-annunciation" in city.route_by_slug(
+        "yoshkar-ola-historic"
+    ).place_slugs
+    assert not hard_route_findings(inspect_routes(city))
