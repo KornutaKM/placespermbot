@@ -635,3 +635,44 @@ def test_yoshkar_ola_sapaev_theatre_uses_operator_and_exterior_visit_semantics()
         "yoshkar-ola-historic"
     ).place_slugs
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_yoshkar_ola_donkey_chimes_are_documented_separately_from_apostles():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("yoshkar-ola")
+    clocks = city.place_by_slug("yoshkar-ola-marian-chimes")
+    gallery = city.place_by_slug("yoshkar-ola-gallery")
+    assert clocks is not None and gallery is not None
+    assert clocks.category == "unusual"
+    assert clocks.is_free is True  # Outdoor viewing, not a ticket to gallery.
+    assert clocks.district == "Площадь Оболенского-Ноготкова"
+    assert "Троеручица" in clocks.summary
+    assert "12 апостолов" in clocks.summary
+    assert "Патриаршей площади" in clocks.summary
+    assert "работу механизма проверяйте на месте" in clocks.summary
+    assert clocks.source.url == (
+        "https://i-ola-visit.ru/articles/sobiraemsya-v-dorogu/"
+        "o-gorode/top10/gorodskie-chasy-s-oslikom/"
+    )
+    assert clocks.source.checked_at == date(2026, 10, 12)
+    document = public_evidence(
+        "yoshkar-ola", "yoshkar-ola-marian-chimes",
+        as_of=date(2026, 10, 12),
+    )
+    assert document["status"] == "official_tourism_listing"
+    assert document["evidence_url"] == clocks.source.url
+    assert public_evidence(
+        "yoshkar-ola", "yoshkar-ola-marian-chimes",
+        as_of=date(2026, 10, 11),
+    )["status"] == "not_independently_checked"
+    gallery_evidence = public_evidence(
+        "yoshkar-ola", "yoshkar-ola-gallery",
+        as_of=date(2026, 10, 12),
+    )
+    assert gallery_evidence["status"] == "operator_listed"
+    assert clocks.slug != gallery.slug
+    assert city.search_places("Часы с осликом")
+    assert not hard_route_findings(inspect_routes(city))
