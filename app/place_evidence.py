@@ -311,6 +311,15 @@ def public_evidence(
             "evidence_url": None,
             "finding": "Нет актуального индивидуального подтверждения объекта.",
         }
+    if entry.checked_on > now:
+        # Historical snapshots must not inherit documentary evidence from
+        # later reviews (and must not expose a future verification link).
+        return {
+            "status": "not_independently_checked",
+            "checked_on": None,
+            "evidence_url": None,
+            "finding": "На выбранную дату индивидуальное подтверждение ещё не получено.",
+        }
     if (now - entry.checked_on).days > 90:
         return {
             "status": "evidence_stale",
