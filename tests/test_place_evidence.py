@@ -176,7 +176,9 @@ def test_official_tourism_listing_is_not_operator_verification() -> None:
     assert "туристского инфоцентра" in text
     assert "сайте учреждения" not in text
     assert "уточняйте" in text
-    report = build_inventory(as_of=date(2026, 10, 11))
+    historical = build_inventory(as_of=date(2026, 10, 11))
+    assert sum(c["official_tourism_listed"] for c in historical["cities"]) == 3
+    report = build_inventory(as_of=date(2026, 10, 12))
     assert sum(c["official_tourism_listed"] for c in report["cities"]) == 4
 
 
