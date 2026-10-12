@@ -274,8 +274,37 @@ EVIDENCE = (
         "2026 года и музейные билеты опубликованы оператором; реальный "
         "проход, выставки и обзорную площадку уточняйте отдельно.",
     ),
+    Evidence(
+        "penza", "penza-local-history", "operator_listed",
+        date(2026, 10, 12),
+        ("https://km-penza.ru/nashi-muzei/"
+         "penzenskij-gosudarstvennyj-kraevedcheskij-muzej/"),
+        "Оператор указывает историческое здание музея по адресу Красная, 73, "
+        "кассу, экспозиции и посещение по билетам. Новое здание на "
+        "Белинского, 8 — другой корпус; актуальный режим уточняйте.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
+    Evidence(
+        "penza", "penza-museum-one", "official_tourism_listing",
+        date(2026, 10, 12),
+        ("https://penzatourism.ru/where/dostoprimechatelnosti/muzei/"
+         "muzey-odnoy-kartina-im-g-v-myasnikova/"),
+        "Городской туристско-информационный центр отдельно перечисляет "
+        "Музей одной картины Мясникова, Кирова, 11, и показывает "
+        "его музейный формат. Операторский сайт нестабилен; время "
+        "сеансов и вход уточняйте по контактам музея.",
+    ),
+    Evidence(
+        "penza", "penza-savitsky", "official_tourism_listing",
+        date(2026, 10, 12),
+        ("https://penzatourism.ru/where/dostoprimechatelnosti/muzei/"
+         "galereya-im-k-a-savitskogo/"),
+        "Городской туристско-информационный центр публикует отдельную "
+        "страницу картинной галереи Савицкого на Советской, 3. "
+        "Билетную доступность выставок и часы уточняйте у учреждения.",
+    ),
+
     Evidence(
         "yoshkar-ola", "yoshkar-ola-bruges", "official_tourism_listing",
         date(2026, 10, 12),
