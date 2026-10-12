@@ -798,20 +798,20 @@ def test_yoshkar_ola_three_civic_spaces_have_distinct_tourism_citations():
     city = get_catalog("yoshkar-ola")
     cases = {
         "yoshkar-ola-bruges": (
-            "https://i-ola-visit.ru/articles/chto-posmotret/dostoprimechatelnosti/"
-            "naberezhnaya-/naberezhnaya-bryugge/",
+            ("https://i-ola-visit.ru/articles/chto-posmotret/dostoprimechatelnosti/"
+             "naberezhnaya-/naberezhnaya-bryugge/"),
             "Малая Кокшага, левый берег",
             "Не средневековый бельгийский квартал",
         ),
         "yoshkar-ola-patriarch": (
-            "https://i-ola-visit.ru/articles/sobiraemsya-v-dorogu/o-gorode/"
-            "top10/patriarshaya-ploschad/",
+            ("https://i-ola-visit.ru/articles/sobiraemsya-v-dorogu/o-gorode/"
+             "top10/patriarshaya-ploschad/"),
             "Патриаршая площадь",
             "фактическую работу композиции",
         ),
         "yoshkar-ola-italian": (
-            "https://i-ola-visit.ru/articles/chto-posmotret/dostoprimechatelnosti/"
-            "gorodskie-ploschadi/ploschad-nogotkova-obolenskogo58/",
+            ("https://i-ola-visit.ru/articles/chto-posmotret/dostoprimechatelnosti/"
+             "gorodskie-ploschadi/ploschad-nogotkova-obolenskogo58/"),
             "Площадь Оболенского-Ноготкова",
             "открытая в 2007 году",
         ),
