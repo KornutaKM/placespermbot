@@ -316,8 +316,26 @@ EVIDENCE = (
         "контакты, режим посещения и октябрьские службы 2026 года. "
         "Посещение в конкретный день и ограничения уточняйте в храме.",
     ),
+    Evidence(
+        "penza", "penza-belinsky-park", "operator_listed",
+        date(2026, 10, 12),
+        "https://www.park-belinsky.ru/",
+        "Муниципальный оператор парка Белинского подтверждает адрес "
+        "Карла Маркса, 1 и афишу октября 2026. Некоторые аттракционы "
+        "сезонные или временно не работают; часы конкретных услуг уточняйте.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
+    Evidence(
+        "penza", "penza-penza-planet", "official_tourism_listing",
+        date(2026, 10, 12),
+        ("https://penzatourism.ru/where/dostoprimechatelnosti/muzei/"
+         "penzenskiy-planetariy/"),
+        "Пензенский ТИЦ описывает восстановленный планетарий на Карла "
+        "Маркса, 2, Звёздный зал и расписание. Сеансы билетные, "
+        "наличие мест и актуальные условия уточняйте у планетария.",
+    ),
+
     Evidence(
         "penza", "penza-monument-first", "official_tourism_listing",
         date(2026, 10, 12),
