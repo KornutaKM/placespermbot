@@ -19,7 +19,7 @@ from app.place_source_probe import (
 def test_all_documentary_evidence_points_exist_and_sources_are_independent():
     assert len(EVIDENCE) == 41
     assert sum(item.city_slug == "perm" for item in EVIDENCE) == 14
-    assert validate_evidence(as_of=date(2026, 10, 11)) == ()
+    assert validate_evidence(as_of=date(2026, 10, 12)) == ()
     assert {
         "perm-art-gallery", "perm-zoo", "permm",
         "perm-childrens-museum-center", "perm-antiquities-museum",
@@ -54,7 +54,7 @@ def test_evidence_validation_catches_missing_place_in_altered_catalog():
 
 
 def test_all_city_inventory_annotates_every_source_without_false_claims():
-    report = build_inventory(as_of=date(2026, 10, 11))
+    report = build_inventory(as_of=date(2026, 10, 12))
     assert report["active_places_count"] == 2141
     assert report["documented_operator_listings"] == 38
     assert report["documented_official_tourism_listings"] == 3
