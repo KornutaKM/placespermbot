@@ -308,8 +308,26 @@ EVIDENCE = (
         "режим. Другие филиалы имеют отдельные адреса; билетный "
         "режим конкретной экспозиции уточняйте.",
     ),
+    Evidence(
+        "penza", "penza-spassky", "operator_listed",
+        date(2026, 10, 12),
+        "https://soborpenza.cerkov.ru/kontakty/",
+        "Приход Спасского кафедрального собора указывает Соборную площадь, 3, "
+        "контакты, режим посещения и октябрьские службы 2026 года. "
+        "Посещение в конкретный день и ограничения уточняйте в храме.",
+    ),
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
+    Evidence(
+        "penza", "penza-monument-first", "official_tourism_listing",
+        date(2026, 10, 12),
+        ("https://penzatourism.ru/where/dostoprimechatelnosti/art-obekty/"
+         "pamyatnik-pervoposelenets/"),
+        "Пензенский туринфоцентр подтверждает памятник Первопоселенцу "
+        "у Кирова, 11, его состав и обзорную площадку. "
+        "Актуальную проходимость подходов необходимо уточнять на месте.",
+    ),
+
     Evidence(
         "penza", "penza-museum-one", "official_tourism_listing",
         date(2026, 10, 12),
