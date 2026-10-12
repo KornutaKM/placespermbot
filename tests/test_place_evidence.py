@@ -17,14 +17,14 @@ from app.place_source_probe import (
 
 
 def test_all_documentary_evidence_points_exist_and_sources_are_independent():
-    assert len(EVIDENCE) == 46
+    assert len(EVIDENCE) == 49
     assert sum(item.city_slug == "perm" for item in EVIDENCE) == 14
     assert validate_evidence(as_of=date(2026, 10, 12)) == ()
     assert {
         "perm-art-gallery", "perm-zoo", "permm",
         "perm-childrens-museum-center", "perm-antiquities-museum",
     } <= {item.place_slug for item in EVIDENCE}
-    assert len({(e.city_slug, e.place_slug) for e in EVIDENCE}) == 46
+    assert len({(e.city_slug, e.place_slug) for e in EVIDENCE}) == 49
 
 
 def test_evidence_is_a_operator_listing_not_guaranteed_access():
@@ -57,7 +57,7 @@ def test_all_city_inventory_annotates_every_source_without_false_claims():
     report = build_inventory(as_of=date(2026, 10, 12))
     assert report["active_places_count"] == 2141
     assert report["documented_operator_listings"] == 40
-    assert report["documented_official_tourism_listings"] == 6
+    assert report["documented_official_tourism_listings"] == 9
     assert report["blocking_findings"] == []
     checked = [
         p for p in report["places"]
@@ -179,7 +179,7 @@ def test_official_tourism_listing_is_not_operator_verification() -> None:
     historical = build_inventory(as_of=date(2026, 10, 11))
     assert sum(c["official_tourism_listed"] for c in historical["cities"]) == 3
     report = build_inventory(as_of=date(2026, 10, 12))
-    assert sum(c["official_tourism_listed"] for c in report["cities"]) == 6
+    assert sum(c["official_tourism_listed"] for c in report["cities"]) == 9
 
 
 def test_murmansk_sources_use_individual_operator_records_without_access_claim():
