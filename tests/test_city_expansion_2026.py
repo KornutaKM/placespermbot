@@ -600,7 +600,8 @@ def test_yoshkar_ola_three_museums_use_precise_operator_sources():
     assert len(catalog.places) == 12
     assert len(catalog.routes) == 5
     assert catalog.place_by_slug("yoshkar-ola-bruges").source.url == (
-        "https://visit-mariel.ru/"
+        "https://i-ola-visit.ru/articles/chto-posmotret/dostoprimechatelnosti/"
+        "naberezhnaya-/naberezhnaya-bryugge/"
     )
     assert not hard_route_findings(inspect_routes(catalog))
 
@@ -787,4 +788,53 @@ def test_yoshkar_ola_central_park_pin_is_inside_grounded_park_area():
     assert any(
         park.slug in route.place_slugs for route in city.routes
     )
+    assert not hard_route_findings(inspect_routes(city))
+
+
+def test_yoshkar_ola_three_civic_spaces_have_distinct_tourism_citations():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("yoshkar-ola")
+    cases = {
+        "yoshkar-ola-bruges": (
+            ("https://i-ola-visit.ru/articles/chto-posmotret/dostoprimechatelnosti/"
+             "naberezhnaya-/naberezhnaya-bryugge/"),
+            "Малая Кокшага, левый берег",
+            "Не средневековый бельгийский квартал",
+        ),
+        "yoshkar-ola-patriarch": (
+            ("https://i-ola-visit.ru/articles/sobiraemsya-v-dorogu/o-gorode/"
+             "top10/patriarshaya-ploschad/"),
+            "Патриаршая площадь",
+            "фактическую работу композиции",
+        ),
+        "yoshkar-ola-italian": (
+            ("https://i-ola-visit.ru/articles/chto-posmotret/dostoprimechatelnosti/"
+             "gorodskie-ploschadi/ploschad-nogotkova-obolenskogo58/"),
+            "Площадь Оболенского-Ноготкова",
+            "открытая в 2007 году",
+        ),
+    }
+    for slug, (url, district, description_fragment) in cases.items():
+        place = city.place_by_slug(slug)
+        assert place is not None
+        assert place.source.url == url
+        assert place.source.checked_at == date(2026, 10, 12)
+        assert place.district == district
+        assert description_fragment in place.summary
+        assert place.is_free is True  # Public space, not adjoining venues.
+        current = public_evidence(
+            "yoshkar-ola", slug, as_of=date(2026, 10, 12)
+        )
+        assert current["status"] == "official_tourism_listing"
+        assert current["evidence_url"] == url
+        assert "оператор" not in current["finding"]
+        historical = public_evidence(
+            "yoshkar-ola", slug, as_of=date(2026, 10, 11)
+        )
+        assert historical["status"] == "not_independently_checked"
+        assert historical["evidence_url"] is None
+        assert any(slug in route.place_slugs for route in city.routes)
     assert not hard_route_findings(inspect_routes(city))
