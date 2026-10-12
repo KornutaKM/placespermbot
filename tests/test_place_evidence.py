@@ -182,7 +182,7 @@ def test_official_tourism_listing_is_not_operator_verification() -> None:
     historical = build_inventory(as_of=date(2026, 10, 11))
     assert sum(c["official_tourism_listed"] for c in historical["cities"]) == 3
     report = build_inventory(as_of=date(2026, 10, 12))
-    assert sum(c["official_tourism_listed"] for c in report["cities"]) == 11
+    assert sum(c["official_tourism_listed"] for c in report["cities"]) == 12
 
 
 def test_murmansk_sources_use_individual_operator_records_without_access_claim():
