@@ -101,6 +101,13 @@ def build_review_queue(
             key = (prior["city_slug"], prior["place_slug"])
             if key in old_rows:
                 raise ValueError(f"Duplicate place in previous scan: {key}")
+            previous_signal = prior.get("probe", {}).get("signal")
+            if previous_signal not in ALLOWED_SIGNALS:
+                raise ValueError(
+                    f"{key}: unknown previous probe signal: {previous_signal}"
+                )
+            if not isinstance(prior.get("source_url"), str):
+                raise TypeError(f"{key}: previous source URL is missing")
             old_rows[key] = prior
     route_impact = defaultdict(list)
     for catalog in active:
@@ -112,6 +119,7 @@ def build_review_queue(
     recovered_technical_probes = []
     source_url_changes = []
     comparable_source_count = 0
+    matched_previous_places = 0
     persistent_technical_retry_count = 0
     by_city = {
         catalog.slug: {
@@ -140,6 +148,8 @@ def build_review_queue(
         if signal not in ALLOWED_SIGNALS:
             raise ValueError(f"{key}: unknown probe signal: {signal}")
         old = old_rows.get(key)
+        if old is not None:
+            matched_previous_places += 1
         previous_signal = (
             old.get("probe", {}).get("signal") if old is not None else None
         )
@@ -326,6 +336,14 @@ def build_review_queue(
         "technical_retry_host_count": len(retry_host_summary),
         "technical_retry_hosts": retry_host_summary,
         "previous_scan_available": previous is not None,
+        "previous_scan_place_count": len(old_rows),
+        "previous_place_match_count": matched_previous_places,
+        "new_places_since_previous_count": (
+            len(by_id) - matched_previous_places if previous is not None else 0
+        ),
+        "retired_places_since_previous_count": (
+            len(old_rows) - matched_previous_places if previous is not None else 0
+        ),
         "same_source_comparable_count": comparable_source_count,
         "source_url_change_count": len(source_url_changes),
         "source_url_changes": source_url_changes,
@@ -362,6 +380,12 @@ def render_markdown(result: dict, *, max_items: int = 30) -> str:
         "",
         (f"Previous completed scan available: **{result['previous_scan_available']}**; "
         f"new/changed review signals: **{result['new_or_changed_count']}**."),
+        (f"Previous snapshot scope: **{result['previous_scan_place_count']}** places; "
+        f"matched: **{result['previous_place_match_count']}**; "
+        f"added in current catalog: **{result['new_places_since_previous_count']}**; "
+        f"absent from current catalog: "
+        f"**{result['retired_places_since_previous_count']}**. "
+        "New/absent places have no same-URL recovery comparison."),
         (f"Comparable unchanged source URLs: **{result['same_source_comparable_count']}**; "
         f"persistent technical retries: **{result['persistent_technical_retry_count']}**; "
         f"technical probes no longer failing: **{result['recovered_technical_probe_count']}**; "
