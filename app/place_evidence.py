@@ -267,6 +267,17 @@ EVIDENCE = (
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(
+        "yoshkar-ola", "yoshkar-ola-marian-chimes", "official_tourism_listing",
+        date(2026, 10, 12),
+        ("https://i-ola-visit.ru/articles/sobiraemsya-v-dorogu/"
+         "o-gorode/top10/gorodskie-chasy-s-oslikom/"),
+        "Городской туристско-информационный центр описывает часы с "
+        "осликом, несущим икону Троеручицы, на фасаде Национальной "
+        "художественной галереи у площади Оболенского-Ноготкова. "
+        "Актуальную работу механизма в день посещения уточняйте.",
+    ),
+
+    Evidence(
         "omsk", "omsk-fortress", "official_tourism_listing",
         date(2026, 10, 11),
         "https://gotoomsk.ru/places/istoriko-kulturnyj-kompleks-omskaya-krepost/",
