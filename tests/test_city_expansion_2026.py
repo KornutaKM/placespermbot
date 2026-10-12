@@ -676,3 +676,37 @@ def test_yoshkar_ola_donkey_chimes_are_documented_separately_from_apostles():
     assert clocks.slug != gallery.slug
     assert city.search_places("Часы с осликом")
     assert not hard_route_findings(inspect_routes(city))
+
+
+def test_yoshkar_ola_kremlin_is_a_modern_reconstruction_not_original_fortress():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("yoshkar-ola")
+    kremlin = city.place_by_slug("yoshkar-ola-tsarevokok")
+    assert kremlin is not None
+    assert "комплекс 2009 года" in kremlin.title
+    assert kremlin.district == "Вознесенская, 58"
+    assert "в 2009 году" in kremlin.summary
+    assert "Это реконструкция" in kremlin.summary
+    assert "не сохранившиеся средневековые стены" in kremlin.summary
+    assert "уточняйте отдельно" in kremlin.summary
+    assert kremlin.source.url == (
+        "https://visit-mariel.ru/routs/sights/tsarevokokshayskiy-kreml/"
+    )
+    assert kremlin.source.checked_at == date(2026, 10, 12)
+    evidence = public_evidence(
+        "yoshkar-ola", "yoshkar-ola-tsarevokok",
+        as_of=date(2026, 10, 12),
+    )
+    assert evidence["status"] == "official_tourism_listing"
+    assert evidence["evidence_url"] == kremlin.source.url
+    assert public_evidence(
+        "yoshkar-ola", "yoshkar-ola-tsarevokok",
+        as_of=date(2026, 10, 11),
+    )["status"] == "not_independently_checked"
+    assert "yoshkar-ola-tsarevokok" in city.route_by_slug(
+        "yoshkar-ola-historic"
+    ).place_slugs
+    assert not hard_route_findings(inspect_routes(city))

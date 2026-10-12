@@ -267,6 +267,16 @@ EVIDENCE = (
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(
+        "yoshkar-ola", "yoshkar-ola-tsarevokok",
+        "official_tourism_listing", date(2026, 10, 12),
+        "https://visit-mariel.ru/routs/sights/tsarevokokshayskiy-kreml/",
+        "Региональный турпортал указывает культурно-исторический комплекс "
+        "Царевококшайский кремль, открытый в 2009 году на месте прежней "
+        "деревянной крепости. Это современное воссоздание, не подлинный "
+        "средневековый кремль; фактический режим посещения уточняйте.",
+    ),
+
+    Evidence(
         "yoshkar-ola", "yoshkar-ola-marian-chimes", "official_tourism_listing",
         date(2026, 10, 12),
         ("https://i-ola-visit.ru/articles/sobiraemsya-v-dorogu/"
