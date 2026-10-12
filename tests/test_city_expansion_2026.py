@@ -603,3 +603,35 @@ def test_yoshkar_ola_three_museums_use_precise_operator_sources():
         "https://visit-mariel.ru/"
     )
     assert not hard_route_findings(inspect_routes(catalog))
+
+
+def test_yoshkar_ola_sapaev_theatre_uses_operator_and_exterior_visit_semantics():
+    from datetime import date
+
+    from app.place_evidence import public_evidence
+
+    city = get_catalog("yoshkar-ola")
+    theatre = city.place_by_slug("yoshkar-ola-theatre")
+    assert theatre is not None
+    assert theatre.title == "Марийский театр оперы и балета им. Э. Сапаева — фасад"
+    assert theatre.district == "Комсомольская, 130"
+    assert theatre.source.url == "https://operaballet.net/contacts/"
+    assert theatre.source.checked_at == date(2026, 10, 12)
+    assert theatre.category == "sights"
+    assert theatre.is_free is True  # Façade, not ticketed auditorium admission.
+    assert "Осмотр фасада с улицы не требует билета" in theatre.summary
+    assert "проход в зал зависит от билетов" in theatre.summary
+    evidence = public_evidence(
+        "yoshkar-ola", "yoshkar-ola-theatre",
+        as_of=date(2026, 10, 12),
+    )
+    assert evidence["status"] == "operator_listed"
+    assert evidence["evidence_url"] == theatre.source.url
+    assert public_evidence(
+        "yoshkar-ola", "yoshkar-ola-theatre",
+        as_of=date(2026, 10, 11),
+    )["status"] == "not_independently_checked"
+    assert "yoshkar-ola-theatre" in city.route_by_slug(
+        "yoshkar-ola-historic"
+    ).place_slugs
+    assert not hard_route_findings(inspect_routes(city))
