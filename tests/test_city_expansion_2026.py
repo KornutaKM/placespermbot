@@ -751,6 +751,7 @@ def test_yoshkar_ola_annunciation_tower_is_museum_exterior_not_free_exhibition()
 def test_yoshkar_ola_central_park_pin_is_inside_grounded_park_area():
     from datetime import date
 
+    from app.catalog import coordinates_distance_km
     from app.place_evidence import public_evidence
 
     city = get_catalog("yoshkar-ola")
@@ -770,7 +771,9 @@ def test_yoshkar_ola_central_park_pin_is_inside_grounded_park_area():
     assert park.source.checked_at == date(2026, 10, 12)
     # Original editorial marker was more than 700 metres outside the
     # independently mapped park area: never restore that inaccurate pin.
-    assert distance_km(56.64, 47.9018, park.latitude, park.longitude) > 0.7
+    assert coordinates_distance_km(
+        56.64, 47.9018, park.latitude, park.longitude
+    ) > 0.7
     evidence = public_evidence(
         "yoshkar-ola", "yoshkar-ola-botanic",
         as_of=date(2026, 10, 12),
