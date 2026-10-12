@@ -62,7 +62,7 @@ def test_retired_slug_guard_rejects_accidental_catalog_restoration():
 
 
 def test_freshness_inventory_works_for_every_active_city_and_source():
-    report = build_inventory(as_of=date(2026, 10, 11))
+    report = build_inventory(as_of=date(2026, 10, 12))
     assert report["cities_count"] == 104
     assert report["active_places_count"] == 2141
     assert report["not_verified_now"] == report["active_places_count"]

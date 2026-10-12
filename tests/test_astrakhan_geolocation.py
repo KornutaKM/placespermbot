@@ -62,7 +62,7 @@ def test_mislocated_slug_has_a_separate_non_demolition_tombstone():
 
 
 def test_full_inventory_documents_geographical_correction_without_false_closure():
-    report = build_inventory(as_of=date(2026, 10, 11))
+    report = build_inventory(as_of=date(2026, 10, 12))
     assert report["cities_count"] == 104
     assert report["active_places_count"] == 2141
     assert report["historically_removed_count"] == 1
