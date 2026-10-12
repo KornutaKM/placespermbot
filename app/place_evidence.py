@@ -277,6 +277,17 @@ EVIDENCE = (
     # This is an official regional tourist-information listing, NOT the
     # attraction operator's own confirmation of hours or public access.
     Evidence(
+        "yoshkar-ola", "yoshkar-ola-botanic", "official_tourism_listing",
+        date(2026, 10, 12),
+        "https://visit-mariel.ru/routs/sights/tsentralnyy-park-kultury-i-otdykha/",
+        "Региональный туристический портал перечисляет Центральный парк "
+        "культуры и отдыха по адресу Комсомольская, 124, с историей "
+        "с 1941 года и площадью около 13 гектаров. Местоположение "
+        "парковой территории отмечено картой; точный вход, "
+        "аттракционы и их режим отдельно не подтверждены.",
+    ),
+
+    Evidence(
         "yoshkar-ola", "yoshkar-ola-tsarevokok",
         "official_tourism_listing", date(2026, 10, 12),
         "https://visit-mariel.ru/routs/sights/tsarevokokshayskiy-kreml/",
